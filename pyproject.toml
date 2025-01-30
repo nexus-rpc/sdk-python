@@ -1,0 +1,14 @@
+[project]
+name = "nexus-rpc"
+version = "0.1.0"
+description = "Nexus Python SDK"
+readme = "README.md"
+authors = [
+    { name = "Dan Davison", email = "dandavison7@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
