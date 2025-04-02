@@ -6,9 +6,19 @@ readme = "README.md"
 authors = [
     { name = "Dan Davison", email = "dandavison7@gmail.com" }
 ]
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.9"
+dependencies = [
+    "pyright==1.1.394",
+    "typing-extensions>=4.12.2",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexusrpc"]
+
+
+[tool.ruff]
+extend-ignore = ["E741"]  # Allow single-letter variable names like I, O
