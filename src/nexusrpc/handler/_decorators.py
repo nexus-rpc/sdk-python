@@ -4,13 +4,11 @@ import inspect
 import types
 import typing
 import warnings
-from dataclasses import dataclass
 from functools import wraps
 from typing import (
     Any,
     Awaitable,
     Callable,
-    Generic,
     Optional,
     Type,
     TypeVar,
@@ -64,9 +62,10 @@ def service_handler(
     :py:func:`@nexusrpc.handler.sync_operation_handler`.
 
     Args:
-        service: The service contract (interface) that the service implements. name: The
-        name of the  service. If not provided, the service name or class name will be
-        used.
+        cls: The service implementation class to decorate.
+        service: The service contract (interface) that the service implements.
+        name: The name of the service. If not provided, the service name or class name
+              will be used.
 
     `service` and `name` are mutually exclusive.
 
@@ -100,39 +99,25 @@ def service_handler(
             )
 
     def decorator(cls: Type[S]) -> Type[S]:
-        return _service_handler_decorator(service=_service, name=name)(cls)
+        # The name by which the service must be addressed in Nexus requests.
+        _name = (
+            _service.name if _service else name if name is not None else cls.__name__
+        )
+        if not _name:
+            raise ValueError("Service name must not be empty.")
+
+        op_factories = collect_operation_handler_methods(cls)
+        service = _service or service_from_operation_handler_methods(
+            _name, op_factories
+        )
+        validate_operation_handler_methods(cls, op_factories, service)
+        cls.__nexus_service__ = service  # type: ignore
+        return cls
 
     if cls is None:
         return decorator
 
     return decorator(cls)
-
-
-@dataclass
-class _service_handler_decorator(Generic[S]):
-    service: Optional[nexusrpc.contract.Service] = None
-    name: Optional[str] = None
-
-    def __call__(self, cls: Type[S]) -> Type[S]:
-        # The name by which the service must be addressed in Nexus requests.
-        name = (
-            self.service.name
-            if self.service
-            else self.name
-            if self.name is not None
-            else cls.__name__
-        )
-        if not name:
-            raise ValueError("Service name must not be empty.")
-
-        # Validate
-        op_factories = collect_operation_handler_methods(cls)
-        service = self.service or service_from_operation_handler_methods(
-            name, op_factories
-        )
-        validate_operation_handler_methods(cls, op_factories, service)
-        cls.__nexus_service__ = service  # type: ignore
-        return cls
 
 
 # TODO(dan): move these to top of file with a forward reference?
@@ -206,8 +191,6 @@ def operation_handler(
 
 # TODO(dan): docstrings
 # TODO(dan): check API docs
-# TODO(dan): shouldn't this return Operation[I, O]?
-# TODO(dan): should it be possible to define operation without an input parameter?
 # TODO(dan): how do we help users that accidentally use @sync_operation_handler on a function that
 # returns nexusrpc.handler.Operation[Input, Output]?
 def sync_operation_handler(
