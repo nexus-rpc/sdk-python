@@ -59,28 +59,29 @@ def service_handler(
 ) -> Union[Type[S], Callable[[Type[S]], Type[S]]]:
     """Decorator that marks a class as a Nexus service implementation.
 
+    The class should implement Nexus operation handlers as methods decorated with
+    operation handler decorators such as :py:func:`@nexusrpc.handler.operation_handler` or
+    :py:func:`@nexusrpc.handler.sync_operation_handler`.
+
     Args:
-        service: The service contract (interface) that the service implements.
-        name: The name of the  service. If not provided, the service name or class name will be used.
+        service: The service contract (interface) that the service implements. name: The
+        name of the  service. If not provided, the service name or class name will be
+        used.
 
     `service` and `name` are mutually exclusive.
 
     Example:
-        ```python
-        @nexusrpc.handler.service_handler
-        class MyService:
+        ```python @nexusrpc.handler.service_handler class MyServiceHandler:
             ...
         ```
 
-        ```python
-        @nexusrpc.handler.service_handler(service=MyServiceInterface)
-        class MyService:
+        ```python @nexusrpc.handler.service_handler(service=MyService) class
+        MyServiceHandler:
             ...
         ```
 
-        ```python
-        @nexusrpc.handler.service_handler(name="my-service")
-        class MyService:
+        ```python @nexusrpc.handler.service_handler(name="my-service") class
+        MyServiceHandler:
             ...
         ```
     """
