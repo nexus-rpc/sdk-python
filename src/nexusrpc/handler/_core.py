@@ -81,7 +81,7 @@ class Handler:
                 raise RuntimeError(f"Service '{sh.name}' has already been registered.")
             self.service_handlers[sh.name] = sh
 
-    def start_operation(
+    async def start_operation(
         self, ctx: StartOperationContext, service: str, operation: str, input: Any
     ) -> Union[
         StartOperationResultSync[Any],
@@ -96,7 +96,24 @@ class Handler:
             operation: The name of the operation to handle.
             input: The serialized input to the operation.
         """
-        raise NotImplementedError
+        op_handler = self.get_operation_handler(ctx)
+        if inspect.iscoroutinefunction(op_handler.start):
+            return await op_handler.start(ctx, input)
+        else:
+            return op_handler.start(ctx, input)
+
+    def _start_operation_sync(
+        self, ctx: StartOperationContext, service: str, operation: str, input: Any
+    ) -> Union[StartOperationResultSync[Any], StartOperationResultAsync]:
+        op_handler = self.get_operation_handler(ctx)
+        assert not inspect.iscoroutinefunction(op_handler.start)
+        return op_handler.start(ctx, input)
+
+    async def _start_operation_async(
+        self, ctx: StartOperationContext, service: str, operation: str, input: Any
+    ) -> Union[StartOperationResultSync[Any], StartOperationResultAsync]:
+        op_handler = self.get_operation_handler(ctx)
+        return await op_handler.start(ctx, input)
 
     def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
