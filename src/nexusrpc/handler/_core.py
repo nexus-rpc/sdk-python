@@ -81,6 +81,62 @@ class Handler:
                 raise RuntimeError(f"Service '{sh.name}' has already been registered.")
             self.service_handlers[sh.name] = sh
 
+    def start_operation(
+        self, ctx: StartOperationContext, service: str, operation: str, input: Any
+    ) -> Union[
+        StartOperationResultSync[Any],
+        Awaitable[StartOperationResultSync[Any]],
+        Awaitable[StartOperationResultAsync],
+    ]:
+        """Handle a start operation request.
+
+        Args:
+            ctx: The operation context.
+            service: The name of the service to handle the operation.
+            operation: The name of the operation to handle.
+            input: The serialized input to the operation.
+        """
+        raise NotImplementedError
+
+    def fetch_operation_info(
+        self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
+    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
+        """Handle a fetch operation info request.
+
+        Args:
+            ctx: The operation context.
+            service: The name of the service.
+            operation: The name of the operation.
+            token: The operation token.
+        """
+        raise NotImplementedError
+
+    def fetch_operation_result(
+        self, ctx: FetchOperationResultContext, service: str, operation: str, token: str
+    ) -> Union[Any, Awaitable[Any]]:
+        """Handle a fetch operation result request.
+
+        Args:
+            ctx: The operation context.
+            service: The name of the service.
+            operation: The name of the operation.
+            token: The operation token.
+        """
+        raise NotImplementedError
+
+    def cancel_operation(
+        self, ctx: CancelOperationContext, service: str, operation: str, token: str
+    ) -> Union[None, Awaitable[None]]:
+        """Handle a cancel operation request.
+
+        Args:
+            ctx: The operation context.
+            service: The name of the service.
+            operation: The name of the operation.
+            token: The operation token.
+        """
+        raise NotImplementedError
+
     def get_operation_handler(self, ctx: OperationContext) -> OperationHandler:
         """Return an operation handler, given the service and operation names from context."""
         service = self.service_handlers.get(ctx.service)
