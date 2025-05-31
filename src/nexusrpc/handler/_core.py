@@ -85,8 +85,7 @@ class Handler:
         self, ctx: StartOperationContext, service: str, operation: str, input: Any
     ) -> Union[
         StartOperationResultSync[Any],
-        Awaitable[StartOperationResultSync[Any]],
-        Awaitable[StartOperationResultAsync],
+        StartOperationResultAsync,
     ]:
         """Handle a start operation request.
 
@@ -96,24 +95,24 @@ class Handler:
             operation: The name of the operation to handle.
             input: The serialized input to the operation.
         """
+        # TODO(dan): ser/de, either Java/.NET or Go/TS style
         op_handler = self.get_operation_handler(ctx)
         if inspect.iscoroutinefunction(op_handler.start):
+            # TODO(dan): apply middleware stack as composed awaitables
             return await op_handler.start(ctx, input)
         else:
-            return op_handler.start(ctx, input)
-
-    def _start_operation_sync(
-        self, ctx: StartOperationContext, service: str, operation: str, input: Any
-    ) -> Union[StartOperationResultSync[Any], StartOperationResultAsync]:
-        op_handler = self.get_operation_handler(ctx)
-        assert not inspect.iscoroutinefunction(op_handler.start)
-        return op_handler.start(ctx, input)
-
-    async def _start_operation_async(
-        self, ctx: StartOperationContext, service: str, operation: str, input: Any
-    ) -> Union[StartOperationResultSync[Any], StartOperationResultAsync]:
-        op_handler = self.get_operation_handler(ctx)
-        return await op_handler.start(ctx, input)
+            # TODO(dan): apply middleware stack as composed functions
+            # TODO(dan): support passing thread (or process?) based executor
+            # raise NotImplementedError(
+            #     "Nexus operation start method must be an `async def`"
+            # )
+            result = op_handler.start(ctx, input)
+            if inspect.isawaitable(result):
+                raise RuntimeError(
+                    f"Operation start handler method {op_handler.start} returned an "
+                    "awaitable but is not an `async def` coroutine function."
+                )
+            return result
 
     def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
