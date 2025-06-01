@@ -101,8 +101,8 @@ class Handler:
             operation: The name of the operation to handle.
             lazy_value: The serialized input to the operation.
         """
-        service_handler = self.get_service_handler(service)
-        op_handler = service_handler.get_operation_handler(operation)
+        service_handler = self._get_service_handler(service)
+        op_handler = service_handler._get_operation_handler(operation)
         op = service_handler.service.operations[operation]
         input = await lazy_value.consume(as_type=op.input_type)
         if inspect.iscoroutinefunction(op_handler.start):
@@ -161,8 +161,8 @@ class Handler:
         """
         raise NotImplementedError
 
-    def get_service_handler(self, service_name: str) -> ServiceHandler:
-        """Return a service handler, given the service name from context."""
+    def _get_service_handler(self, service_name: str) -> ServiceHandler:
+        """Return a service handler, given the service name."""
         service = self.service_handlers.get(service_name)
         if service is None:
             # TODO(dan): can this raise HandlerError directly or is HandlerError always a
@@ -217,7 +217,7 @@ class ServiceHandler:
             operation_handlers=op_handlers,
         )
 
-    def get_operation_handler(self, operation: str) -> OperationHandler:
+    def _get_operation_handler(self, operation: str) -> OperationHandler:
         """Return an operation handler, given the operation name."""
         if operation not in self.service.operations:
             msg = (
