@@ -7,6 +7,7 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
+    Type,
 )
 
 
@@ -40,8 +41,18 @@ class Serializer(Protocol):
         """Serialize encodes a value into a Content."""
         ...
 
-    async def deserialize(self, content: Content) -> Any:
-        """Deserialize decodes a Content into a value."""
+    # TODO(dan): are we happy with None as the sentinel type here, meaning do not attempt
+    # type conversion, despite the fact that Python treats None as a valid type?
+    async def deserialize(
+        self, content: Content, as_type: Optional[Type[Any]] = None
+    ) -> Any:
+        """Deserialize decodes a Content into a value.
+
+        Args:
+            content: The content to deserialize.
+            as_type: The type to convert the result of deserialization into.
+                     Do not attempt type conversion if this is None.
+        """
         ...
 
 
@@ -69,17 +80,20 @@ class LazyValue:
         self.headers = headers
         self.stream = stream
 
-    async def consume(self) -> Any:
+    async def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
         # TODO(dan): HandlerError(BAD_REQUEST) on error while deserializing?
         if self.stream is None:
-            return await self.serializer.deserialize(Content(headers=self.headers))
+            return await self.serializer.deserialize(
+                Content(headers=self.headers), as_type=as_type
+            )
 
         return await self.serializer.deserialize(
             Content(
                 headers=self.headers,
                 data=b"".join([c async for c in self.stream]),
-            )
+            ),
+            as_type=as_type,
         )

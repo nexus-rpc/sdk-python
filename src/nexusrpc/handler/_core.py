@@ -98,9 +98,17 @@ class Handler:
         """
         # TODO(dan): ser/de, either Java/.NET or Go/TS style
         op_handler = self.get_operation_handler(ctx)
+
+        input_type = None
+        if op := getattr(op_handler, "__nexus_operation__", None):
+            if isinstance(op, nexusrpc.contract.Operation):
+                input_type = op.input_type
+            else:
+                input_type = None
+
         if inspect.iscoroutinefunction(op_handler.start):
             # TODO(dan): apply middleware stack as composed awaitables
-            return await op_handler.start(ctx, await input.consume())
+            return await op_handler.start(ctx, await input.consume(as_type=input_type))
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing thread (or process?) based executor
@@ -169,6 +177,7 @@ class Handler:
             raise UnknownOperationError(
                 f"Nexus service '{ctx.service}' has no operation '{ctx.operation}'."
             )
+
         return operation_handler
 
 
@@ -206,13 +215,22 @@ class ServiceHandler:
                 f"a Nexus service implementation."
             )
         op_factories = collect_operation_handler_methods(user_instance.__class__)
+
+        op_handlers = {}
+        # TODO(dan): looks like this isn't using name overrides; test coverage?
+        for op_name, op_factory in op_factories.items():
+            op_handler = op_factory(user_instance)
+            # TODO(dan): hack
+            setattr(
+                op_handler,
+                "__nexus_operation__",
+                getattr(op_factory, "__nexus_operation__", None),
+            )
+            op_handlers[op_name] = op_handler
+
         return cls(
             name=service.name,
-            operation_handlers={
-                # TODO(dan): looks like this isn't using name overrides; test coverage?
-                op_name: op_factory(user_instance)
-                for op_name, op_factory in op_factories.items()
-            },
+            operation_handlers=op_handlers,
         )
 
 
