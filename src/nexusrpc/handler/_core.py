@@ -310,7 +310,7 @@ def collect_operation_handler_methods(
         # Check for accidentally missing decorator on an OperationHandler factory
         # TODO(dan): support disabling warning in @service_handler decorator?
         elif (
-            typing.get_origin(inspect.signature(method).return_annotation)
+            typing.get_origin(typing.get_type_hints(method).get("return"))
             == OperationHandler
         ):
             warnings.warn(

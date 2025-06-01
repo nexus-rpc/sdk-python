@@ -206,7 +206,7 @@ def test_operation_without_decorator():
 
     with pytest.warns(
         UserWarning,
-        match="Did you forget to apply the @nexusrpc.handler.operation_handler decorator?",
+        match=r"Did you forget to apply the @nexusrpc.handler.operation_handler decorator\?",
     ):
         nexusrpc.handler.service_handler(Service)
 
