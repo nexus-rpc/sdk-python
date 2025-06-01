@@ -111,10 +111,10 @@ class Handler:
             return await op_handler.start(ctx, input)
         else:
             # TODO(dan): apply middleware stack as composed functions
-            # TODO(dan): support passing thread (or process?) based executor
-            # raise NotImplementedError(
-            #     "Nexus operation start method must be an `async def`"
-            # )
+            # TODO(dan): support passing executor for non-async start methods
+            raise NotImplementedError(
+                "Nexus operation start method must be an `async def`"
+            )
             result = op_handler.start(ctx, input)
             if inspect.isawaitable(result):
                 raise RuntimeError(
@@ -123,7 +123,7 @@ class Handler:
                 )
             return result
 
-    def fetch_operation_info(
+    async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
     ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
         """Handle a fetch operation info request.
@@ -136,7 +136,7 @@ class Handler:
         """
         raise NotImplementedError
 
-    def fetch_operation_result(
+    async def fetch_operation_result(
         self, ctx: FetchOperationResultContext, service: str, operation: str, token: str
     ) -> Union[Any, Awaitable[Any]]:
         """Handle a fetch operation result request.
@@ -149,7 +149,7 @@ class Handler:
         """
         raise NotImplementedError
 
-    def cancel_operation(
+    async def cancel_operation(
         self, ctx: CancelOperationContext, service: str, operation: str, token: str
     ) -> Union[None, Awaitable[None]]:
         """Handle a cancel operation request.
@@ -160,7 +160,18 @@ class Handler:
             operation: The name of the operation.
             token: The operation token.
         """
-        raise NotImplementedError
+        service_handler = self._get_service_handler(service)
+        op_handler = service_handler._get_operation_handler(operation)
+        if inspect.iscoroutinefunction(
+            op_handler.cancel
+        ) or inspect.iscoroutinefunction(op_handler.cancel.__call__):
+            # pyright does not infer awaitable from iscoroutinefunction(__call__)
+            return await op_handler.cancel(ctx, token)  # type: ignore
+        else:
+            raise NotImplementedError(
+                "Nexus operation cancel method must be an `async def`."
+            )
+            op_handler.cancel(ctx, token)
 
     def _get_service_handler(self, service_name: str) -> ServiceHandler:
         """Return a service handler, given the service name."""
