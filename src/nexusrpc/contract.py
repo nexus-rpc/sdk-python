@@ -86,6 +86,12 @@ def service(
             raise ValueError("Service name must not be empty.")
         # TODO(dan): check that __annotations__ is the correct API to use here
         # TODO(dan): check that op names are unique
+        # TODO(dan): error on attempt foo = Operation[int, str](name="bar")
+        #            The input and output types are not accessible on the instance.
+        # TODO(dan): Support foo = Operation[int, str]? E.g. via
+        # ops = {name: nexusrpc.contract.Operation[int, int] for name in op_names}
+        # service_cls = nexusrpc.contract.service(type("ServiceContract", (), ops))
+
         operations = {}
         annotations = getattr(cls, "__annotations__", {})
         for op_name, op in annotations.items():

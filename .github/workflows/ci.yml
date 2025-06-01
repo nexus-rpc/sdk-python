@@ -38,5 +38,6 @@ jobs:
           uv run mypy --check-untyped-defs . || true
 
       - name: Run tests
+        # TODO(dan): Coverage report
         run: |
           uv run pytest
