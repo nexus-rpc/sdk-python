@@ -118,7 +118,7 @@ class AllAnnotationsMissing(_TestCase):
     ],
 )
 def test_get_input_and_output_types(test_case: Type[_TestCase]):
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
         input_type, output_type = (
             get_input_and_output_types_from_sync_operation_start_method(test_case.start)
