@@ -77,9 +77,11 @@ class Handler:
                 # It must be a user service handler instance (i.e. an instance of a class
                 # decorated with @nexusrpc.handler.service_handler).
                 sh = ServiceHandler.from_user_instance(sh)
-            if sh.name in self.service_handlers:
-                raise RuntimeError(f"Service '{sh.name}' has already been registered.")
-            self.service_handlers[sh.name] = sh
+            if sh.service.name in self.service_handlers:
+                raise RuntimeError(
+                    f"Service '{sh.service.name}' has already been registered."
+                )
+            self.service_handlers[sh.service.name] = sh
 
     async def start_operation(
         self, ctx: StartOperationContext, service: str, operation: str, input: LazyValue
@@ -191,7 +193,7 @@ class ServiceHandler:
     constructor, for example when programatically creating Nexus service implementations.
     """
 
-    name: str
+    service: nexusrpc.contract.Service
     operation_handlers: dict[str, OperationHandler[Any, Any]]
 
     @classmethod
@@ -221,7 +223,7 @@ class ServiceHandler:
             op_handlers[op_name] = op_handler
 
         return cls(
-            name=service.name,
+            service=service,
             operation_handlers=op_handlers,
         )
 

@@ -21,7 +21,7 @@ def test_services_are_collected():
 
     service_handlers = Handler([Service1()])
     assert service_handlers.service_handlers.keys() == {"Service1"}
-    assert service_handlers.service_handlers["Service1"].name == "Service1"
+    assert service_handlers.service_handlers["Service1"].service.name == "Service1"
     assert service_handlers.service_handlers["Service1"].operation_handlers.keys() == {
         "op"
     }
