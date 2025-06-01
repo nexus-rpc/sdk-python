@@ -217,10 +217,10 @@ def sync_operation_handler(
     ) -> Callable[[S], OperationHandler[I, O]]:
         def factory(service: S) -> OperationHandler[I, O]:
             op = OperationHandler()
+            # Non-async functions returning Awaitable are not supported
             if inspect.iscoroutinefunction(start_method) or inspect.iscoroutinefunction(
                 start_method.__call__
             ):
-                # TODO(dan): support non-async function that returns Awaitable
                 start_method_async = cast(
                     Callable[
                         [S, StartOperationContext, I],
