@@ -57,6 +57,9 @@ from ._core import (
     OperationHandler as OperationHandler,
 )
 from ._core import (
+    SyncOperationHandler as SyncOperationHandler,
+)
+from ._core import (
     UnknownOperationError as UnknownOperationError,
 )
 from ._core import (

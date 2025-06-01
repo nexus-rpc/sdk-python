@@ -25,6 +25,7 @@ from ._common import (
 )
 from ._core import (
     OperationHandler,
+    SyncOperationHandler,
     collect_operation_handler_methods,
     service_from_operation_handler_methods,
     validate_operation_handler_methods,
@@ -216,7 +217,7 @@ def sync_operation_handler(
         start_method: Callable[[S, StartOperationContext, I], Union[O, Awaitable[O]]],
     ) -> Callable[[S], OperationHandler[I, O]]:
         def factory(service: S) -> OperationHandler[I, O]:
-            op = OperationHandler()
+            op = SyncOperationHandler()
             # Non-async functions returning Awaitable are not supported
             if inspect.iscoroutinefunction(start_method) or inspect.iscoroutinefunction(
                 start_method.__call__

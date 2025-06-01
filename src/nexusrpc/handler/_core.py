@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import typing
 import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -243,8 +244,7 @@ class ServiceHandler:
         return operation_handler
 
 
-# TODO(dan): ABC? *_operation decorator impls will need adjusting
-class OperationHandler(Generic[I, O]):
+class OperationHandler(ABC, Generic[I, O]):
     """
     Base class for an operation handler in a Nexus service implementation.
 
@@ -257,6 +257,7 @@ class OperationHandler(Generic[I, O]):
     class and apply the :py:func:`@nexusrpc.handler.sync_operation_handler` decorator.
     """
 
+    @abstractmethod
     def start(
         self, ctx: StartOperationContext, input: I
     ) -> Union[
@@ -270,31 +271,81 @@ class OperationHandler(Generic[I, O]):
         Either returns the result synchronously, or returns an operation token. Which
         path is taken may be decided at operation handling time.
         """
-        raise NotImplementedError
+        ...
 
+    # TODO(dan): test coverage
+    @abstractmethod
     def fetch_info(
         self, ctx: FetchOperationInfoContext, token: str
     ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
         """
         Return information about the current status of the operation.
         """
-        raise NotImplementedError
+        ...
 
+    # TODO(dan): test coverage
+    @abstractmethod
     def fetch_result(
         self, ctx: FetchOperationResultContext, token: str
     ) -> Union[O, Awaitable[O]]:
         """
         Fetch the result of the operation.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def cancel(
         self, ctx: CancelOperationContext, token: str
     ) -> Union[None, Awaitable[None]]:
         """
         Cancel the operation.
         """
-        raise NotImplementedError
+        ...
+
+
+class SyncOperationHandler(OperationHandler[I, O]):
+    """
+    An OperationHandler that is limited to responding synchronously.
+    """
+
+    def start(
+        self, ctx: StartOperationContext, input: I
+    ) -> Union[
+        StartOperationResultSync[O],
+        Awaitable[StartOperationResultSync[O]],
+        Awaitable[StartOperationResultAsync],
+    ]:
+        """
+        Note that this method may be either `async def` or `def`. 'SyncOperationHandler'
+        means that the operation responds synchronously according to the Nexus protocol;
+        it doesn't refer to whether the implementation of the method uses an event loop.
+        However, a `def` method returning an Awaitable is not supported; use `async def`
+        instead.
+        """
+        raise NotImplementedError(
+            "Start method must be implemented by subclasses of SyncOperationHandler."
+        )
+
+    def fetch_info(
+        self, ctx: FetchOperationInfoContext, token: str
+    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
+        raise NotImplementedError(
+            "Cannot fetch operation info for an operation that responded synchronously."
+        )
+
+    def fetch_result(
+        self, ctx: FetchOperationResultContext, token: str
+    ) -> Union[O, Awaitable[O]]:
+        raise NotImplementedError(
+            "Cannot fetch the result of an operation that responded synchronously."
+        )
+
+    def cancel(
+        self, ctx: CancelOperationContext, token: str
+    ) -> Union[None, Awaitable[None]]:
+        raise NotImplementedError(
+            "An operation that responded synchronously cannot be cancelled."
+        )
 
 
 def collect_operation_handler_methods(

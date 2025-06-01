@@ -17,7 +17,7 @@ def test_services_are_collected():
     class Service1:
         @nexusrpc.handler.operation_handler
         def op(self) -> nexusrpc.handler.OperationHandler[int, int]:
-            return nexusrpc.handler.OperationHandler()
+            return nexusrpc.handler.SyncOperationHandler()
 
     service_handlers = Handler([Service1()])
     assert service_handlers.service_handlers.keys() == {"Service1"}

@@ -27,7 +27,7 @@ class ManualOperationDefinition(_TestCase):
     class Service:
         @nexusrpc.handler.operation_handler
         def operation(self) -> nexusrpc.handler.OperationHandler[int, int]:
-            class OpHandler(nexusrpc.handler.OperationHandler[int, int]):
+            class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
                 async def start(
                     self, ctx: nexusrpc.handler.StartOperationContext, input: int
                 ) -> nexusrpc.handler.StartOperationResultSync[int]:
