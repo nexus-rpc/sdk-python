@@ -29,6 +29,7 @@ from ._common import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
+from ._serializer import LazyValue
 from ._types import MISSING_TYPE, I, O, S
 
 
@@ -82,7 +83,7 @@ class Handler:
             self.service_handlers[sh.name] = sh
 
     async def start_operation(
-        self, ctx: StartOperationContext, service: str, operation: str, input: Any
+        self, ctx: StartOperationContext, service: str, operation: str, input: LazyValue
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
@@ -99,7 +100,7 @@ class Handler:
         op_handler = self.get_operation_handler(ctx)
         if inspect.iscoroutinefunction(op_handler.start):
             # TODO(dan): apply middleware stack as composed awaitables
-            return await op_handler.start(ctx, input)
+            return await op_handler.start(ctx, await input.consume())
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing thread (or process?) based executor
