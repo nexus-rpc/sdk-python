@@ -26,6 +26,17 @@ jobs:
         run: |
           uv sync
 
+      - name: Lint
+        run: |
+          uv run ruff format --check
+          uv run ruff check
+
+      - name: Type check
+        # TODO(dan): Get both passing
+        run: |
+          uv run pyright . || true
+          uv run mypy --check-untyped-defs . || true
+
       - name: Run tests
         run: |
           uv run pytest
