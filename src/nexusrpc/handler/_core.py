@@ -84,7 +84,11 @@ class Handler:
             self.service_handlers[sh.service.name] = sh
 
     async def start_operation(
-        self, ctx: StartOperationContext, service: str, operation: str, input: LazyValue
+        self,
+        ctx: StartOperationContext,
+        service: str,
+        operation: str,
+        lazy_value: LazyValue,  # TODO(dan): what should the name of this parameter be?
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
@@ -95,32 +99,15 @@ class Handler:
             ctx: The operation context.
             service: The name of the service to handle the operation.
             operation: The name of the operation to handle.
-            input: The serialized input to the operation.
+            lazy_value: The serialized input to the operation.
         """
         service_handler = self.get_service_handler(service)
         op_handler = service_handler.get_operation_handler(operation)
-
-        _input_type = None
-        if _op := getattr(op_handler, "__nexus_operation__", None):
-            if isinstance(_op, nexusrpc.contract.Operation):
-                _input_type = _op.input_type
-            else:
-                _input_type = None
         op = service_handler.service.operations[operation]
-
-        if op.input_type != _input_type:
-            print(
-                f"""\n\n
-                Input type from operation_handler.__nexus_operation__: {_input_type}
-                Input type from service contract: {op.input_type}
-                \n\n"""
-            )
-
+        input = await lazy_value.consume(as_type=op.input_type)
         if inspect.iscoroutinefunction(op_handler.start):
             # TODO(dan): apply middleware stack as composed awaitables
-            return await op_handler.start(
-                ctx, await input.consume(as_type=op.input_type)
-            )
+            return await op_handler.start(ctx, input)
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing thread (or process?) based executor
@@ -210,7 +197,6 @@ class ServiceHandler:
     def from_user_instance(cls, user_instance: Any) -> Self:
         """Create a ServiceHandler from a user service instance."""
 
-        # set on the class by @service_handler
         service = getattr(user_instance.__class__, "__nexus_service__", None)
         if not isinstance(service, nexusrpc.contract.Service):
             raise RuntimeError(
@@ -218,19 +204,13 @@ class ServiceHandler:
                 f"Use the :py:func:`@nexusrpc.handler.service_handler` decorator on your class to define "
                 f"a Nexus service implementation."
             )
-        op_factories = collect_operation_handler_methods(user_instance.__class__)
-
-        op_handlers = {}
         # TODO(dan): looks like this isn't using name overrides; test coverage?
-        for op_name, op_factory in op_factories.items():
-            op_handler = op_factory(user_instance)
-            # TODO(dan): hack
-            setattr(
-                op_handler,
-                "__nexus_operation__",
-                getattr(op_factory, "__nexus_operation__", None),
-            )
-            op_handlers[op_name] = op_handler
+        op_handlers = {
+            name: factory(user_instance)
+            for name, factory in collect_operation_handler_methods(
+                user_instance.__class__
+            ).items()
+        }
 
         return cls(
             service=service,
