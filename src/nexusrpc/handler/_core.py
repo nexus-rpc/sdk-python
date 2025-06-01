@@ -23,7 +23,6 @@ from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
-    OperationContext,
     OperationInfo,
     StartOperationContext,
     StartOperationResultAsync,
@@ -96,8 +95,9 @@ class Handler:
             operation: The name of the operation to handle.
             input: The serialized input to the operation.
         """
+        service_handler = self.get_service_handler(service)
+        op_handler = service_handler.get_operation_handler(operation)
         # TODO(dan): ser/de, either Java/.NET or Go/TS style
-        op_handler = self.get_operation_handler(ctx)
 
         input_type = None
         if op := getattr(op_handler, "__nexus_operation__", None):
@@ -162,23 +162,15 @@ class Handler:
         """
         raise NotImplementedError
 
-    def get_operation_handler(self, ctx: OperationContext) -> OperationHandler:
-        """Return an operation handler, given the service and operation names from context."""
-        service = self.service_handlers.get(ctx.service)
+    def get_service_handler(self, service_name: str) -> ServiceHandler:
+        """Return a service handler, given the service name from context."""
+        service = self.service_handlers.get(service_name)
         if service is None:
             # TODO(dan): can this raise HandlerError directly or is HandlerError always a
             # wrapper? I have currently made its __cause__ required but if it's not a
             # wrapper then that is wrong.
-            raise UnknownServiceError(
-                f"Nexus service '{ctx.service}' has not been registered."
-            )
-        operation_handler = service.operation_handlers.get(ctx.operation)
-        if operation_handler is None:
-            raise UnknownOperationError(
-                f"Nexus service '{ctx.service}' has no operation '{ctx.operation}'."
-            )
-
-        return operation_handler
+            raise UnknownServiceError(f"No handler for service '{service_name}'.")
+        return service
 
 
 @dataclass
@@ -232,6 +224,16 @@ class ServiceHandler:
             name=service.name,
             operation_handlers=op_handlers,
         )
+
+    def get_operation_handler(self, operation: str) -> OperationHandler:
+        """Return an operation handler, given the operation name."""
+        operation_handler = self.operation_handlers.get(operation)
+        if operation_handler is None:
+            raise UnknownOperationError(
+                f"Nexus service '{self.service.name}' has no handler for operation '{operation}'."
+            )
+
+        return operation_handler
 
 
 # TODO(dan): ABC? *_operation decorator impls will need adjusting
