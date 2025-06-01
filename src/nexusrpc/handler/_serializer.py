@@ -34,11 +34,13 @@ class Serializer(Protocol):
     Serializer is used by the framework to serialize/deserialize input and output.
     """
 
-    def serialize(self, value: Any) -> Content:
+    # TODO(dan): support non-async def?
+
+    async def serialize(self, value: Any) -> Content:
         """Serialize encodes a value into a Content."""
         ...
 
-    def deserialize(self, content: Content) -> Any:
+    async def deserialize(self, content: Content) -> Any:
         """Deserialize decodes a Content into a value."""
         ...
 
@@ -71,10 +73,11 @@ class LazyValue:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
+        # TODO(dan): HandlerError(BAD_REQUEST) on error while deserializing?
         if self.stream is None:
-            return self.serializer.deserialize(Content(headers=self.headers))
+            return await self.serializer.deserialize(Content(headers=self.headers))
 
-        return self.serializer.deserialize(
+        return await self.serializer.deserialize(
             Content(
                 headers=self.headers,
                 data=b"".join([c async for c in self.stream]),
