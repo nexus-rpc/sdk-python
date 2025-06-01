@@ -230,8 +230,6 @@ def sync_operation_handler(
                     start_method,
                 )
 
-                # TODO: get rid of first parameter?
-                # TODO(dan): what is wraps actually doing here?
                 @wraps(start_method)
                 async def start_async(
                     _, ctx: StartOperationContext, input: I
@@ -245,7 +243,6 @@ def sync_operation_handler(
                     Callable[[S, StartOperationContext, I], O], start_method
                 )
 
-                # TODO(dan): what is wraps actually doing here?
                 @wraps(start_method)
                 def start(
                     _, ctx: StartOperationContext, input: I
