@@ -99,18 +99,28 @@ class Handler:
         """
         service_handler = self.get_service_handler(service)
         op_handler = service_handler.get_operation_handler(operation)
-        # TODO(dan): ser/de, either Java/.NET or Go/TS style
 
-        input_type = None
-        if op := getattr(op_handler, "__nexus_operation__", None):
-            if isinstance(op, nexusrpc.contract.Operation):
-                input_type = op.input_type
+        _input_type = None
+        if _op := getattr(op_handler, "__nexus_operation__", None):
+            if isinstance(_op, nexusrpc.contract.Operation):
+                _input_type = _op.input_type
             else:
-                input_type = None
+                _input_type = None
+        op = service_handler.service.operations[operation]
+
+        if op.input_type != _input_type:
+            print(
+                f"""\n\n
+                Input type from operation_handler.__nexus_operation__: {_input_type}
+                Input type from service contract: {op.input_type}
+                \n\n"""
+            )
 
         if inspect.iscoroutinefunction(op_handler.start):
             # TODO(dan): apply middleware stack as composed awaitables
-            return await op_handler.start(ctx, await input.consume(as_type=input_type))
+            return await op_handler.start(
+                ctx, await input.consume(as_type=op.input_type)
+            )
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing thread (or process?) based executor
@@ -229,12 +239,27 @@ class ServiceHandler:
 
     def get_operation_handler(self, operation: str) -> OperationHandler:
         """Return an operation handler, given the operation name."""
+        if operation not in self.service.operations:
+            msg = (
+                f"Nexus service contract '{self.service.name}' has no operation '{operation}'. "
+                f"There are {len(self.service.operations)} operations defined in the contract"
+            )
+            if self.service.operations:
+                msg += f": {', '.join(sorted(self.service.operations.keys()))}"
+            msg += "."
+            raise UnknownOperationError(msg)
         operation_handler = self.operation_handlers.get(operation)
         if operation_handler is None:
-            raise UnknownOperationError(
-                f"Nexus service '{self.service.name}' has no handler for operation '{operation}'."
+            # TODO(dan): This should not be possible. If contract was supplied then this was checked; if
+            # not then contract was generated from the operation handlers.
+            msg = (
+                f"Nexus service implementation '{self.service.name}' has no handler for operation '{operation}'. "
+                f"There are {len(self.operation_handlers)} available operation handlers"
             )
-
+            if self.operation_handlers:
+                msg += f": {', '.join(sorted(self.operation_handlers.keys()))}"
+            msg += "."
+            raise UnknownOperationError(msg)
         return operation_handler
 
 
