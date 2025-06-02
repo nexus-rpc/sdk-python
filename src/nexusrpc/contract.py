@@ -24,6 +24,7 @@ O = TypeVar("O", covariant=True)
 T = TypeVar("T")
 
 
+# TODO(dan): support inheritance in service contracts
 @dataclass
 class Service:
     name: str
