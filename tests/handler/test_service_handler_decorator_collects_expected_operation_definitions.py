@@ -209,19 +209,3 @@ def test_operation_without_decorator():
         match=r"Did you forget to apply the @nexusrpc.handler.operation_handler decorator\?",
     ):
         nexusrpc.handler.service_handler(Service)
-
-
-def test_service_does_not_implement_operation_name():
-    @nexusrpc.contract.service
-    class Contract:
-        operation_a: nexusrpc.contract.Operation[Input, Output]
-
-    class Service:
-        @nexusrpc.handler.operation_handler
-        def operation_b(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
-
-    with pytest.raises(
-        TypeError,
-        match="does not implement operation 'operation_a' in interface",
-    ):
-        nexusrpc.handler.service_handler(service=Contract)(Service)

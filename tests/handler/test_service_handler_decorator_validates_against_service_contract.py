@@ -133,3 +133,20 @@ def test_service_decorator_enforces_interface_implementation(
         assert test_case.error_message in str(err)
     else:
         nexusrpc.handler.service_handler(service=test_case.Interface)(test_case.Impl)
+
+
+# TODO(dan): duplicate test?
+def test_service_does_not_implement_operation_name():
+    @nexusrpc.contract.service
+    class Contract:
+        operation_a: nexusrpc.contract.Operation[None, None]
+
+    class Service:
+        @nexusrpc.handler.operation_handler
+        def operation_b(self) -> nexusrpc.handler.OperationHandler[None, None]: ...
+
+    with pytest.raises(
+        TypeError,
+        match="does not implement operation 'operation_a' in interface",
+    ):
+        nexusrpc.handler.service_handler(service=Contract)(Service)

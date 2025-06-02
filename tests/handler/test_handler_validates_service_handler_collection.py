@@ -1,3 +1,8 @@
+"""
+Test that the Handler constructor processes the supplied collection of service handlers
+correctly.
+"""
+
 import pytest
 
 import nexusrpc
