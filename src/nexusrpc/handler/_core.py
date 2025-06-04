@@ -457,10 +457,8 @@ class SyncFuncExecutor:
     """
     Run a synchronous function asynchronously.
     """
+    def __init__(self, executor: ThreadPoolExecutor):
+        self._executor = executor
 
-    @abstractmethod
     def run_sync(self, fn, *args) -> Awaitable[Any]:
-        """
-        Run a synchronous function asynchronously.
-        """
-        ...
+        return asyncio.get_event_loop().run_in_executor(self._executor, fn, *args)
