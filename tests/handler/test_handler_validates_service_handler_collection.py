@@ -18,11 +18,26 @@ def test_service_must_use_decorator():
 
 
 def test_services_are_collected():
+    class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
+        async def start(
+            self,
+            _: nexusrpc.handler.StartOperationContext,
+            _input: int,
+        ) -> int:
+            return Output(value=1)  # type: ignore
+
+        async def cancel(
+            self,
+            _: nexusrpc.handler.StartOperationContext,
+            _token: str,
+        ) -> int:
+            return Output(value=1)  # type: ignore
+
     @nexusrpc.handler.service_handler
     class Service1:
         @nexusrpc.handler.operation_handler
         def op(self) -> nexusrpc.handler.OperationHandler[int, int]:
-            return nexusrpc.handler.SyncOperationHandler()
+            return OpHandler()
 
     service_handlers = Handler([Service1()])
     assert service_handlers.service_handlers.keys() == {"Service1"}

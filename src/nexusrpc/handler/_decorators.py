@@ -218,6 +218,14 @@ def sync_operation_handler(
     ) -> Callable[[S], OperationHandler[I, O]]:
         def factory(service: S) -> OperationHandler[I, O]:
             op = SyncOperationHandler()
+
+            async def cancel(_, ctx: StartOperationContext, token: str):
+                raise NotImplementedError(
+                    "An operation that responded synchronously cannot be cancelled."
+                )
+
+            op.cancel = types.MethodType(cancel, op)
+
             # Non-async functions returning Awaitable are not supported
             if inspect.iscoroutinefunction(start_method) or inspect.iscoroutinefunction(
                 start_method.__call__

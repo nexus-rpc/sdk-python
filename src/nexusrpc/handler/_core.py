@@ -361,7 +361,7 @@ class SyncOperationHandler(OperationHandler[I, O]):
             "Cannot fetch the result of an operation that responded synchronously."
         )
 
-    async def cancel(
+    def cancel(
         self, ctx: CancelOperationContext, token: str
     ) -> Union[None, Awaitable[None]]:
         raise NotImplementedError(
