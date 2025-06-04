@@ -131,10 +131,7 @@ class Handler:
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing executor for non-async start methods
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(
-                self.executor, op_handler.start, ctx, input
-            )
+            return await self.executor.run_sync(op_handler.start, ctx, input)
 
     async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
