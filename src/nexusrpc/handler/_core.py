@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import concurrent
 import inspect
 import typing
 import warnings
@@ -10,6 +12,7 @@ from typing import (
     Awaitable,
     Callable,
     Generic,
+    Optional,
     Sequence,
     Type,
     Union,
@@ -57,7 +60,11 @@ class Handler:
 
     service_handlers: dict[str, ServiceHandler]
 
-    def __init__(self, user_service_handlers: Sequence[Any]):
+    def __init__(
+        self,
+        user_service_handlers: Sequence[Any],
+        executor: Optional[SyncFuncExecutor] = None,
+    ):
         """Initialize a Handler instance from user service handler instances.
 
         The user service handler instances must have been decorated with the
@@ -66,6 +73,7 @@ class Handler:
         Args:
             user_service_handlers: A sequence of user service handlers.
         """
+        self.executor = executor
         self.service_handlers = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
@@ -82,6 +90,17 @@ class Handler:
                 raise RuntimeError(
                     f"Service '{sh.service.name}' has already been registered."
                 )
+            if self.executor is None:
+                for op_name, operation_handler in sh.operation_handlers.items():
+                    if not inspect.iscoroutinefunction(operation_handler.start):
+                        raise RuntimeError(
+                            f"Service '{sh.service.name}' operation '{op_name}' start must be async if no executor is provided."
+                        )
+                    # Cancel isn't currently made async on SyncOperationHandler I think
+                    if not inspect.iscoroutinefunction(operation_handler.cancel):
+                        raise RuntimeError(
+                            f"Service '{sh.service.name}' operation '{op_name}' cancel must be async if no executor is provided."
+                        )
             self.service_handlers[sh.service.name] = sh
 
     async def start_operation(
@@ -112,16 +131,10 @@ class Handler:
         else:
             # TODO(dan): apply middleware stack as composed functions
             # TODO(dan): support passing executor for non-async start methods
-            raise NotImplementedError(
-                "Nexus operation start method must be an `async def`"
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(
+                self.executor, op_handler.start, ctx, input
             )
-            result = op_handler.start(ctx, input)
-            if inspect.isawaitable(result):
-                raise RuntimeError(
-                    f"Operation start handler method {op_handler.start} returned an "
-                    "awaitable but is not an `async def` coroutine function."
-                )
-            return result
 
     async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
@@ -351,7 +364,7 @@ class SyncOperationHandler(OperationHandler[I, O]):
             "Cannot fetch the result of an operation that responded synchronously."
         )
 
-    def cancel(
+    async def cancel(
         self, ctx: CancelOperationContext, token: str
     ) -> Union[None, Awaitable[None]]:
         raise NotImplementedError(
@@ -441,3 +454,16 @@ def service_from_operation_handler_methods(
         operations[op.name] = op
 
     return nexusrpc.contract.Service(name=service_name, operations=operations)
+
+
+class SyncFuncExecutor:
+    """
+    Run a synchronous function asynchronously.
+    """
+
+    @abstractmethod
+    def run_sync(self, fn, *args) -> Awaitable[Any]:
+        """
+        Run a synchronous function asynchronously.
+        """
+        ...
