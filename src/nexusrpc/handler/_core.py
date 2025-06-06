@@ -130,8 +130,13 @@ class Handler:
             return await op_handler.start(ctx, input)
         else:
             # TODO(dan): apply middleware stack as composed functions
-            # TODO(dan): support passing executor for non-async start methods
-            return await self.executor.run_sync(op_handler.start, ctx, input)
+            result = await self.executor.run_sync(op_handler.start, ctx, input)
+            if inspect.isawaitable(result):
+                raise RuntimeError(
+                    f"Operation start handler method {op_handler.start} returned an "
+                    "awaitable but is not an `async def` coroutine function."
+                )
+            return result
 
     async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, service: str, operation: str, token: str
@@ -178,10 +183,13 @@ class Handler:
             # pyright does not infer awaitable from iscoroutinefunction(__call__)
             return await op_handler.cancel(ctx, token)  # type: ignore
         else:
-            raise NotImplementedError(
-                "Nexus operation cancel method must be an `async def`."
-            )
-            op_handler.cancel(ctx, token)
+            result = await self.executor.run_sync(op_handler.cancel, ctx, token)
+            if inspect.isawaitable(result):
+                raise RuntimeError(
+                    f"Operation start handler method {op_handler.cancel} returned an "
+                    "awaitable but is not an `async def` coroutine function."
+                )
+            return result
 
     def _get_service_handler(self, service_name: str) -> ServiceHandler:
         """Return a service handler, given the service name."""
