@@ -5,7 +5,7 @@ correctly.
 
 import pytest
 
-import nexusrpc
+import nexusrpc.handler
 from nexusrpc.handler import Handler
 
 

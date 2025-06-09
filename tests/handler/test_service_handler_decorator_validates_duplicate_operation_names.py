@@ -2,7 +2,7 @@ from typing import Any, Type
 
 import pytest
 
-import nexusrpc
+import nexusrpc.handler
 
 
 class _TestCase:

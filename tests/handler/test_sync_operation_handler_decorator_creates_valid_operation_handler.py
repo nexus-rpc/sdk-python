@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-import nexusrpc
+import nexusrpc.handler
 from nexusrpc.handler._util import is_async_callable
 
 

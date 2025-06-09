@@ -63,7 +63,7 @@ class Handler:
     def __init__(
         self,
         user_service_handlers: Sequence[Any],
-        executor: Optional[SyncExecutor] = None,
+        sync_executor: Optional[SyncExecutor] = None,
     ):
         """Initialize a :py:class:`Handler` instance from user service handler instances.
 
@@ -72,9 +72,9 @@ class Handler:
 
         Args:
             user_service_handlers: A sequence of user service handlers.
-            executor: An executor to run non-`async def` operation handlers in.
+            sync_executor: An executor to run non-`async def` operation handlers in.
         """
-        self.executor = executor
+        self.sync_executor = sync_executor
         self.service_handlers = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
@@ -91,7 +91,7 @@ class Handler:
                 raise RuntimeError(
                     f"Service '{sh.service.name}' has already been registered."
                 )
-            if self.executor is None:
+            if self.sync_executor is None:
                 for op_name, operation_handler in sh.operation_handlers.items():
                     if not is_async_callable(operation_handler.start):
                         raise RuntimeError(
@@ -127,12 +127,12 @@ class Handler:
             return await op_handler.start(ctx, input)
         else:
             # TODO(preview): apply middleware stack as composed functions
-            if not self.executor:
+            if not self.sync_executor:
                 raise RuntimeError(
-                    "Operation start handler method is async but "
-                    "no executor was provided to the Handler constructor. "
+                    "Operation start handler method is not an `async def` but "
+                    "no sync executor was provided to the Handler constructor. "
                 )
-            result = await self.executor.run_sync(op_handler.start, ctx, input)
+            result = await self.sync_executor.run_sync(op_handler.start, ctx, input)
             if inspect.isawaitable(result):
                 raise RuntimeError(
                     f"Operation start handler method {op_handler.start} returned an "
@@ -142,7 +142,7 @@ class Handler:
 
     async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, token: str
-    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
+    ) -> OperationInfo:
         """Handle a Fetch Operation Info request.
 
         Args:
@@ -153,7 +153,7 @@ class Handler:
 
     async def fetch_operation_result(
         self, ctx: FetchOperationResultContext, token: str
-    ) -> Union[Any, Awaitable[Any]]:
+    ) -> Any:
         """Handle a Fetch Operation Result request.
 
         Args:
@@ -162,9 +162,7 @@ class Handler:
         """
         raise NotImplementedError
 
-    async def cancel_operation(
-        self, ctx: CancelOperationContext, token: str
-    ) -> Union[None, Awaitable[None]]:
+    async def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
         """Handle a Cancel Operation request.
 
         Args:
@@ -176,12 +174,12 @@ class Handler:
         if is_async_callable(op_handler.cancel):
             return await op_handler.cancel(ctx, token)
         else:
-            if not self.executor:
+            if not self.sync_executor:
                 raise RuntimeError(
                     "Operation cancel handler method is async but "
                     "no executor was provided to the Handler constructor."
                 )
-            result = await self.executor.run_sync(op_handler.cancel, ctx, token)
+            result = await self.sync_executor.run_sync(op_handler.cancel, ctx, token)
             if inspect.isawaitable(result):
                 raise RuntimeError(
                     f"Operation start handler method {op_handler.cancel} returned an "
