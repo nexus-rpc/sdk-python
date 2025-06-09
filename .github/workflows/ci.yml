@@ -47,3 +47,13 @@ jobs:
         with:
           name: coverage-html-report-${{ matrix.python-version }}
           path: coverage_html_report/
+
+      - name: Build API docs
+        run: uv run pydoctor src/nexusrpc
+      # TODO(prerelease)
+      # - name: Deploy prod API docs
+      #   if: ${{ github.ref == 'refs/heads/main' }}
+      #   env:
+      #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      #   run: npx vercel deploy build/apidocs -t ${{ secrets.VERCEL_TOKEN }} --prod --yes

@@ -12,3 +12,8 @@ uv run ruff format --check
 uv run ruff check --select I --fix
 uv run ruff format
 ```
+
+### API docs
+```
+uv run pydoctor src/nexusrpc
+```
