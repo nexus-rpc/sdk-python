@@ -19,7 +19,7 @@ from typing import (
     overload,
 )
 
-from .handler._types import (
+from nexusrpc.types import (
     InputT,
     OutputT,
     ServiceDefinitionT,

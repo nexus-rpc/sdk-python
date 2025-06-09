@@ -82,7 +82,7 @@ from ._serializer import (
 from ._serializer import (
     Serializer as Serializer,
 )
-from ._types import (
+from nexusrpc.types import (
     MISSING_TYPE as MISSING_TYPE,
 )
 from ._util import (

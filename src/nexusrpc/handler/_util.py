@@ -15,7 +15,7 @@ from typing import (
 from typing_extensions import TypeGuard
 
 from ._common import StartOperationContext
-from ._types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
+from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 
 
 def get_start_method_input_and_output_types_annotations(

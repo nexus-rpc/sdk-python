@@ -23,6 +23,7 @@ from typing_extensions import Self
 import nexusrpc
 import nexusrpc._service_definition
 from nexusrpc.handler._util import is_async_callable
+from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 
 from ._common import (
     CancelOperationContext,
@@ -34,7 +35,6 @@ from ._common import (
     StartOperationResultSync,
 )
 from ._serializer import LazyValue
-from ._types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 
 
 class UnknownServiceError(RuntimeError):

@@ -9,11 +9,8 @@ import pytest
 
 import nexusrpc._service_definition
 import nexusrpc.handler
+from nexusrpc.types import InputT, OutputT
 from nexusrpc.handler._core import collect_operation_handler_factories
-from nexusrpc.handler._types import (
-    InputT,
-    OutputT,
-)
 from nexusrpc.handler._util import is_async_callable
 
 

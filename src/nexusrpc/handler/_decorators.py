@@ -29,7 +29,7 @@ from ._core import (
     service_from_operation_handler_methods,
     validate_operation_handler_methods,
 )
-from ._types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
+from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 from ._util import (
     get_start_method_input_and_output_types_annotations,
     is_async_callable,

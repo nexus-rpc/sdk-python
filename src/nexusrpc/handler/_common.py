@@ -7,7 +7,7 @@ from typing import (
     Optional,
 )
 
-from ._types import OutputT
+from nexusrpc.types import OutputT
 
 
 class HandlerErrorType(Enum):
