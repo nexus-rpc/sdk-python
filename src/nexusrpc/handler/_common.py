@@ -170,8 +170,8 @@ class OperationInfo:
     # Token identifying the operation (returned on operation start).
     token: str
 
-    # The operation's status.
-    status: OperationState
+    # The operation's state
+    state: OperationState
 
 
 # TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
