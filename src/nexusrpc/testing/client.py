@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 import httpx
 
@@ -14,7 +14,7 @@ class ServiceClient:
         self,
         operation: str,
         body: dict[str, Any],
-        headers: dict[str, str] = {},
+        headers: Mapping[str, str] = {},
     ) -> httpx.Response:
         """
         Start a Nexus operation.
