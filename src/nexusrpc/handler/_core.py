@@ -199,17 +199,6 @@ class Handler:
 
 
 @dataclass
-class ServiceHandlerDefinition:
-    """Internal representation of a user's Nexus service implementation class.
-
-    This class is not part of the public API.
-    """
-
-    service: nexusrpc.ServiceDefinition
-    operation_handler_factories: dict[str, Callable[[Any], OperationHandler[Any, Any]]]
-
-
-@dataclass
 class ServiceHandler:
     """Internal representation of a user's Nexus service implementation instance.
 
