@@ -38,7 +38,7 @@ def test_interface_operation_declarations(
     metadata = getattr(test_case.Interface, "__nexus_service__")
     assert isinstance(metadata, nexusrpc.ServiceDefinition)
     actual_ops = {
-        op.key: (op.input_type, op.output_type)
+        op.name: (op.input_type, op.output_type)
         for op in test_case.Interface.__dict__.values()
         if isinstance(op, nexusrpc.Operation)
     }

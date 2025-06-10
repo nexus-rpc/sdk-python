@@ -407,10 +407,10 @@ def collect_operation_handler_factories(
         op_defn = getattr(method, "__nexus_operation__", None)
         if isinstance(op_defn, nexusrpc.Operation):
             # This is a method decorated with one of the *operation_handler decorators
-            # assert op_defn.key == name
-            if op_defn.key in factories:
+            # assert op_defn.name == name
+            if op_defn.name in factories:
                 raise RuntimeError(
-                    f"Operation '{op_defn.key}' in service '{user_service_cls.__name__}' "
+                    f"Operation '{op_defn.name}' in service '{user_service_cls.__name__}' "
                     f"is defined multiple times."
                 )
             if service and name not in op_method_names:
@@ -421,7 +421,7 @@ def collect_operation_handler_factories(
                     f"Available method names in the service definition: {method_names}."
                 )
 
-            factories[op_defn.key] = method
+            factories[op_defn.name] = method
         # Check for accidentally missing decorator on an OperationHandler factory
         # TODO(preview): support disabling warning in @service_handler decorator?
         elif (
@@ -504,7 +504,7 @@ def service_from_operation_handler_methods(
                 f":py:func:`@nexusrpc.handler.operation_handler` or "
                 f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
             )
-        operations[op.name or op.method_name] = op
+        operations[op.name] = op
 
     return nexusrpc.ServiceDefinition(name=service_name, operations=operations)
 

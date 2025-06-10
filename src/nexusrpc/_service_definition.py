@@ -49,14 +49,10 @@ class Operation(Generic[InputT, OutputT]):
             my_operation: nexusrpc.Operation[MyInput, MyOutput]
     """
 
-    name: Optional[str] = None
+    name: str
     method_name: str = dataclasses.field(init=False)
     input_type: Type[InputT] = dataclasses.field(init=False)
     output_type: Type[OutputT] = dataclasses.field(init=False)
-
-    @property
-    def key(self) -> str:
-        return self.name or self.method_name
 
     @classmethod
     def _create(
@@ -67,7 +63,7 @@ class Operation(Generic[InputT, OutputT]):
         input_type: Type,
         output_type: Type,
     ) -> Operation:
-        op = cls(name)
+        op = cls(name or method_name)
         op.method_name = method_name
         op.input_type = input_type
         op.output_type = output_type
@@ -151,11 +147,11 @@ def service(
                     op.input_type = input_type
                     op.output_type = output_type
 
-                if op.key in operations:
+                if op.name in operations:
                     raise ValueError(
-                        f"Operation {op.key} in service {service_name} is defined multiple times"
+                        f"Operation {op.name} in service {service_name} is defined multiple times"
                     )
-                operations[op.key] = op
+                operations[op.name] = op
 
         cls.__nexus_service__ = ServiceDefinition(  # type: ignore
             name=service_name,
