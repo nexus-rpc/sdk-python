@@ -143,7 +143,7 @@ class SyncOperationWithCallableInstance(_TestCase):
 
     @nexusrpc.handler.service_handler(service=Contract)
     class Service:
-        class CallableInstanceStartMethod:
+        class sync_operation_with_callable_instance:
             def __call__(
                 self,
                 _handler: Any,
@@ -151,9 +151,12 @@ class SyncOperationWithCallableInstance(_TestCase):
                 input: Input,
             ) -> Output: ...
 
-        sync_operation_with_callable_instance = nexusrpc.handler.sync_operation_handler(
-            name="sync_operation_with_callable_instance",
-        )(CallableInstanceStartMethod())
+        # TODO(preview): improve the DX here. The decorator cannot be placed on the
+        # callable class itself, because the user must be responsible for instantiating
+        # the class to obtain the callable instance.
+        sync_operation_with_callable_instance = nexusrpc.handler.sync_operation_handler(  # type: ignore
+            sync_operation_with_callable_instance()
+        )
 
     expected_operations = {
         "sync_operation_with_callable_instance": nexusrpc.Operation._create(

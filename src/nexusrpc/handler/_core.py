@@ -389,10 +389,10 @@ def collect_operation_handler_factories(
     Collect operation handler methods from a user service handler class.
     """
     factories = {}
-    op_method_names = (
+    op_defn_method_names = (
         {op.method_name for op in service.operations.values()} if service else set()
     )
-    for name, method in inspect.getmembers(user_service_cls, inspect.isfunction):
+    for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
         op_defn = getattr(method, "__nexus_operation__", None)
         if isinstance(op_defn, nexusrpc.Operation):
             # This is a method decorated with one of the *operation_handler decorators
@@ -402,12 +402,12 @@ def collect_operation_handler_factories(
                     f"Operation '{op_defn.name}' in service '{user_service_cls.__name__}' "
                     f"is defined multiple times."
                 )
-            if service and name not in op_method_names:
-                method_names = ", ".join(f"'{s}'" for s in sorted(op_method_names))
+            if service and op_defn.method_name not in op_defn_method_names:
+                _names = ", ".join(f"'{s}'" for s in sorted(op_defn_method_names))
                 raise TypeError(
-                    f"Operation method name '{name}' in service handler {user_service_cls} "
+                    f"Operation method name '{op_defn.method_name}' in service handler {user_service_cls} "
                     f"does not match an operation method name in the service definition. "
-                    f"Available method names in the service definition: {method_names}."
+                    f"Available method names in the service definition: {_names}."
                 )
 
             factories[op_defn.name] = method
@@ -418,7 +418,7 @@ def collect_operation_handler_factories(
             == OperationHandler
         ):
             warnings.warn(
-                f"Method '{name}' in class '{user_service_cls.__name__}' "
+                f"Method '{method}' in class '{user_service_cls}' "
                 f"returns OperationHandler but has not been decorated. "
                 f"Did you forget to apply the @nexusrpc.handler.operation_handler decorator?",
                 UserWarning,

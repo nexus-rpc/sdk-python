@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import pytest
-
 import nexusrpc.handler
 from nexusrpc.handler._core import ServiceHandler
+
+# TODO(preview): test operation_handler version of this
 
 
 @nexusrpc.handler.service_handler
@@ -24,9 +24,6 @@ class MyServiceHandlerWithCallableInstance:
     )
 
 
-@pytest.mark.skip(
-    reason="TODO(preview): fix method name bug in absence of service definition"
-)
 def test_service_handler_from_user_instance():
     service_handler = MyServiceHandlerWithCallableInstance()
     ServiceHandler.from_user_instance(service_handler)

@@ -337,7 +337,11 @@ def sync_operation_handler(
             start_method
         )
         method_name = getattr(start_method, "__name__", None)
-        if not method_name and callable(start_method):
+        if (
+            not method_name
+            and callable(start_method)
+            and hasattr(start_method, "__call__")
+        ):
             method_name = start_method.__class__.__name__
         if not method_name:
             raise TypeError(
