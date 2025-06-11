@@ -151,6 +151,60 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
     error_message = None
 
 
+class X:
+    pass
+
+
+class SuperClass:
+    pass
+
+
+class Subclass(SuperClass):
+    pass
+
+
+class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[X, X]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(self, ctx: nexusrpc.handler.StartOperationContext, input: X) -> X: ...
+
+    error_message = None
+
+
+class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[X, SuperClass]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: X
+        ) -> Subclass: ...
+
+    error_message = None
+
+
+class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
+    _InterfaceImplementationTestCase
+):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[X, Subclass]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: X
+        ) -> SuperClass: ...
+
+    error_message = "is not compatible with the output type"
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -164,6 +218,12 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
         WrongOutputTypeWithNone,
         ValidImplWithNone,
         MoreSpecificImplAllowed,
+        OutputCovarianceImplOutputCanBeSameType,
+        OutputCovarianceImplOutputCanBeSubclass,
+        OutputCovarianceImplOutputCannnotBeStrictSuperclass,
+        # ValidSubtyping,
+        # InvalidOutputSupertype,
+        # InvalidInputSubtype,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(
