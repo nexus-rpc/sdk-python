@@ -55,49 +55,55 @@ class MissingInputAnnotationInUnionMethod(_TestCase):
         self, ctx: StartOperationContext, i
     ) -> Union[Output, Awaitable[Output]]: ...
 
-    expected_types = (Any, Union[Output, Awaitable[Output]])
+    expected_types = (None, Union[Output, Awaitable[Output]])
 
 
 class TooFewParams(_TestCase):
     def start(self, i: Input) -> Output: ...
 
-    expected_types = (Any, Output)
+    expected_types = (None, Output)
 
 
 class TooManyParams(_TestCase):
     def start(self, ctx: StartOperationContext, i: Input, extra: int) -> Output: ...
 
-    expected_types = (Any, Output)
+    expected_types = (None, Output)
 
 
 class WrongOptionsType(_TestCase):
     def start(self, ctx: int, i: Input) -> Output: ...
 
-    expected_types = (Any, Output)
+    expected_types = (None, Output)
 
 
 class NoReturnHint(_TestCase):
     def start(self, ctx: StartOperationContext, i: Input): ...
 
-    expected_types = (Input, Any)
+    expected_types = (Input, None)
 
 
 class NoInputAnnotation(_TestCase):
     def start(self, ctx: StartOperationContext, i) -> Output: ...
 
-    expected_types = (Any, Output)
+    expected_types = (None, Output)
 
 
 class NoOptionsAnnotation(_TestCase):
     def start(self, ctx, i: Input) -> Output: ...
 
-    expected_types = (Any, Output)
+    expected_types = (None, Output)
 
 
 class AllAnnotationsMissing(_TestCase):
-    def start(self, ctx: StartOperationContext, i: Input): ...
+    def start(self, ctx: StartOperationContext, i): ...
 
-    expected_types = (Input, Any)
+    expected_types = (None, None)
+
+
+class ExplicitNoneTypes(_TestCase):
+    def start(self, ctx: StartOperationContext, i: None) -> None: ...
+
+    expected_types = (type(None), type(None))
 
 
 @pytest.mark.parametrize(
@@ -114,6 +120,7 @@ class AllAnnotationsMissing(_TestCase):
         NoOptionsAnnotation,
         MissingInputAnnotationInUnionMethod,
         AllAnnotationsMissing,
+        ExplicitNoneTypes,
     ],
 )
 def test_get_input_and_output_types(test_case: Type[_TestCase]):

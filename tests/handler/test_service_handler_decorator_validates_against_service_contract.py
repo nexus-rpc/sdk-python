@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 import pytest
 
@@ -109,6 +109,48 @@ class WrongOutputType(_InterfaceImplementationTestCase):
     error_message = "does not match the output type"
 
 
+class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[str, None]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        async def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: str
+        ) -> str: ...
+
+    error_message = "does not match the output type"
+
+
+class ValidImplWithNone(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[str, None]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        async def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: str
+        ) -> None: ...
+
+    error_message = None
+
+
+class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[Any, Any]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        async def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: str
+        ) -> str: ...
+
+    error_message = None
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -119,6 +161,9 @@ class WrongOutputType(_InterfaceImplementationTestCase):
         MissingInputAnnotation,
         MissingOptionsAnnotation,
         WrongOutputType,
+        WrongOutputTypeWithNone,
+        ValidImplWithNone,
+        MoreSpecificImplAllowed,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(

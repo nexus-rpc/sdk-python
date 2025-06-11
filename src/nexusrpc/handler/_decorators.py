@@ -183,8 +183,8 @@ def operation_handler(
         method: OperationHandlerFactoryT,
     ) -> OperationHandlerFactoryT:
         # Extract input and output types from the return type annotation
-        input_type = Any
-        output_type = Any
+        input_type = None
+        output_type = None
 
         return_type = typing.get_type_hints(method).get("return")
         if typing.get_origin(return_type) == OperationHandler:

@@ -51,8 +51,8 @@ class Operation(Generic[InputT, OutputT]):
 
     name: str
     method_name: str = dataclasses.field(init=False)
-    input_type: Any = dataclasses.field(init=False)
-    output_type: Any = dataclasses.field(init=False)
+    input_type: Optional[Type[InputT]] = dataclasses.field(init=False)
+    output_type: Optional[Type[OutputT]] = dataclasses.field(init=False)
 
     @classmethod
     def _create(
@@ -60,8 +60,8 @@ class Operation(Generic[InputT, OutputT]):
         *,
         name: Optional[str] = None,
         method_name: str,
-        input_type: Any,
-        output_type: Any,
+        input_type: Optional[Type],
+        output_type: Optional[Type],
     ) -> Operation:
         op = cls(name or method_name)
         op.method_name = method_name

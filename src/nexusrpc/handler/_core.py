@@ -448,12 +448,20 @@ def validate_operation_handler_methods(
                 f":py:func:`@nexusrpc.handler.operation_handler` or "
                 f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
             )
-        if op.input_type != op_defn.input_type and op.input_type != Any:
+        if (
+            op.input_type is not None
+            and op_defn.input_type is not Any
+            and op.input_type != op_defn.input_type
+        ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has input type '{op.input_type}', "
                 f"which does not match the input type '{op_defn.input_type}' in interface '{service_definition}'."
             )
-        if op.output_type != op_defn.output_type and op.output_type != Any:
+        if (
+            op.output_type is not None
+            and op_defn.output_type is not Any
+            and op.output_type != op_defn.output_type
+        ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has output type '{op.output_type}', "
                 f"which does not match the output type '{op_defn.output_type}' in interface '{service_definition}'."

@@ -8,6 +8,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Optional,
     Type,
     Union,
 )
@@ -25,8 +26,8 @@ def get_start_method_input_and_output_types_annotations(
         Union[OutputT, Awaitable[OutputT]],
     ],
 ) -> tuple[
-    Union[Type[InputT], Any],
-    Union[Type[OutputT], Any],
+    Optional[Type[InputT]],
+    Optional[Type[OutputT]],
 ]:
     """Return operation input and output types.
 
@@ -39,8 +40,8 @@ def get_start_method_input_and_output_types_annotations(
         warnings.warn(
             f"Expected decorated start method {start_method} to have type annotations"
         )
-        return Any, Any
-    output_type = type_annotations.pop("return", Any)
+        return None, None
+    output_type = type_annotations.pop("return", None)
 
     if len(type_annotations) != 2:
         # TODO(preview): stacklevel
@@ -49,7 +50,7 @@ def get_start_method_input_and_output_types_annotations(
             f"type-annotated parameters (ctx and input), but has {len(type_annotations)}: "
             f"{type_annotations}."
         )
-        input_type = Any
+        input_type = None
     else:
         ctx_type, input_type = type_annotations.values()
         if not issubclass(ctx_type, StartOperationContext):
@@ -58,7 +59,7 @@ def get_start_method_input_and_output_types_annotations(
                 f"Expected first parameter of {start_method} to be an instance of "
                 f"StartOperationContext, but is {ctx_type}."
             )
-            input_type = Any
+            input_type = None
 
     return input_type, output_type
 
