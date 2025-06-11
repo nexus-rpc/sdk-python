@@ -106,7 +106,7 @@ class WrongOutputType(_InterfaceImplementationTestCase):
             self, ctx: nexusrpc.handler.StartOperationContext, input: None
         ) -> str: ...
 
-    error_message = "does not match the output type"
+    error_message = "is not compatible with the output type"
 
 
 class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
@@ -120,7 +120,7 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
             self, ctx: nexusrpc.handler.StartOperationContext, input: str
         ) -> str: ...
 
-    error_message = "does not match the output type"
+    error_message = "is not compatible with the output type"
 
 
 class ValidImplWithNone(_InterfaceImplementationTestCase):

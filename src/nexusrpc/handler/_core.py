@@ -457,14 +457,17 @@ def validate_operation_handler_methods(
                 f"Operation '{op_name}' in service '{user_service_cls}' has input type '{op.input_type}', "
                 f"which does not match the input type '{op_defn.input_type}' in interface '{service_definition}'."
             )
+        # Output type is covariant: op handler output must be subclass of op defn output
         if (
             op.output_type is not None
-            and op_defn.output_type is not Any
-            and op.output_type != op_defn.output_type
+            and op_defn.output_type is not None
+            and Any not in (op.output_type, op_defn.output_type)
+            and not issubclass(op.output_type, op_defn.output_type)
         ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has output type '{op.output_type}', "
-                f"which does not match the output type '{op_defn.output_type}' in interface '{service_definition}'."
+                f"which is not compatible with the output type '{op_defn.output_type}' in interface '{service_definition}'. "
+                f"The output type must be the same as or a subclass of the operation definition output type."
             )
     if service_definition.operations.keys() > user_methods.keys():
         raise TypeError(
