@@ -448,14 +448,20 @@ def validate_operation_handler_methods(
                 f":py:func:`@nexusrpc.handler.operation_handler` or "
                 f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
             )
+        # Input type is contravariant: op handler input must be superclass of op defn output
         if (
             op.input_type is not None
-            and op_defn.input_type is not Any
-            and op.input_type != op_defn.input_type
+            and op_defn.input_type is not None
+            and Any not in (op.input_type, op_defn.input_type)
+            and not (
+                op_defn.input_type == op.input_type
+                or issubclass(op_defn.input_type, op.input_type)
+            )
         ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has input type '{op.input_type}', "
-                f"which does not match the input type '{op_defn.input_type}' in interface '{service_definition}'."
+                f"which is not compatible with the input type '{op_defn.input_type}' in interface '{service_definition}'. "
+                f"The input type must be the same as or a superclass of the operation definition input type."
             )
         # Output type is covariant: op handler output must be subclass of op defn output
         if (
