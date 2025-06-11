@@ -176,14 +176,14 @@ class Handler:
         else:
             if not self.sync_executor:
                 raise RuntimeError(
-                    "Operation cancel handler method is async but "
+                    "Operation cancel handler method is not an `async def` function but "
                     "no executor was provided to the Handler constructor."
                 )
             result = await self.sync_executor.run_sync(op_handler.cancel, ctx, token)
             if inspect.isawaitable(result):
                 raise RuntimeError(
-                    f"Operation start handler method {op_handler.cancel} returned an "
-                    "awaitable but is not an `async def` coroutine function."
+                    f"Operation cancel handler method {op_handler.cancel} returned an "
+                    "awaitable but is not an `async def` function."
                 )
             return result
 

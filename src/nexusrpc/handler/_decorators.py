@@ -20,6 +20,7 @@ import nexusrpc
 from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._common import (
+    CancelOperationContext,
     StartOperationContext,
     StartOperationResultSync,
 )
@@ -175,7 +176,7 @@ def operation_handler(
         .. code-block:: python
 
             @nexusrpc.handler.operation_handler(name="my-operation")
-            defmy_operation(self) -> Operation[MyInput, MyOutput]:
+            def my_operation(self) -> Operation[MyInput, MyOutput]:
                 ...
     """
 
@@ -303,7 +304,7 @@ def sync_operation_handler(
 
                 op.start = types.MethodType(start_async, op)
 
-                async def cancel_async(_, ctx: StartOperationContext, token: str):
+                async def cancel_async(_, ctx: CancelOperationContext, token: str):
                     raise NotImplementedError(
                         "An operation that responded synchronously cannot be cancelled."
                     )
@@ -325,7 +326,7 @@ def sync_operation_handler(
 
                 op.start = types.MethodType(start, op)
 
-                def cancel(_, ctx: StartOperationContext, token: str):
+                def cancel(_, ctx: CancelOperationContext, token: str):
                     raise NotImplementedError(
                         "An operation that responded synchronously cannot be cancelled."
                     )
