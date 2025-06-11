@@ -92,7 +92,7 @@ class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
             self, ctx: nexusrpc.handler.StartOperationContext, input: str
         ) -> None: ...
 
-    error_message = "does not match the input type"
+    error_message = "is not compatible with the input type"
 
 
 class WrongOutputType(_InterfaceImplementationTestCase):
@@ -205,6 +205,46 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
     error_message = "is not compatible with the output type"
 
 
+class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[X, X]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(self, ctx: nexusrpc.handler.StartOperationContext, input: X) -> X: ...
+
+    error_message = None
+
+
+class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[Subclass, X]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: SuperClass
+        ) -> X: ...
+
+    error_message = None
+
+
+class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestCase):
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[SuperClass, X]
+
+    class Impl:
+        @nexusrpc.handler.sync_operation_handler
+        def op(
+            self, ctx: nexusrpc.handler.StartOperationContext, input: Subclass
+        ) -> X: ...
+
+    error_message = "is not compatible with the input type"
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -221,6 +261,8 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
         OutputCovarianceImplOutputCanBeSameType,
         OutputCovarianceImplOutputCanBeSubclass,
         OutputCovarianceImplOutputCannnotBeStrictSuperclass,
+        InputContravarianceImplInputCanBeSameType,
+        InputContravarianceImplInputCanBeSuperclass,
         # ValidSubtyping,
         # InvalidOutputSupertype,
         # InvalidInputSubtype,
