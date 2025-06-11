@@ -14,8 +14,9 @@ from typing import (
 
 from typing_extensions import TypeGuard
 
+from nexusrpc.types import InputT, OutputT, ServiceHandlerT
+
 from ._common import StartOperationContext
-from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 
 
 def get_start_method_input_and_output_types_annotations(
@@ -24,8 +25,8 @@ def get_start_method_input_and_output_types_annotations(
         Union[OutputT, Awaitable[OutputT]],
     ],
 ) -> tuple[
-    Union[Type[InputT], Type[MISSING_TYPE]],
-    Union[Type[OutputT], Type[MISSING_TYPE]],
+    Union[Type[InputT], Any],
+    Union[Type[OutputT], Any],
 ]:
     """Return operation input and output types.
 
@@ -38,8 +39,8 @@ def get_start_method_input_and_output_types_annotations(
         warnings.warn(
             f"Expected decorated start method {start_method} to have type annotations"
         )
-        return MISSING_TYPE, MISSING_TYPE
-    output_type = type_annotations.pop("return", MISSING_TYPE)
+        return Any, Any
+    output_type = type_annotations.pop("return", Any)
 
     if len(type_annotations) != 2:
         # TODO(preview): stacklevel
@@ -48,7 +49,7 @@ def get_start_method_input_and_output_types_annotations(
             f"type-annotated parameters (ctx and input), but has {len(type_annotations)}: "
             f"{type_annotations}."
         )
-        input_type = MISSING_TYPE
+        input_type = Any
     else:
         ctx_type, input_type = type_annotations.values()
         if not issubclass(ctx_type, StartOperationContext):
@@ -57,7 +58,7 @@ def get_start_method_input_and_output_types_annotations(
                 f"Expected first parameter of {start_method} to be an instance of "
                 f"StartOperationContext, but is {ctx_type}."
             )
-            input_type = MISSING_TYPE
+            input_type = Any
 
     return input_type, output_type
 

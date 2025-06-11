@@ -17,6 +17,7 @@ from typing import (
 )
 
 import nexusrpc
+from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._common import (
     StartOperationContext,
@@ -29,7 +30,6 @@ from ._core import (
     service_from_operation_handler_methods,
     validate_operation_handler_methods,
 )
-from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
 from ._util import (
     get_start_method_input_and_output_types_annotations,
     is_async_callable,
@@ -183,8 +183,8 @@ def operation_handler(
         method: OperationHandlerFactoryT,
     ) -> OperationHandlerFactoryT:
         # Extract input and output types from the return type annotation
-        input_type = MISSING_TYPE
-        output_type = MISSING_TYPE
+        input_type = Any
+        output_type = Any
 
         return_type = typing.get_type_hints(method).get("return")
         if typing.get_origin(return_type) == OperationHandler:

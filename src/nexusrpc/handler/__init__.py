@@ -82,9 +82,6 @@ from ._serializer import (
 from ._serializer import (
     Serializer as Serializer,
 )
-from nexusrpc.types import (
-    MISSING_TYPE as MISSING_TYPE,
-)
 from ._util import (
     get_start_method_input_and_output_types_annotations as get_start_method_input_and_output_types_annotations,
 )

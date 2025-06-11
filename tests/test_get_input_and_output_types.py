@@ -12,7 +12,6 @@ from typing import (
 import pytest
 
 from nexusrpc.handler import (
-    MISSING_TYPE,
     StartOperationContext,
     get_start_method_input_and_output_types_annotations,
 )
@@ -28,7 +27,7 @@ class Output:
 
 class _TestCase:
     start: Callable
-    expected_types: tuple[Type[Any], Type[Any]]
+    expected_types: tuple[Any, Any]
 
 
 class SyncMethod(_TestCase):
@@ -56,49 +55,49 @@ class MissingInputAnnotationInUnionMethod(_TestCase):
         self, ctx: StartOperationContext, i
     ) -> Union[Output, Awaitable[Output]]: ...
 
-    expected_types = (MISSING_TYPE, Union[Output, Awaitable[Output]])
+    expected_types = (Any, Union[Output, Awaitable[Output]])
 
 
 class TooFewParams(_TestCase):
     def start(self, i: Input) -> Output: ...
 
-    expected_types = (MISSING_TYPE, Output)
+    expected_types = (Any, Output)
 
 
 class TooManyParams(_TestCase):
     def start(self, ctx: StartOperationContext, i: Input, extra: int) -> Output: ...
 
-    expected_types = (MISSING_TYPE, Output)
+    expected_types = (Any, Output)
 
 
 class WrongOptionsType(_TestCase):
     def start(self, ctx: int, i: Input) -> Output: ...
 
-    expected_types = (MISSING_TYPE, Output)
+    expected_types = (Any, Output)
 
 
 class NoReturnHint(_TestCase):
     def start(self, ctx: StartOperationContext, i: Input): ...
 
-    expected_types = (Input, MISSING_TYPE)
+    expected_types = (Input, Any)
 
 
 class NoInputAnnotation(_TestCase):
     def start(self, ctx: StartOperationContext, i) -> Output: ...
 
-    expected_types = (MISSING_TYPE, Output)
+    expected_types = (Any, Output)
 
 
 class NoOptionsAnnotation(_TestCase):
     def start(self, ctx, i: Input) -> Output: ...
 
-    expected_types = (MISSING_TYPE, Output)
+    expected_types = (Any, Output)
 
 
 class AllAnnotationsMissing(_TestCase):
     def start(self, ctx: StartOperationContext, i: Input): ...
 
-    expected_types = (Input, MISSING_TYPE)
+    expected_types = (Input, Any)
 
 
 @pytest.mark.parametrize(

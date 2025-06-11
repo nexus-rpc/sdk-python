@@ -23,7 +23,7 @@ from typing_extensions import Self
 import nexusrpc
 import nexusrpc._service_definition
 from nexusrpc.handler._util import is_async_callable
-from nexusrpc.types import MISSING_TYPE, InputT, OutputT, ServiceHandlerT
+from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._common import (
     CancelOperationContext,
@@ -448,12 +448,12 @@ def validate_operation_handler_methods(
                 f":py:func:`@nexusrpc.handler.operation_handler` or "
                 f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
             )
-        if op.input_type != op_defn.input_type and op.input_type != MISSING_TYPE:
+        if op.input_type != op_defn.input_type and op.input_type != Any:
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has input type '{op.input_type}', "
                 f"which does not match the input type '{op_defn.input_type}' in interface '{service_definition}'."
             )
-        if op.output_type != op_defn.output_type and op.output_type != MISSING_TYPE:
+        if op.output_type != op_defn.output_type and op.output_type != Any:
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has output type '{op.output_type}', "
                 f"which does not match the output type '{op_defn.output_type}' in interface '{service_definition}'."
