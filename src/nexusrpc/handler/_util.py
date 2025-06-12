@@ -45,10 +45,11 @@ def get_start_method_input_and_output_types_annotations(
 
     if len(type_annotations) != 2:
         # TODO(preview): stacklevel
+        suffix = f": {type_annotations}" if type_annotations else ""
         warnings.warn(
-            f"Expected decorated start method {start_method} to have exactly two "
-            f"type-annotated parameters (ctx and input), but has {len(type_annotations)}: "
-            f"{type_annotations}."
+            f"Expected decorated start method {start_method} to have exactly 2 "
+            f"type-annotated parameters (ctx and input), but it has {len(type_annotations)}"
+            f"{suffix}."
         )
         input_type = None
     else:
@@ -68,7 +69,7 @@ def get_start_method_input_and_output_types_annotations(
 #
 # Copyright (c) 2024 Anthropic, PBC.
 #
-# Modified to use TypeIs.
+# Modified to use TypeGuard.
 #
 # This file is licensed under the MIT License.
 def is_async_callable(obj: Any) -> TypeGuard[Callable[..., Awaitable[Any]]]:

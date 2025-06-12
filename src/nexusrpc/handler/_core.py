@@ -460,8 +460,9 @@ def validate_operation_handler_methods(
         ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has input type '{op.input_type}', "
-                f"which is not compatible with the input type '{op_defn.input_type}' in interface '{service_definition}'. "
-                f"The input type must be the same as or a superclass of the operation definition input type."
+                f"which is not compatible with the input type '{op_defn.input_type}' "
+                f" in interface '{service_definition.name}'. The input type must be the same as or a "
+                f"superclass of the operation definition input type."
             )
         # Output type is covariant: op handler output must be subclass of op defn output
         if (
