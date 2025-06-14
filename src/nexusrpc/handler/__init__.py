@@ -58,12 +58,6 @@ from ._core import (
 from ._core import (
     SyncOperationHandler as SyncOperationHandler,
 )
-from ._core import (
-    UnknownOperationError as UnknownOperationError,
-)
-from ._core import (
-    UnknownServiceError as UnknownServiceError,
-)
 from ._decorators import (
     operation_handler as operation_handler,
 )

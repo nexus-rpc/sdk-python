@@ -29,24 +29,14 @@ from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
+    HandlerError,
+    HandlerErrorType,
     OperationInfo,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
 )
 from ._serializer import LazyValue
-
-
-class UnknownServiceError(RuntimeError):
-    """Raised when a request contains a service name that does not match a service handler."""
-
-    pass
-
-
-class UnknownOperationError(RuntimeError):
-    """Raised when a request contains an operation name that does not match an operation handler."""
-
-    pass
 
 
 @dataclass
@@ -191,10 +181,10 @@ class Handler:
         """Return a service handler, given the service name."""
         service = self.service_handlers.get(service_name)
         if service is None:
-            # TODO(prerelease): can this raise HandlerError directly or is HandlerError always a
-            # wrapper? I have currently made its __cause__ required but if it's not a
-            # wrapper then that is wrong.
-            raise UnknownServiceError(f"No handler for service '{service_name}'.")
+            raise HandlerError(
+                f"No handler for service '{service_name}'.",
+                type=HandlerErrorType.NOT_FOUND,
+            )
         return service
 
 
@@ -251,7 +241,7 @@ class ServiceHandler:
             if self.service.operations:
                 msg += f": {', '.join(sorted(self.service.operations.keys()))}"
             msg += "."
-            raise UnknownOperationError(msg)
+            raise HandlerError(msg, type=HandlerErrorType.NOT_FOUND)
         operation_handler = self.operation_handlers.get(operation)
         if operation_handler is None:
             # This should not be possible. If a service definition was supplied then
@@ -264,7 +254,7 @@ class ServiceHandler:
             if self.operation_handlers:
                 msg += f": {', '.join(sorted(self.operation_handlers.keys()))}"
             msg += "."
-            raise UnknownOperationError(msg)
+            raise HandlerError(msg, type=HandlerErrorType.NOT_FOUND)
         return operation_handler
 
 
