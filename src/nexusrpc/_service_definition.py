@@ -118,6 +118,7 @@ def service(
         # and __dict__
 
         operations: dict[str, Operation] = {}
+        # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
         annotations: dict[str, Any] = getattr(cls, "__annotations__", {})
         for annot_name, op in annotations.items():
             if typing.get_origin(op) == Operation:
