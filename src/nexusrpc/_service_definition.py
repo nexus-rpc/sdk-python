@@ -19,6 +19,8 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Self
+
 from nexusrpc._util import get_annotations
 from nexusrpc.types import (
     InputT,
@@ -27,11 +29,52 @@ from nexusrpc.types import (
 )
 
 
-# TODO(prerelease): support inheritance in service definitions
 @dataclass
 class ServiceDefinition:
     name: str
     operations: dict[str, Operation[Any, Any]]
+
+    @classmethod
+    def from_user_class(cls, user_class: Type[ServiceDefinitionT], name: str) -> Self:
+        operations: dict[str, Operation] = {}
+        print(f"🟠 user_class: {user_class.__name__}")
+        annotations: dict[str, Any] = get_annotations(user_class)
+        for annot_name, op in annotations.items():
+            print(f"🟡 annot_name: {annot_name}")
+            if typing.get_origin(op) == Operation:
+                args = typing.get_args(op)
+                if len(args) != 2:
+                    raise TypeError(
+                        f"Each operation in the service definition should look like  "
+                        f"nexusrpc.Operation[MyInputType, MyOutputType]. "
+                        f"However, '{annot_name}' in '{user_class}' has {len(args)} type parameters."
+                    )
+                input_type, output_type = args
+                op = getattr(user_class, annot_name, None)
+                if not op:
+                    op = Operation(
+                        name=annot_name,
+                        method_name=annot_name,
+                        input_type=input_type,
+                        output_type=output_type,
+                    )
+                    setattr(user_class, annot_name, op)
+                else:
+                    if not isinstance(op, Operation):
+                        raise TypeError(
+                            f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
+                            f"but it is a {type(op)}"
+                        )
+                    op.method_name = annot_name
+                    op.input_type = input_type
+                    op.output_type = output_type
+
+                if op.name in operations:
+                    raise ValueError(
+                        f"Operation '{op.name}' in class '{user_class}' is defined multiple times"
+                    )
+                operations[op.name] = op
+        return cls(name=name, operations=operations)
 
 
 @dataclass
@@ -116,50 +159,12 @@ def service(
         return decorator(cls)
 
 
-def _operations_from_class_mro(cls) -> dict[str, Operation]:
+def _operations_from_class_mro(cls: Type[ServiceDefinitionT]) -> dict[str, Operation]:
     operations: dict[str, Operation] = {}
     for parent_cls in cls.mro():
-        operations.update(_operations_from_class(parent_cls))
-    return operations
-
-
-def _operations_from_class(parent_cls) -> dict[str, Operation]:
-    operations: dict[str, Operation] = {}
-    print(f"🟠 parent_cls: {parent_cls.__name__}")
-    annotations: dict[str, Any] = get_annotations(parent_cls)
-    for annot_name, op in annotations.items():
-        print(f"🟡 annot_name: {annot_name}")
-        if typing.get_origin(op) == Operation:
-            args = typing.get_args(op)
-            if len(args) != 2:
-                raise TypeError(
-                    f"Each operation in the service definition should look like  "
-                    f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                    f"However, '{annot_name}' in '{parent_cls}' has {len(args)} type parameters."
-                )
-            input_type, output_type = args
-            op = getattr(parent_cls, annot_name, None)
-            if not op:
-                op = Operation(
-                    name=annot_name,
-                    method_name=annot_name,
-                    input_type=input_type,
-                    output_type=output_type,
-                )
-                setattr(parent_cls, annot_name, op)
-            else:
-                if not isinstance(op, Operation):
-                    raise TypeError(
-                        f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
-                        f"but it is a {type(op)}"
-                    )
-                op.method_name = annot_name
-                op.input_type = input_type
-                op.output_type = output_type
-
-            if op.name in operations:
-                raise ValueError(
-                    f"Operation '{op.name}' in class '{parent_cls}' is defined multiple times"
-                )
-            operations[op.name] = op
+        operations.update(
+            ServiceDefinition.from_user_class(
+                parent_cls, parent_cls.__name__
+            ).operations
+        )
     return operations
