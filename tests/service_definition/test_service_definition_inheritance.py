@@ -67,6 +67,7 @@ class ChildClassSynthesizedWithTypeValues:
     expected_operation_names = {"a", "b"}
 
 
+# TODO: test mro is honored: that synonymous operation definition in child class wins
 @pytest.mark.parametrize(
     "test_case",
     [

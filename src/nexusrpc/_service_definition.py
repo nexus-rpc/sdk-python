@@ -35,7 +35,7 @@ class ServiceDefinition:
     operations: dict[str, Operation[Any, Any]]
 
     @classmethod
-    def from_user_class(cls, user_class: Type[ServiceDefinitionT], name: str) -> Self:
+    def from_class(cls, user_class: Type[ServiceDefinitionT], name: str) -> Self:
         operations: dict[str, Operation] = {}
         print(f"🟠 user_class: {user_class.__name__}")
         annotations: dict[str, Any] = get_annotations(user_class)
@@ -58,6 +58,7 @@ class ServiceDefinition:
                         input_type=input_type,
                         output_type=output_type,
                     )
+                    # TODO(prerelease): we must not mutate parent classes like this unless they are decorated
                     setattr(user_class, annot_name, op)
                 else:
                     if not isinstance(op, Operation):
@@ -164,6 +165,7 @@ def _operations_from_class_mro(cls: Type[ServiceDefinitionT]) -> dict[str, Opera
     for parent_cls in cls.mro():
         defn = getattr(
             parent_cls, "__nexus_service__", None
-        ) or ServiceDefinition.from_user_class(parent_cls, parent_cls.__name__)
-        operations.update(defn.operations)
+        ) or ServiceDefinition.from_class(parent_cls, parent_cls.__name__)
+        for name, op in defn.operations.items():
+            operations.setdefault(name, op)
     return operations
