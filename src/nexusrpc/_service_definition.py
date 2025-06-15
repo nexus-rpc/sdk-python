@@ -105,7 +105,7 @@ def service(
 
         cls.__nexus_service__ = ServiceDefinition(  # type: ignore
             name=service_name,
-            operations=_operations_from_class(cls),
+            operations=_operations_from_class_mro(cls),
         )
 
         return cls
@@ -116,44 +116,50 @@ def service(
         return decorator(cls)
 
 
-def _operations_from_class(cls) -> dict[str, Operation]:
+def _operations_from_class_mro(cls) -> dict[str, Operation]:
     operations: dict[str, Operation] = {}
     for parent_cls in cls.mro():
-        print(f"🟠 parent_cls: {parent_cls.__name__}")
-        annotations: dict[str, Any] = get_annotations(parent_cls)
-        for annot_name, op in annotations.items():
-            print(f"🟡 annot_name: {annot_name}")
-            if typing.get_origin(op) == Operation:
-                args = typing.get_args(op)
-                if len(args) != 2:
-                    raise TypeError(
-                        f"Each operation in the service definition should look like  "
-                        f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                        f"However, '{annot_name}' in '{cls}' has {len(args)} type parameters."
-                    )
-                input_type, output_type = args
-                op = getattr(cls, annot_name, None)
-                if not op:
-                    op = Operation(
-                        name=annot_name,
-                        method_name=annot_name,
-                        input_type=input_type,
-                        output_type=output_type,
-                    )
-                    setattr(cls, annot_name, op)
-                else:
-                    if not isinstance(op, Operation):
-                        raise TypeError(
-                            f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
-                            f"but it is a {type(op)}"
-                        )
-                    op.method_name = annot_name
-                    op.input_type = input_type
-                    op.output_type = output_type
+        operations.update(_operations_from_class(parent_cls))
+    return operations
 
-                if op.name in operations:
-                    raise ValueError(
-                        f"Operation '{op.name}' in class '{parent_cls}' is defined multiple times"
+
+def _operations_from_class(parent_cls) -> dict[str, Operation]:
+    operations: dict[str, Operation] = {}
+    print(f"🟠 parent_cls: {parent_cls.__name__}")
+    annotations: dict[str, Any] = get_annotations(parent_cls)
+    for annot_name, op in annotations.items():
+        print(f"🟡 annot_name: {annot_name}")
+        if typing.get_origin(op) == Operation:
+            args = typing.get_args(op)
+            if len(args) != 2:
+                raise TypeError(
+                    f"Each operation in the service definition should look like  "
+                    f"nexusrpc.Operation[MyInputType, MyOutputType]. "
+                    f"However, '{annot_name}' in '{parent_cls}' has {len(args)} type parameters."
+                )
+            input_type, output_type = args
+            op = getattr(parent_cls, annot_name, None)
+            if not op:
+                op = Operation(
+                    name=annot_name,
+                    method_name=annot_name,
+                    input_type=input_type,
+                    output_type=output_type,
+                )
+                setattr(parent_cls, annot_name, op)
+            else:
+                if not isinstance(op, Operation):
+                    raise TypeError(
+                        f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
+                        f"but it is a {type(op)}"
                     )
-                operations[op.name] = op
+                op.method_name = annot_name
+                op.input_type = input_type
+                op.output_type = output_type
+
+            if op.name in operations:
+                raise ValueError(
+                    f"Operation '{op.name}' in class '{parent_cls}' is defined multiple times"
+                )
+            operations[op.name] = op
     return operations
