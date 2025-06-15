@@ -14,37 +14,29 @@ from nexusrpc.handler._core import ServiceHandler
 #         temporalio.common._type_hints_from_func(hello_nexus.hello2().fetch_result),
 
 
-# Test Case for Decorator Validation
 class _DecoratorValidationTestCase:
-    UserServiceDefinition: Type[Any]
+    UserService: Type[Any]
     UserServiceHandler: Type[Any]
     expected_error_message_pattern: str
 
 
 class MissingOperationFromDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
-    class ServiceDefinition:
+    class UserService:
         op_A: nexusrpc.Operation[int, str]
         op_B: nexusrpc.Operation[bool, float]
 
-    UserServiceDefinition = ServiceDefinition
-
-    class HandlerMissingOpB:
+    class UserServiceHandler:
         @nexusrpc.handler.operation_handler
         def op_A(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
 
-        # op_B is missing
-
-    UserServiceHandler = HandlerMissingOpB
     expected_error_message_pattern = r"does not implement operation 'op_B'"
 
 
 class MethodNameDoesNotMatchDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
-    class ServiceDefinition:
+    class UserService:
         op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")
-
-    UserServiceDefinition = ServiceDefinition
 
     class UserServiceHandler:
         @nexusrpc.handler.operation_handler
@@ -68,105 +60,86 @@ def test_decorator_validates_definition_compliance(
     test_case: _DecoratorValidationTestCase,
 ):
     with pytest.raises(TypeError, match=test_case.expected_error_message_pattern):
-        nexusrpc.handler.service_handler(service=test_case.UserServiceDefinition)(
+        nexusrpc.handler.service_handler(service=test_case.UserService)(
             test_case.UserServiceHandler
         )
 
 
-# Test Cases for Service Implementation Inheritance
-class _ServiceImplInheritanceTestCase:
-    test_case_name: str
-    BaseImpl: Type[Any]
-    ChildImpl: Type[Any]
-    expected_operations_in_child_handler: set[str]
+class _ServiceHandlerInheritanceTestCase:
+    UserServiceHandler: Type[Any]
+    expected_operations: set[str]
 
 
-class ServiceImplInheritanceWithDefinition(_ServiceImplInheritanceTestCase):
-    test_case_name = "ServiceImplInheritanceWithContracts"
-
+class ServiceHandlerInheritanceWithServiceDefinition(
+    _ServiceHandlerInheritanceTestCase
+):
     @nexusrpc.service
-    class ContractA:
+    class BaseUserService:
         base_op: nexusrpc.Operation[int, str]
 
     @nexusrpc.service
-    class ContractB:
+    class UserService:
         base_op: nexusrpc.Operation[int, str]
         child_op: nexusrpc.Operation[bool, float]
 
-    @nexusrpc.handler.service_handler(service=ContractA)
-    class AImplementation:
+    @nexusrpc.handler.service_handler(service=BaseUserService)
+    class BaseUserServiceHandler:
         @nexusrpc.handler.operation_handler
         def base_op(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
 
-    @nexusrpc.handler.service_handler(service=ContractB)
-    class BImplementation(AImplementation):
+    @nexusrpc.handler.service_handler(service=UserService)
+    class UserServiceHandler(BaseUserServiceHandler):
         @nexusrpc.handler.operation_handler
         def child_op(self) -> nexusrpc.handler.OperationHandler[bool, float]: ...
 
-    BaseImpl = AImplementation
-    ChildImpl = BImplementation
-    expected_operations_in_child_handler = {"base_op", "child_op"}
+    expected_operations = {"base_op", "child_op"}
 
 
-class ServiceImplInheritanceWithoutDefinition(_ServiceImplInheritanceTestCase):
-    test_case_name = "ServiceImplInheritanceWithoutDefinition"
-
+class ServiceHandlerInheritanceWithoutDefinition(_ServiceHandlerInheritanceTestCase):
     @nexusrpc.handler.service_handler
-    class BaseImplWithoutDefinition:
+    class BaseUserServiceHandler:
         @nexusrpc.handler.operation_handler
         def base_op_nc(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
 
     @nexusrpc.handler.service_handler
-    class ChildImplWithoutDefinition(BaseImplWithoutDefinition):
+    class UserServiceHandler(BaseUserServiceHandler):
         @nexusrpc.handler.operation_handler
         def child_op_nc(self) -> nexusrpc.handler.OperationHandler[bool, float]: ...
 
-    BaseImpl = BaseImplWithoutDefinition
-    ChildImpl = ChildImplWithoutDefinition
-    expected_operations_in_child_handler = {"base_op_nc", "child_op_nc"}
+    expected_operations = {"base_op_nc", "child_op_nc"}
 
 
 @pytest.mark.parametrize(
     "test_case",
     [
-        ServiceImplInheritanceWithDefinition,
-        ServiceImplInheritanceWithoutDefinition,
+        ServiceHandlerInheritanceWithServiceDefinition,
+        ServiceHandlerInheritanceWithoutDefinition,
     ],
 )
-def test_service_implementation_inheritance(test_case: _ServiceImplInheritanceTestCase):
-    child_instance = test_case.ChildImpl()
-    service_handler_meta = ServiceHandler.from_user_instance(child_instance)
+def test_service_implementation_inheritance(
+    test_case: _ServiceHandlerInheritanceTestCase,
+):
+    service_handler = ServiceHandler.from_user_instance(test_case.UserServiceHandler())
 
-    assert (
-        set(service_handler_meta.operation_handlers.keys())
-        == test_case.expected_operations_in_child_handler
-    )
-    assert (
-        set(service_handler_meta.service.operations.keys())
-        == test_case.expected_operations_in_child_handler
-    )
+    assert set(service_handler.operation_handlers) == test_case.expected_operations
+    assert set(service_handler.service.operations) == test_case.expected_operations
 
 
-# Test Cases for Service Definition Inheritance (Current Behavior due to TODO)
 class _ServiceDefinitionInheritanceTestCase:
-    test_case_name: str
-    ChildDefinitionInheriting: Type[Any]  # We only need to inspect the child definition
-    expected_ops_in_child_definition: set[str]
+    UserService: Type[Any]
+    expected_ops: set[str]
 
 
 class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
-    test_case_name = "ServiceDefinitionInheritance"
-
     @nexusrpc.service
-    class BaseDef:
+    class BaseUserService:
         op_from_base_definition: nexusrpc.Operation[int, str]
 
     @nexusrpc.service
-    class ChildDefInherits(BaseDef):
+    class UserService(BaseUserService):
         op_from_child_definition: nexusrpc.Operation[bool, float]
 
-    ChildDefinitionInheriting = ChildDefInherits
-    expected_ops_in_child_definition = {
+    expected_ops = {
         "op_from_base_definition",
         "op_from_child_definition",
     }
@@ -184,27 +157,22 @@ class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
 def test_service_definition_inheritance_behavior(
     test_case: _ServiceDefinitionInheritanceTestCase,
 ):
-    child_service_definition = getattr(
-        test_case.ChildDefinitionInheriting, "__nexus_service__", None
-    )
+    service_defn = getattr(test_case.UserService, "__nexus_service__", None)
 
-    assert child_service_definition is not None, (
-        f"{test_case.ChildDefinitionInheriting.__name__} lacks __nexus_service__ attribute."
+    assert service_defn is not None, (
+        f"{test_case.UserService.__name__} lacks __nexus_service__ attribute."
     )
-    assert isinstance(child_service_definition, nexusrpc.ServiceDefinition), (
+    assert isinstance(service_defn, nexusrpc.ServiceDefinition), (
         "__nexus_service__ is not a nexusrpc.ServiceDefinition instance."
     )
 
-    assert (
-        set(child_service_definition.operations.keys())
-        == test_case.expected_ops_in_child_definition
-    )
+    assert set(service_defn.operations) == test_case.expected_ops
 
     with pytest.raises(
         TypeError, match="does not implement operation 'op_from_base_definition'"
     ):
 
-        @nexusrpc.handler.service_handler(service=test_case.ChildDefinitionInheriting)
+        @nexusrpc.handler.service_handler(service=test_case.UserService)
         class HandlerMissingChildOp:
             @nexusrpc.handler.operation_handler
             def op_from_base_definition(
