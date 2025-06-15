@@ -4,6 +4,7 @@ from typing import Any, Type
 import pytest
 
 from nexusrpc import Operation, ServiceDefinition, service
+from nexusrpc._util import get_annotations
 
 
 class _TestCase:
@@ -79,7 +80,7 @@ class ChildClassSynthesizedWithTypeValues:
 def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     print(f"\n\n{test_case.UserService.__name__}:")
     print("\n__annotations__")
-    pprint(test_case.UserService.__annotations__)
+    pprint(get_annotations(test_case.UserService))
     print("\n__dict__")
     pprint(test_case.UserService.__dict__)
 

@@ -20,6 +20,7 @@ from typing import (
     overload,
 )
 
+from nexusrpc._util import get_annotations
 from nexusrpc.types import (
     InputT,
     OutputT,
@@ -128,9 +129,7 @@ def service(
 def _operations_from_annotations(cls) -> Iterator[Operation]:
     for parent_cls in reversed(cls.mro()):
         print(f"🟠 parent_cls: {parent_cls.__name__}")
-        # TODO(preview): backport inspect.get_annotations
-        # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
-        annotations: dict[str, Any] = getattr(parent_cls, "__annotations__", {})
+        annotations: dict[str, Any] = get_annotations(parent_cls)
         for annot_name, op in annotations.items():
             print(f"🟡 annot_name: {annot_name}")
             if typing.get_origin(op) == Operation:
