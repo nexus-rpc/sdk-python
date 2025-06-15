@@ -36,7 +36,8 @@ class ManualOperationHandler(_TestCase):
         def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
-        "operation": nexusrpc.Operation._create(
+        "operation": nexusrpc.Operation(
+            name="operation",
             method_name="operation",
             input_type=Input,
             output_type=Output,
@@ -51,7 +52,7 @@ class ManualOperationHandlerWithNameOverride(_TestCase):
         def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
-        "operation": nexusrpc.Operation._create(
+        "operation": nexusrpc.Operation(
             name="operation-name",
             method_name="operation",
             input_type=Input,
@@ -69,7 +70,8 @@ class SyncOperation(_TestCase):
         ) -> Output: ...
 
     expected_operations = {
-        "sync_operation_handler": nexusrpc.Operation._create(
+        "sync_operation_handler": nexusrpc.Operation(
+            name="sync_operation_handler",
             method_name="sync_operation_handler",
             input_type=Input,
             output_type=Output,
@@ -86,7 +88,7 @@ class SyncOperationWithOperationHandlerNameOverride(_TestCase):
         ) -> Output: ...
 
     expected_operations = {
-        "sync_operation_handler": nexusrpc.Operation._create(
+        "sync_operation_handler": nexusrpc.Operation(
             name="sync-operation-name",
             method_name="sync_operation_handler",
             input_type=Input,
@@ -106,7 +108,8 @@ class ManualOperationWithContract(_TestCase):
         def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
-        "operation": nexusrpc.Operation._create(
+        "operation": nexusrpc.Operation(
+            name="operation",
             method_name="operation",
             input_type=Input,
             output_type=Output,
@@ -127,7 +130,7 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
         def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
-        "operation": nexusrpc.Operation._create(
+        "operation": nexusrpc.Operation(
             name="operation-override",
             method_name="operation",
             input_type=Input,
@@ -159,7 +162,7 @@ class SyncOperationWithCallableInstance(_TestCase):
         )
 
     expected_operations = {
-        "sync_operation_with_callable_instance": nexusrpc.Operation._create(
+        "sync_operation_with_callable_instance": nexusrpc.Operation(
             name="sync_operation_with_callable_instance",
             method_name="CallableInstanceStartMethod",
             input_type=Input,

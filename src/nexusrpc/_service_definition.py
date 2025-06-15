@@ -51,24 +51,9 @@ class Operation(Generic[InputT, OutputT]):
     """
 
     name: str
-    method_name: str = dataclasses.field(init=False)
-    input_type: Optional[Type[InputT]] = dataclasses.field(init=False)
-    output_type: Optional[Type[OutputT]] = dataclasses.field(init=False)
-
-    @classmethod
-    def _create(
-        cls,
-        *,
-        name: Optional[str] = None,
-        method_name: str,
-        input_type: Optional[Type],
-        output_type: Optional[Type],
-    ) -> Operation:
-        op = cls(name or method_name)
-        op.method_name = method_name
-        op.input_type = input_type
-        op.output_type = output_type
-        return op
+    method_name: Optional[str] = dataclasses.field(default=None)
+    input_type: Optional[Type[InputT]] = dataclasses.field(default=None)
+    output_type: Optional[Type[OutputT]] = dataclasses.field(default=None)
 
 
 @overload
@@ -123,7 +108,7 @@ def service(
         for op in _operations_from_annotations(cls):
             if op.name in operations:
                 raise ValueError(
-                    f"Operation {op.name} in service {service_name} is defined multiple times"
+                    f"Operation '{op.name}' in service '{service_name}' is defined multiple times"
                 )
             operations[op.name] = op
 
@@ -142,10 +127,12 @@ def service(
 
 def _operations_from_annotations(cls) -> Iterator[Operation]:
     for parent_cls in reversed(cls.mro()):
+        print(f"🟠 parent_cls: {parent_cls.__name__}")
         # TODO(preview): backport inspect.get_annotations
         # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
         annotations: dict[str, Any] = getattr(parent_cls, "__annotations__", {})
         for annot_name, op in annotations.items():
+            print(f"🟡 annot_name: {annot_name}")
             if typing.get_origin(op) == Operation:
                 args = typing.get_args(op)
                 if len(args) != 2:
@@ -157,7 +144,8 @@ def _operations_from_annotations(cls) -> Iterator[Operation]:
                 input_type, output_type = args
                 op = getattr(cls, annot_name, None)
                 if not op:
-                    op = Operation._create(
+                    op = Operation(
+                        name=annot_name,
                         method_name=annot_name,
                         input_type=input_type,
                         output_type=output_type,

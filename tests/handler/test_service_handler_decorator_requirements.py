@@ -166,7 +166,7 @@ def test_service_definition_inheritance_behavior(
     assert set(service_defn.operations) == test_case.expected_ops
 
     with pytest.raises(
-        TypeError, match="does not implement operation 'op_from_base_definition'"
+        TypeError, match="does not implement operation 'op_from_child_definition'"
     ):
 
         @nexusrpc.handler.service_handler(service=test_case.UserService)

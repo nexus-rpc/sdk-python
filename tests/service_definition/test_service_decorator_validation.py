@@ -23,7 +23,7 @@ class DuplicateOperationNameOverride(_TestCase):
         b: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="a")
 
     expected_error = ValueError(
-        "Operation a in service Contract is defined multiple times"
+        "Operation 'a' in service 'Contract' is defined multiple times"
     )
 
 
