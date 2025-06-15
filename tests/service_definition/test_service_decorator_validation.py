@@ -22,9 +22,7 @@ class DuplicateOperationNameOverride(_TestCase):
         a: nexusrpc.Operation[None, Output] = nexusrpc.Operation(name="a")
         b: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="a")
 
-    expected_error = ValueError(
-        "Operation 'a' in service 'Contract' is defined multiple times"
-    )
+    expected_error = ValueError(r"Operation 'a' in class .* is defined multiple times")
 
 
 @pytest.mark.parametrize(

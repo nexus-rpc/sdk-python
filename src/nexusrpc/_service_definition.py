@@ -13,7 +13,6 @@ from typing import (
     Any,
     Callable,
     Generic,
-    Iterator,
     Optional,
     Type,
     Union,
@@ -104,18 +103,9 @@ def service(
         # This will require forming a union of operations disovered via __annotations__
         # and __dict__
 
-        operations: dict[str, Operation] = {}
-
-        for op in _operations_from_annotations(cls):
-            if op.name in operations:
-                raise ValueError(
-                    f"Operation '{op.name}' in service '{service_name}' is defined multiple times"
-                )
-            operations[op.name] = op
-
         cls.__nexus_service__ = ServiceDefinition(  # type: ignore
             name=service_name,
-            operations=operations,
+            operations=_operations_from_class(cls),
         )
 
         return cls
@@ -126,8 +116,9 @@ def service(
         return decorator(cls)
 
 
-def _operations_from_annotations(cls) -> Iterator[Operation]:
-    for parent_cls in reversed(cls.mro()):
+def _operations_from_class(cls) -> dict[str, Operation]:
+    operations: dict[str, Operation] = {}
+    for parent_cls in cls.mro():
         print(f"🟠 parent_cls: {parent_cls.__name__}")
         annotations: dict[str, Any] = get_annotations(parent_cls)
         for annot_name, op in annotations.items():
@@ -160,4 +151,9 @@ def _operations_from_annotations(cls) -> Iterator[Operation]:
                     op.input_type = input_type
                     op.output_type = output_type
 
-                yield op
+                if op.name in operations:
+                    raise ValueError(
+                        f"Operation '{op.name}' in class '{parent_cls}' is defined multiple times"
+                    )
+                operations[op.name] = op
+    return operations
