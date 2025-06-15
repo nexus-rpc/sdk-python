@@ -162,9 +162,8 @@ def service(
 def _operations_from_class_mro(cls: Type[ServiceDefinitionT]) -> dict[str, Operation]:
     operations: dict[str, Operation] = {}
     for parent_cls in cls.mro():
-        operations.update(
-            ServiceDefinition.from_user_class(
-                parent_cls, parent_cls.__name__
-            ).operations
-        )
+        defn = getattr(
+            parent_cls, "__nexus_service__", None
+        ) or ServiceDefinition.from_user_class(parent_cls, parent_cls.__name__)
+        operations.update(defn.operations)
     return operations
