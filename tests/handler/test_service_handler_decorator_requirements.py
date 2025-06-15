@@ -151,9 +151,6 @@ class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
         ServiceDefinitionInheritance,
     ],
 )
-@pytest.mark.skip(
-    reason="TODO(prerelease): service definition inheritance is not supported yet"
-)
 def test_service_definition_inheritance_behavior(
     test_case: _ServiceDefinitionInheritanceTestCase,
 ):
