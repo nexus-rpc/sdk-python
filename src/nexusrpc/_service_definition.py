@@ -141,35 +141,36 @@ def service(
 
 
 def _operations_from_annotations(cls) -> Iterator[Operation]:
-    # TODO(preview): backport inspect.get_annotations
-    # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
-    annotations: dict[str, Any] = getattr(cls, "__annotations__", {})
-    for annot_name, op in annotations.items():
-        if typing.get_origin(op) == Operation:
-            args = typing.get_args(op)
-            if len(args) != 2:
-                raise TypeError(
-                    f"Each operation in the service definition should look like  "
-                    f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                    f"However, '{annot_name}' in '{cls}' has {len(args)} type parameters."
-                )
-            input_type, output_type = args
-            op = getattr(cls, annot_name, None)
-            if not op:
-                op = Operation._create(
-                    method_name=annot_name,
-                    input_type=input_type,
-                    output_type=output_type,
-                )
-                setattr(cls, annot_name, op)
-            else:
-                if not isinstance(op, Operation):
+    for parent_cls in reversed(cls.mro()):
+        # TODO(preview): backport inspect.get_annotations
+        # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
+        annotations: dict[str, Any] = getattr(parent_cls, "__annotations__", {})
+        for annot_name, op in annotations.items():
+            if typing.get_origin(op) == Operation:
+                args = typing.get_args(op)
+                if len(args) != 2:
                     raise TypeError(
-                        f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
-                        f"but it is a {type(op)}"
+                        f"Each operation in the service definition should look like  "
+                        f"nexusrpc.Operation[MyInputType, MyOutputType]. "
+                        f"However, '{annot_name}' in '{cls}' has {len(args)} type parameters."
                     )
-                op.method_name = annot_name
-                op.input_type = input_type
-                op.output_type = output_type
+                input_type, output_type = args
+                op = getattr(cls, annot_name, None)
+                if not op:
+                    op = Operation._create(
+                        method_name=annot_name,
+                        input_type=input_type,
+                        output_type=output_type,
+                    )
+                    setattr(cls, annot_name, op)
+                else:
+                    if not isinstance(op, Operation):
+                        raise TypeError(
+                            f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
+                            f"but it is a {type(op)}"
+                        )
+                    op.method_name = annot_name
+                    op.input_type = input_type
+                    op.output_type = output_type
 
-            yield op
+                yield op
