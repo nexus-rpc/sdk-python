@@ -1,59 +1,88 @@
 from pprint import pprint
+from typing import Any, Type
 
 import pytest
 
 from nexusrpc import Operation, ServiceDefinition, service
 
 
-class A1:
-    a: Operation[int, int]
+class _TestCase:
+    UserService: Type[Any]
+    expected_operation_names: set[str]
 
 
-class A2(A1):
-    b: Operation[int, int]
+class TypeAnnotationsOnly:
+    class A1:
+        a: Operation[int, int]
+
+    class A2(A1):
+        b: Operation[int, int]
+
+    UserService = A2
+    expected_operation_names = {"a", "b"}
 
 
 # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 
 
-class B1:
-    a: Operation[int, int] = Operation[int, int](name="a-name")
+class TypeAnnotationsWithValues:
+    class A1:
+        a: Operation[int, int] = Operation[int, int](name="a-name")
+
+    class A2(A1):
+        b: Operation[int, int] = Operation[int, int](name="b-name")
+
+    UserService = A2
+    expected_operation_names = {"a-name", "b-name"}
 
 
-class B2(B1):
-    b: Operation[int, int] = Operation[int, int](name="b-name")
+class TypeAnnotationsWithValuesAllFromParentClass:
+    class A1:
+        a: Operation[int, int] = Operation[int, int](name="a-name")
+        b: Operation[int, int] = Operation[int, int](name="b-name")
+
+    class A2(A1):
+        pass
+
+    UserService = A2
+    expected_operation_names = {"a-name", "b-name"}
 
 
-class C1:
-    a: Operation[int, int] = Operation[int, int](name="a-name")
-    b: Operation[int, int] = Operation[int, int](name="b-name")
+class TypeValuesOnly:
+    class A1:
+        a = Operation[int, int]
+
+    UserService = A1
+    expected_operation_names = {"a"}
 
 
-class C2(C1):
-    pass
+class ChildClassSynthesizedWithTypeValues:
+    class A1:
+        a: Operation[int, int]
+
+    A2 = type("A2", (A1,), {name: Operation[int, int] for name in ["b"]})
+
+    UserService = A2
+    expected_operation_names = {"a", "b"}
 
 
-# ops = {name: nexusrpc.Operation[int, int] for name in op_names}
-# service_cls = nexusrpc.service(type("ServiceContract", (), ops))
-
-
-class D1:
-    a: Operation[int, int]
-
-
-d2_ops = {name: Operation[int, int] for name in ["b"]}
-
-D2 = type("D2", (D1,), d2_ops)
-
-
-@pytest.mark.parametrize("user_service", [A2, B2, C2, D2])
-def test_user_service_definition_inheritance(user_service):
-    print(f"\n\n{user_service.__name__}:")
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        TypeAnnotationsOnly,
+        TypeAnnotationsWithValues,
+        TypeAnnotationsWithValuesAllFromParentClass,
+        TypeValuesOnly,
+        ChildClassSynthesizedWithTypeValues,
+    ],
+)
+def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
+    print(f"\n\n{test_case.UserService.__name__}:")
     print("\n__annotations__")
-    pprint(user_service.__annotations__)
+    pprint(test_case.UserService.__annotations__)
     print("\n__dict__")
-    pprint(user_service.__dict__)
+    pprint(test_case.UserService.__dict__)
 
-    service_defn = getattr(service(user_service), "__nexus_service__", None)
+    service_defn = getattr(service(test_case.UserService), "__nexus_service__", None)
     assert isinstance(service_defn, ServiceDefinition)
-    assert set(service_defn.operations) == {"a", "b"}
+    assert set(service_defn.operations) == test_case.expected_operation_names
