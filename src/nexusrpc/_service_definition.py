@@ -36,10 +36,10 @@ class ServiceDefinition:
 
 @dataclass
 class Operation(Generic[InputT, OutputT]):
-    """
-    Used to define a Nexus operation in a Nexus service definition.
+    """Defines a Nexus operation in a Nexus service definition.
 
-    To implement an operation handler, see `:py:meth:nexusrpc.handler.operation_handler`.
+    This class is for definition of operation name and input/output types only; to
+    implement an operation, see `:py:meth:nexusrpc.handler.operation_handler`.
 
     Example:
 
