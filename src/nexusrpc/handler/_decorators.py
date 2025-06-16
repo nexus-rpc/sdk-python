@@ -102,6 +102,8 @@ def service_handler(
         )
     _service = None
     if service:
+        # TODO(prerelease): This allows a non-decorated class to act as a service
+        # definition if it inherits from a decorated class. Is this what we want?
         _service = getattr(service, "__nexus_service__", None)
         if not _service:
             raise ValueError(
