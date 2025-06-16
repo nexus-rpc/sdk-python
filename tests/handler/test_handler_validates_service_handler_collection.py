@@ -6,7 +6,7 @@ correctly.
 import pytest
 
 import nexusrpc.handler
-from nexusrpc.handler import Handler
+from nexusrpc.asyncio.handler import Handler
 
 
 def test_service_must_use_decorator():

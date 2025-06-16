@@ -5,7 +5,7 @@ import inspect
 import typing
 import warnings
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -39,16 +39,13 @@ from ._common import (
 from ._serializer import LazyValue
 
 
-@dataclass
-class Handler:
+class BaseHandler(ABC):
     """
     A Nexus handler, managing a collection of Nexus service handlers.
 
     Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
     name in the operation context.
     """
-
-    service_handlers: dict[str, ServiceHandler]
 
     def __init__(
         self,
@@ -93,89 +90,53 @@ class Handler:
                         )
             self.service_handlers[sh.service.name] = sh
 
-    async def start_operation(
+    @abstractmethod
+    def start_operation(
         self,
         ctx: StartOperationContext,
         input: LazyValue,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
-    ]:
-        """Handle a Start Operation request.
+        Awaitable[StartOperationResultSync[Any]],
+        Awaitable[StartOperationResultAsync],
+    ]: ...
 
-        Args:
-            ctx: The operation context.
-            input: The input to the operation, as a LazyValue.
-        """
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
-        op = service_handler.service.operations[ctx.operation]
-        input = await input.consume(as_type=op.input_type)
-
-        if is_async_callable(op_handler.start):
-            # TODO(preview): apply middleware stack as composed awaitables
-            return await op_handler.start(ctx, input)
-        else:
-            # TODO(preview): apply middleware stack as composed functions
-            if not self.sync_executor:
-                raise RuntimeError(
-                    "Operation start handler method is not an `async def` but "
-                    "no sync executor was provided to the Handler constructor. "
-                )
-            result = await self.sync_executor.run_sync(op_handler.start, ctx, input)
-            if inspect.isawaitable(result):
-                raise RuntimeError(
-                    f"Operation start handler method {op_handler.start} returned an "
-                    "awaitable but is not an `async def` coroutine function."
-                )
-            return result
-
-    async def fetch_operation_info(
+    @abstractmethod
+    def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, token: str
-    ) -> OperationInfo:
+    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
         """Handle a Fetch Operation Info request.
 
         Args:
             ctx: The operation context.
             token: The operation token.
         """
-        raise NotImplementedError
+        ...
 
-    async def fetch_operation_result(
+    @abstractmethod
+    def fetch_operation_result(
         self, ctx: FetchOperationResultContext, token: str
-    ) -> Any:
+    ) -> Union[Any, Awaitable[Any]]:
         """Handle a Fetch Operation Result request.
 
         Args:
             ctx: The operation context.
             token: The operation token.
         """
-        raise NotImplementedError
+        ...
 
-    async def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
+    @abstractmethod
+    def cancel_operation(
+        self, ctx: CancelOperationContext, token: str
+    ) -> Union[None, Awaitable[None]]:
         """Handle a Cancel Operation request.
 
         Args:
             ctx: The operation context.
             token: The operation token.
         """
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
-        if is_async_callable(op_handler.cancel):
-            return await op_handler.cancel(ctx, token)
-        else:
-            if not self.sync_executor:
-                raise RuntimeError(
-                    "Operation cancel handler method is not an `async def` function but "
-                    "no executor was provided to the Handler constructor."
-                )
-            result = await self.sync_executor.run_sync(op_handler.cancel, ctx, token)
-            if inspect.isawaitable(result):
-                raise RuntimeError(
-                    f"Operation cancel handler method {op_handler.cancel} returned an "
-                    "awaitable but is not an `async def` function."
-                )
-            return result
+        ...
 
     def _get_service_handler(self, service_name: str) -> ServiceHandler:
         """Return a service handler, given the service name."""
@@ -380,7 +341,13 @@ def collect_operation_handler_factories(
     """
     factories = {}
     op_defn_method_names = (
-        {op.method_name for op in service.operations.values()} if service else set()
+        {
+            op.method_name
+            for op in service.operations.values()
+            if op.method_name is not None
+        }
+        if service
+        else set()
     )
     for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
         op_defn = getattr(method, "__nexus_operation__", None)
@@ -508,11 +475,16 @@ def service_from_operation_handler_methods(
 
 class SyncExecutor:
     """
-    Run a synchronous function asynchronously.
+    Run a synchronous function in an executor.
     """
 
     def __init__(self, executor: ThreadPoolExecutor):
         self._executor = executor
 
-    def run_sync(self, fn: Callable[..., Any], *args: Any) -> Awaitable[Any]:
+    def submit_to_event_loop(
+        self, fn: Callable[..., Any], *args: Any
+    ) -> Awaitable[Any]:
         return asyncio.get_event_loop().run_in_executor(self._executor, fn, *args)
+
+    def submit(self, fn: Callable[..., Any], *args: Any) -> Future[Any]:
+        return self._executor.submit(fn, *args)

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
     Any,
     AsyncIterable,
+    Awaitable,
+    Iterable,
     Mapping,
     Optional,
     Protocol,
     Type,
+    Union,
 )
 
 
@@ -37,15 +41,15 @@ class Serializer(Protocol):
 
     # TODO(preview): support non-async def
 
-    async def serialize(self, value: Any) -> Content:
+    def serialize(self, value: Any) -> Union[Content, Awaitable[Content]]:
         """Serialize encodes a value into a Content."""
         ...
 
     # TODO(prerelease): does None work as the sentinel type here, meaning do not attempt
     # type conversion, despite the fact that Python treats None as a valid type?
-    async def deserialize(
+    def deserialize(
         self, content: Content, as_type: Optional[Type[Any]] = None
-    ) -> Any:
+    ) -> Union[Any, Awaitable[Any]]:
         """Deserialize decodes a Content into a value.
 
         Args:
@@ -56,7 +60,7 @@ class Serializer(Protocol):
         ...
 
 
-class LazyValue:
+class LazyValue(ABC):
     """
     A container for a value encoded in an underlying stream.
     It is used to stream inputs and outputs in the various client and server APIs.
@@ -66,7 +70,7 @@ class LazyValue:
         self,
         serializer: Serializer,
         headers: Mapping[str, str],
-        stream: Optional[AsyncIterable[bytes]] = None,
+        stream: Optional[Union[AsyncIterable[bytes], Iterable[bytes]]] = None,
     ) -> None:
         """
         Args:
@@ -74,26 +78,17 @@ class LazyValue:
             headers: Headers that include information on how to process the stream's content.
                      Headers constructed by the framework always have lower case keys.
                      User provided keys are treated case-insensitively.
-            stream: AsyncIterable that contains request or response data. None means empty data.
+            stream:  Iterable that contains request or response data. None means empty data.
         """
         self.serializer = serializer
         self.headers = headers
         self.stream = stream
 
-    async def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
+    @abstractmethod
+    def consume(
+        self, as_type: Optional[Type[Any]] = None
+    ) -> Union[Any, Awaitable[Any]]:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
-        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
-        if self.stream is None:
-            return await self.serializer.deserialize(
-                Content(headers=self.headers), as_type=as_type
-            )
-
-        return await self.serializer.deserialize(
-            Content(
-                headers=self.headers,
-                data=b"".join([c async for c in self.stream]),
-            ),
-            as_type=as_type,
-        )
+        ...

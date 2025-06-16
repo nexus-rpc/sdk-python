@@ -50,10 +50,13 @@ from ._common import (
     StartOperationResultSync as StartOperationResultSync,
 )
 from ._core import (
-    Handler as Handler,
+    BaseHandler as BaseHandler,
 )
 from ._core import (
     OperationHandler as OperationHandler,
+)
+from ._core import (
+    SyncExecutor as SyncExecutor,
 )
 from ._core import (
     SyncOperationHandler as SyncOperationHandler,
