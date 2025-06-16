@@ -49,6 +49,20 @@ class Operation(Generic[InputT, OutputT]):
     input_type: Optional[Type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[Type[OutputT]] = dataclasses.field(default=None)
 
+    def _validation_errors(self) -> list[str]:
+        errors = []
+        if not self.name:
+            errors.append(
+                f"Operation has no name (method_name is '{self.method_name}')"
+            )
+        if not self.method_name:
+            errors.append(f"Operation '{self.name}' has no method name")
+        if not self.input_type:
+            errors.append(f"Operation '{self.name}' has no input type")
+        if not self.output_type:
+            errors.append(f"Operation '{self.name}' has no output type")
+        return errors
+
 
 @overload
 def service(cls: Type[ServiceDefinitionT]) -> Type[ServiceDefinitionT]: ...
@@ -147,6 +161,19 @@ class ServiceDefinition:
                 dict(parent_defn.operations) | cls._collect_operations(user_class)
             ),
         )
+        if errors := defn._validation_errors():
+            raise ValueError(
+                f"Service definition {name} has validation errors: {errors}"
+            )
+        return defn
+
+    def _validation_errors(self) -> list[str]:
+        errors = []
+        if not self.name:
+            errors.append("Service has no name")
+        for op in self.operations.values():
+            errors.extend(op._validation_errors())
+        return errors
 
     @staticmethod
     def _collect_operations(

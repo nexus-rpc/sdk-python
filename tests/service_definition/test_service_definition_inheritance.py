@@ -1,5 +1,5 @@
 from pprint import pprint
-from typing import Any, Type
+from typing import Any, Optional, Type
 
 import pytest
 
@@ -12,9 +12,10 @@ from nexusrpc._util import get_annotations
 class _TestCase:
     UserService: Type[Any]
     expected_operation_names: set[str]
+    expected_error: Optional[str] = None
 
 
-class TypeAnnotationsOnly:
+class TypeAnnotationsOnly(_TestCase):
     class A1:
         a: Operation[int, str]
 
@@ -25,7 +26,7 @@ class TypeAnnotationsOnly:
     expected_operation_names = {"a", "b"}
 
 
-class TypeAnnotationsWithValues:
+class TypeAnnotationsWithValues(_TestCase):
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
 
@@ -36,7 +37,7 @@ class TypeAnnotationsWithValues:
     expected_operation_names = {"a-name", "b-name"}
 
 
-class TypeAnnotationsWithValuesAllFromParentClass:
+class TypeAnnotationsWithValuesAllFromParentClass(_TestCase):
     # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
     # A2.__annotations__ returns annotations from parent
     class A1:
@@ -50,7 +51,15 @@ class TypeAnnotationsWithValuesAllFromParentClass:
     expected_operation_names = {"a-name", "b-name"}
 
 
-class TypeValuesOnly:
+class InstanceWithoutTypeAnnotationIsAnError(_TestCase):
+    class A1:
+        a = Operation[int, str](name="a-name")
+
+    UserService = A1
+    expected_error = "Each operation in the service definition should look like  "
+
+
+class TypeValuesOnly(_TestCase):
     class A1:
         a = Operation[int, str]
 
@@ -58,7 +67,7 @@ class TypeValuesOnly:
     expected_operation_names = {"a"}
 
 
-class ChildClassSynthesizedWithTypeValues:
+class ChildClassSynthesizedWithTypeValues(_TestCase):
     class A1:
         a: Operation[int, str]
 
@@ -75,6 +84,7 @@ class ChildClassSynthesizedWithTypeValues:
         TypeAnnotationsOnly,
         TypeAnnotationsWithValues,
         TypeAnnotationsWithValuesAllFromParentClass,
+        InstanceWithoutTypeAnnotationIsAnError,
         TypeValuesOnly,
         ChildClassSynthesizedWithTypeValues,
     ],
@@ -85,6 +95,11 @@ def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     pprint(get_annotations(test_case.UserService))
     print("\n__dict__")
     pprint(test_case.UserService.__dict__)
+
+    if test_case.expected_error:
+        with pytest.raises(Exception, match=test_case.expected_error):
+            service(test_case.UserService)
+        return
 
     service_defn = getattr(service(test_case.UserService), "__nexus_service__", None)
     assert isinstance(service_defn, ServiceDefinition)
