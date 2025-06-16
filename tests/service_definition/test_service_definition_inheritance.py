@@ -6,6 +6,8 @@ import pytest
 from nexusrpc import Operation, ServiceDefinition, service
 from nexusrpc._util import get_annotations
 
+# See https://docs.python.org/3/howto/annotations.html
+
 
 class _TestCase:
     UserService: Type[Any]
@@ -14,33 +16,32 @@ class _TestCase:
 
 class TypeAnnotationsOnly:
     class A1:
-        a: Operation[int, int]
+        a: Operation[int, str]
 
     class A2(A1):
-        b: Operation[int, int]
+        b: Operation[int, str]
 
     UserService = A2
     expected_operation_names = {"a", "b"}
 
 
-# https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
-
-
 class TypeAnnotationsWithValues:
     class A1:
-        a: Operation[int, int] = Operation[int, int](name="a-name")
+        a: Operation[int, str] = Operation[int, str](name="a-name")
 
     class A2(A1):
-        b: Operation[int, int] = Operation[int, int](name="b-name")
+        b: Operation[int, str] = Operation[int, str](name="b-name")
 
     UserService = A2
     expected_operation_names = {"a-name", "b-name"}
 
 
 class TypeAnnotationsWithValuesAllFromParentClass:
+    # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
+    # A2.__annotations__ returns annotations from parent
     class A1:
-        a: Operation[int, int] = Operation[int, int](name="a-name")
-        b: Operation[int, int] = Operation[int, int](name="b-name")
+        a: Operation[int, str] = Operation[int, str](name="a-name")
+        b: Operation[int, str] = Operation[int, str](name="b-name")
 
     class A2(A1):
         pass
@@ -51,7 +52,7 @@ class TypeAnnotationsWithValuesAllFromParentClass:
 
 class TypeValuesOnly:
     class A1:
-        a = Operation[int, int]
+        a = Operation[int, str]
 
     UserService = A1
     expected_operation_names = {"a"}
@@ -59,9 +60,9 @@ class TypeValuesOnly:
 
 class ChildClassSynthesizedWithTypeValues:
     class A1:
-        a: Operation[int, int]
+        a: Operation[int, str]
 
-    A2 = type("A2", (A1,), {name: Operation[int, int] for name in ["b"]})
+    A2 = type("A2", (A1,), {name: Operation[int, str] for name in ["b"]})
 
     UserService = A2
     expected_operation_names = {"a", "b"}
@@ -88,3 +89,6 @@ def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     service_defn = getattr(service(test_case.UserService), "__nexus_service__", None)
     assert isinstance(service_defn, ServiceDefinition)
     assert set(service_defn.operations) == test_case.expected_operation_names
+    for op in service_defn.operations.values():
+        assert op.input_type == int
+        assert op.output_type == str
