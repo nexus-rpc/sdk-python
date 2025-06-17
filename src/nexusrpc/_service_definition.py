@@ -45,6 +45,7 @@ class Operation(Generic[InputT, OutputT]):
     """
 
     name: str
+    # TODO(preview): they should not be able to set method_name in constructor
     method_name: Optional[str] = dataclasses.field(default=None)
     input_type: Optional[Type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[Type[OutputT]] = dataclasses.field(default=None)
@@ -192,10 +193,10 @@ class ServiceDefinition:
 
         # Form the union of all class attribute names that are either an Operation
         # instance or have an Operation type annotation, or both.
-        operations = {}
-        for v in user_class.__dict__.values():
+        operations: dict[str, Operation[Any, Any]] = {}
+        for k, v in user_class.__dict__.items():
             if isinstance(v, Operation):
-                operations[v.name] = v
+                operations[k] = v
             elif typing.get_origin(v) is Operation:
                 raise TypeError(
                     "Operation definitions in the service definition should look like  "
@@ -208,53 +209,56 @@ class ServiceDefinition:
             for k, v in get_annotations(user_class).items()
             if typing.get_origin(v) == Operation
         }
-        for name in operations.keys() | annotations.keys():
+        for key in operations.keys() | annotations.keys():
             # If the name has a type annotation, then add the input and output types to
             # the operation instance, or create the instance if there was only an
             # annotation.
-            if op_type := annotations.get(name):
+            if op_type := annotations.get(key):
                 args = typing.get_args(op_type)
                 if len(args) != 2:
                     raise TypeError(
                         f"Operation types in the service definition should look like  "
-                        f"nexusrpc.Operation[InputType, OutputType], but '{name}' in "
+                        f"nexusrpc.Operation[InputType, OutputType], but '{key}' in "
                         f"'{user_class}' has {len(args)} type parameters."
                     )
                 input_type, output_type = args
-                if name not in operations:
+                if key not in operations:
                     # It looked like
                     # my_op: Operation[I, O]
-                    operations[name] = Operation(
-                        name=name,
-                        method_name=name,
+                    op = operations[key] = Operation(
+                        name=key,
+                        method_name=key,
                         input_type=input_type,
                         output_type=output_type,
                     )
                 else:
-                    op = operations[name]
+                    op = operations[key]
                     # It looked like
                     # my_op: Operation[I, O] = Operation(...)
                     if not op.input_type:
                         op.input_type = input_type
                     elif op.input_type != input_type:
                         raise ValueError(
-                            f"Operation {name} input_type ({op.input_type}) must match type parameter {input_type}"
+                            f"Operation {key} input_type ({op.input_type}) must match type parameter {input_type}"
                         )
                     if not op.output_type:
                         op.output_type = output_type
                     elif op.output_type != output_type:
                         raise ValueError(
-                            f"Operation {name} output_type ({op.output_type}) must match type parameter {output_type}"
+                            f"Operation {key} output_type ({op.output_type}) must match type parameter {output_type}"
                         )
             else:
                 # It looked like
                 # my_op = Operation(...)
-                op = operations[name]
+                op = operations[key]
                 if not op.method_name:
-                    op.method_name = name
-                elif op.method_name != name:
+                    op.method_name = key
+                elif op.method_name != key:
                     raise ValueError(
-                        f"Operation {name} method_name ({op.method_name}) must match attribute name {name}"
+                        f"Operation {key} method_name ({op.method_name}) must match attribute name {key}"
                     )
 
-        return operations
+            if op.method_name is None:
+                op.method_name = key
+
+        return {op.name: op for op in operations.values()}
