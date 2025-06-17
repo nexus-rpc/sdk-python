@@ -49,6 +49,10 @@ class Operation(Generic[InputT, OutputT]):
     input_type: Optional[Type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[Type[OutputT]] = dataclasses.field(default=None)
 
+    def __post_init__(self):
+        if not self.name:
+            raise ValueError("Operation name cannot be empty")
+
     def _validation_errors(self) -> list[str]:
         errors = []
         if not self.name:
@@ -113,9 +117,10 @@ def service(
         defn = ServiceDefinition.from_user_class(cls, name or cls.__name__)
         setattr(cls, "__nexus_service__", defn)
 
-        # A decorated user service class must have a class attribute for each operation,
-        # the value of which is the operation instance; it is not sufficient for the
-        # operation to be represented by a type annotation alone.
+        # In order for callers to refer to operations at run-time, a decorated user
+        # service class must itself have a class attribute for every operation, even if
+        # declared only via a type annotation, and whether inherited from a parent class
+        # or not.
         for op_name, op in defn.operations.items():
             setattr(cls, op_name, op)
 
@@ -132,9 +137,9 @@ class ServiceDefinition:
     name: str
     operations: Mapping[str, Operation[Any, Any]]
 
-    @classmethod
+    @staticmethod
     def from_user_class(
-        cls, user_class: Type[ServiceDefinitionT], name: str
+        user_class: Type[ServiceDefinitionT], name: str
     ) -> ServiceDefinition:
         """Create a ServiceDefinition from a user service definition class.
 
@@ -145,7 +150,7 @@ class ServiceDefinition:
         # already-decorated service definition.
 
         # If this class is decorated then return the already-computed ServiceDefinition.
-        # (getattr would be affected by decorated parents)
+        # Do not use getattr since it would retrieve a value from a decorated parent class.
         if defn := user_class.__dict__.get("__nexus_service__"):
             if isinstance(defn, ServiceDefinition):
                 return defn
@@ -158,12 +163,13 @@ class ServiceDefinition:
         defn = ServiceDefinition(
             name=name,
             operations=(
-                dict(parent_defn.operations) | cls._collect_operations(user_class)
+                dict(parent_defn.operations)
+                | ServiceDefinition._collect_operations(user_class)
             ),
         )
         if errors := defn._validation_errors():
             raise ValueError(
-                f"Service definition {name} has validation errors: {errors}"
+                f"Service definition {name} has validation errors: {', '.join(errors)}"
             )
         return defn
 
@@ -175,53 +181,43 @@ class ServiceDefinition:
             errors.extend(op._validation_errors())
         return errors
 
-    @classmethod
+    @staticmethod
     def _collect_operations(
-        cls,
         user_class: Type[ServiceDefinitionT],
     ) -> dict[str, Operation[Any, Any]]:
         """Collect operations from a user service definition class.
 
         Does not visit parent classes.
         """
-        from_annotations = cls._collect_operations_from_annotations(user_class)
-        from_class_attributes = cls._collect_operations_from_class_attributes(
-            user_class
-        )
 
-        return from_annotations | from_class_attributes
-
-    @classmethod
-    def _collect_operations_from_class_attributes(
-        cls,
-        user_class: Type[ServiceDefinitionT],
-    ) -> dict[str, Operation[Any, Any]]:
-        operations: dict[str, Operation[Any, Any]] = {}
-        for name, op in user_class.__dict__.items():
-            if isinstance(op, Operation):
-                operations[name] = op
-        return operations
-
-    @classmethod
-    def _collect_operations_from_annotations(
-        cls,
-        user_class: Type[ServiceDefinitionT],
-    ) -> dict[str, Operation[Any, Any]]:
-        operations: dict[str, Operation[Any, Any]] = {}
+        # Combine attribute instance and type annotation for all keys.
+        attrs_and_annotations: dict[
+            str, tuple[Optional[Operation], Optional[Type[Operation]]]
+        ] = {
+            v.name: (v, None)
+            for v in user_class.__dict__.values()
+            if isinstance(v, Operation)
+        }
         for name, op_type in get_annotations(user_class).items():
-            if typing.get_origin(op_type) != Operation:
-                continue
+            if typing.get_origin(op_type) == Operation:
+                op, _ = attrs_and_annotations.get(name, (None, None))
+                attrs_and_annotations[name] = (op, op_type)
 
-            args = typing.get_args(op_type)
-            if len(args) != 2:
-                raise TypeError(
-                    f"Each operation in the service definition should look like  "
-                    f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                    f"However, '{name}' in '{user_class}' has {len(args)} type parameters."
-                )
-            input_type, output_type = args
+        # Create an Operation instance for each key.
+        operations: dict[str, Operation[Any, Any]] = {}
+        for name, (op, op_type) in attrs_and_annotations.items():
+            if op_type:
+                args = typing.get_args(op_type)
+                if len(args) != 2:
+                    raise TypeError(
+                        f"Operation types in the service definition should look like  "
+                        f"nexusrpc.Operation[MyInputType, MyOutputType]. "
+                        f"However, '{name}' in '{user_class}' has {len(args)} type parameters."
+                    )
+                input_type, output_type = args
+            else:
+                input_type = output_type = None
 
-            op = getattr(user_class, name, None)
             if not op:
                 # It looked like
                 # my_op: Operation[I, O]

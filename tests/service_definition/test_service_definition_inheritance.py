@@ -56,7 +56,9 @@ class InstanceWithoutTypeAnnotationIsAnError(_TestCase):
         a = Operation[int, str](name="a-name")
 
     UserService = A1
-    expected_error = "Each operation in the service definition should look like  "
+    expected_error = (
+        "Operation 'a-name' has no input type, Operation 'a-name' has no output type"
+    )
 
 
 class TypeValuesOnly(_TestCase):
