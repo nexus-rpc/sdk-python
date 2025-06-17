@@ -190,73 +190,63 @@ class ServiceDefinition:
         Does not visit parent classes.
         """
 
-        # Combine attribute instance and type annotation for all keys.
-        attrs_and_annotations: dict[
-            str, tuple[Optional[Operation], Optional[Type[Operation]]]
-        ] = {
-            v.name: (v, None)
-            for v in user_class.__dict__.values()
-            if isinstance(v, Operation)
+        # Form the union of all class attribute names that are either an Operation
+        # instance or have an Operation type annotation, or both.
+        operations: dict[str, Operation[Any, Any]] = {
+            v.name: v for v in user_class.__dict__.values() if isinstance(v, Operation)
         }
-        for name, op_type in get_annotations(user_class).items():
-            if typing.get_origin(op_type) == Operation:
-                op, _ = attrs_and_annotations.get(name, (None, None))
-                attrs_and_annotations[name] = (op, op_type)
-
-        # Create an Operation instance for each key.
-        operations: dict[str, Operation[Any, Any]] = {}
-        for name, (op, op_type) in attrs_and_annotations.items():
-            if op_type:
+        annotations = {
+            k: v
+            for k, v in get_annotations(user_class).items()
+            if typing.get_origin(v) == Operation
+        }
+        for name in operations.keys() | annotations.keys():
+            # If the name has a type annotation, then add the input and output types to
+            # the operation instance, or create the instance if there was only an
+            # annotation.
+            if op_type := annotations.get(name):
                 args = typing.get_args(op_type)
                 if len(args) != 2:
                     raise TypeError(
                         f"Operation types in the service definition should look like  "
-                        f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                        f"However, '{name}' in '{user_class}' has {len(args)} type parameters."
+                        f"nexusrpc.Operation[InputType, OutputType], but '{name}' in "
+                        f"'{user_class}' has {len(args)} type parameters."
                     )
                 input_type, output_type = args
-            else:
-                input_type = output_type = None
-
-            if not op:
-                # It looked like
-                # my_op: Operation[I, O]
-                op = Operation(
-                    name=name,
-                    method_name=name,
-                    input_type=input_type,
-                    output_type=output_type,
-                )
-            else:
-                # It looked like
-                # my_op: Operation[I, O] = Operation(...)
-                if not isinstance(op, Operation):
-                    raise TypeError(
-                        f"Operation {name} must be an instance of nexusrpc.Operation, "
-                        f"but it is a {type(op)}"
+                if name not in operations:
+                    # It looked like
+                    # my_op: Operation[I, O]
+                    operations[name] = Operation(
+                        name=name,
+                        method_name=name,
+                        input_type=input_type,
+                        output_type=output_type,
                     )
+                else:
+                    op = operations[name]
+                    # It looked like
+                    # my_op: Operation[I, O] = Operation(...)
+                    if not op.input_type:
+                        op.input_type = input_type
+                    elif op.input_type != input_type:
+                        raise ValueError(
+                            f"Operation {name} input_type ({op.input_type}) must match type parameter {input_type}"
+                        )
+                    if not op.output_type:
+                        op.output_type = output_type
+                    elif op.output_type != output_type:
+                        raise ValueError(
+                            f"Operation {name} output_type ({op.output_type}) must match type parameter {output_type}"
+                        )
+            else:
+                # It looked like
+                # my_op = Operation(...)
+                op = operations[name]
                 if not op.method_name:
                     op.method_name = name
-                else:
+                elif op.method_name != name:
                     raise ValueError(
                         f"Operation {name} method_name ({op.method_name}) must match attribute name {name}"
                     )
-                if not op.input_type:
-                    op.input_type = input_type
-                else:
-                    raise ValueError(
-                        f"Operation {name} input_type ({op.input_type}) must match type parameter {input_type}"
-                    )
-                if not op.output_type:
-                    op.output_type = output_type
-                else:
-                    raise ValueError(
-                        f"Operation {name} output_type ({op.output_type}) must match type parameter {output_type}"
-                    )
 
-            if op.name in operations:
-                raise ValueError(
-                    f"Operation '{op.name}' in class '{user_class}' is defined multiple times"
-                )
-            operations[op.name] = op
         return operations
