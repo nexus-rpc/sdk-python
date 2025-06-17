@@ -61,12 +61,12 @@ class InstanceWithoutTypeAnnotationIsAnError(_TestCase):
     )
 
 
-class TypeValuesOnly(_TestCase):
+class InvalidUseOfTypeAsValue(_TestCase):
     class A1:
         a = Operation[int, str]
 
     UserService = A1
-    expected_operation_names = {"a"}
+    expected_error = "Did you accidentally use '=' instead of ':'"
 
 
 class ChildClassSynthesizedWithTypeValues(_TestCase):
@@ -76,7 +76,7 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
     A2 = type("A2", (A1,), {name: Operation[int, str] for name in ["b"]})
 
     UserService = A2
-    expected_operation_names = {"a", "b"}
+    expected_error = "Did you accidentally use '=' instead of ':'"
 
 
 # TODO: test mro is honored: that synonymous operation definition in child class wins
@@ -87,7 +87,7 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
         TypeAnnotationsWithValues,
         TypeAnnotationsWithValuesAllFromParentClass,
         InstanceWithoutTypeAnnotationIsAnError,
-        TypeValuesOnly,
+        InvalidUseOfTypeAsValue,
         ChildClassSynthesizedWithTypeValues,
     ],
 )

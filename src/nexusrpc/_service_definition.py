@@ -192,9 +192,17 @@ class ServiceDefinition:
 
         # Form the union of all class attribute names that are either an Operation
         # instance or have an Operation type annotation, or both.
-        operations: dict[str, Operation[Any, Any]] = {
-            v.name: v for v in user_class.__dict__.values() if isinstance(v, Operation)
-        }
+        operations = {}
+        for v in user_class.__dict__.values():
+            if isinstance(v, Operation):
+                operations[v.name] = v
+            elif typing.get_origin(v) is Operation:
+                raise TypeError(
+                    "Operation definitions in the service definition should look like  "
+                    "my_op: nexusrpc.Operation[InputType, OutputType]. Did you accidentally "
+                    "use '=' instead of ':'?"
+                )
+
         annotations = {
             k: v
             for k, v in get_annotations(user_class).items()
