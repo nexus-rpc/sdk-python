@@ -175,46 +175,88 @@ class ServiceDefinition:
             errors.extend(op._validation_errors())
         return errors
 
-    @staticmethod
+    @classmethod
     def _collect_operations(
+        cls,
         user_class: Type[ServiceDefinitionT],
     ) -> dict[str, Operation[Any, Any]]:
         """Collect operations from a user service definition class.
 
         Does not visit parent classes.
         """
+        from_annotations = cls._collect_operations_from_annotations(user_class)
+        from_class_attributes = cls._collect_operations_from_class_attributes(
+            user_class
+        )
+
+        return from_annotations | from_class_attributes
+
+    @classmethod
+    def _collect_operations_from_class_attributes(
+        cls,
+        user_class: Type[ServiceDefinitionT],
+    ) -> dict[str, Operation[Any, Any]]:
         operations: dict[str, Operation[Any, Any]] = {}
-        print(f"🟠 user_class: {user_class.__name__}")
-        annotations: dict[str, Any] = get_annotations(user_class)
-        for annot_name, op in annotations.items():
-            print(f"🟡 annot_name: {annot_name}")
-            if typing.get_origin(op) != Operation:
+        for name, op in user_class.__dict__.items():
+            if isinstance(op, Operation):
+                operations[name] = op
+        return operations
+
+    @classmethod
+    def _collect_operations_from_annotations(
+        cls,
+        user_class: Type[ServiceDefinitionT],
+    ) -> dict[str, Operation[Any, Any]]:
+        operations: dict[str, Operation[Any, Any]] = {}
+        for name, op_type in get_annotations(user_class).items():
+            if typing.get_origin(op_type) != Operation:
                 continue
-            args = typing.get_args(op)
+
+            args = typing.get_args(op_type)
             if len(args) != 2:
                 raise TypeError(
                     f"Each operation in the service definition should look like  "
                     f"nexusrpc.Operation[MyInputType, MyOutputType]. "
-                    f"However, '{annot_name}' in '{user_class}' has {len(args)} type parameters."
+                    f"However, '{name}' in '{user_class}' has {len(args)} type parameters."
                 )
             input_type, output_type = args
-            op = getattr(user_class, annot_name, None)
+
+            op = getattr(user_class, name, None)
             if not op:
+                # It looked like
+                # my_op: Operation[I, O]
                 op = Operation(
-                    name=annot_name,
-                    method_name=annot_name,
+                    name=name,
+                    method_name=name,
                     input_type=input_type,
                     output_type=output_type,
                 )
             else:
+                # It looked like
+                # my_op: Operation[I, O] = Operation(...)
                 if not isinstance(op, Operation):
                     raise TypeError(
-                        f"Operation {annot_name} must be an instance of nexusrpc.Operation, "
+                        f"Operation {name} must be an instance of nexusrpc.Operation, "
                         f"but it is a {type(op)}"
                     )
-                op.method_name = annot_name
-                op.input_type = input_type
-                op.output_type = output_type
+                if not op.method_name:
+                    op.method_name = name
+                else:
+                    raise ValueError(
+                        f"Operation {name} method_name ({op.method_name}) must match attribute name {name}"
+                    )
+                if not op.input_type:
+                    op.input_type = input_type
+                else:
+                    raise ValueError(
+                        f"Operation {name} input_type ({op.input_type}) must match type parameter {input_type}"
+                    )
+                if not op.output_type:
+                    op.output_type = output_type
+                else:
+                    raise ValueError(
+                        f"Operation {name} output_type ({op.output_type}) must match type parameter {output_type}"
+                    )
 
             if op.name in operations:
                 raise ValueError(
