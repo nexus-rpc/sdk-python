@@ -7,6 +7,15 @@
 
 from __future__ import annotations
 
+from .._serializer import (
+    Content as Content,
+)
+from .._serializer import (
+    LazyValue as LazyValue,
+)
+from .._serializer import (
+    Serializer as Serializer,
+)
 from ._common import (
     CancelOperationContext as CancelOperationContext,
 )
@@ -63,15 +72,6 @@ from ._decorators import (
 )
 from ._decorators import (
     sync_operation_handler as sync_operation_handler,
-)
-from ._serializer import (
-    Content as Content,
-)
-from ._serializer import (
-    LazyValue as LazyValue,
-)
-from ._serializer import (
-    Serializer as Serializer,
 )
 from ._util import (
     get_start_method_input_and_output_types_annotations as get_start_method_input_and_output_types_annotations,

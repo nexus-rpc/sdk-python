@@ -8,8 +8,8 @@ from typing import Any, Optional, Type
 
 import pytest
 
-import nexusrpc._service_definition
-import nexusrpc.handler
+import nexusrpc._service
+import nexusrpc._handler
 
 
 @dataclass
@@ -30,10 +30,10 @@ class _TestCase:
 
 
 class ManualOperationHandler(_TestCase):
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class Service:
-        @nexusrpc.handler.operation_handler
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
+        @nexusrpc._handler.operation_handler
+        def operation(self) -> nexusrpc._handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "operation": nexusrpc.Operation(
@@ -46,10 +46,10 @@ class ManualOperationHandler(_TestCase):
 
 
 class ManualOperationHandlerWithNameOverride(_TestCase):
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class Service:
-        @nexusrpc.handler.operation_handler(name="operation-name")
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
+        @nexusrpc._handler.operation_handler(name="operation-name")
+        def operation(self) -> nexusrpc._handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "operation": nexusrpc.Operation(
@@ -62,11 +62,11 @@ class ManualOperationHandlerWithNameOverride(_TestCase):
 
 
 class SyncOperation(_TestCase):
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class Service:
-        @nexusrpc.handler.sync_operation_handler
+        @nexusrpc._handler.sync_operation_handler
         def sync_operation_handler(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: Input
+            self, ctx: nexusrpc._handler.StartOperationContext, input: Input
         ) -> Output: ...
 
     expected_operations = {
@@ -80,11 +80,11 @@ class SyncOperation(_TestCase):
 
 
 class SyncOperationWithOperationHandlerNameOverride(_TestCase):
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class Service:
-        @nexusrpc.handler.sync_operation_handler(name="sync-operation-name")
+        @nexusrpc._handler.sync_operation_handler(name="sync-operation-name")
         async def sync_operation_handler(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: Input
+            self, ctx: nexusrpc._handler.StartOperationContext, input: Input
         ) -> Output: ...
 
     expected_operations = {
@@ -102,10 +102,10 @@ class ManualOperationWithContract(_TestCase):
     class Contract:
         operation: nexusrpc.Operation[Input, Output]
 
-    @nexusrpc.handler.service_handler(service=Contract)
+    @nexusrpc._handler.service_handler(service=Contract)
     class Service:
-        @nexusrpc.handler.operation_handler
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
+        @nexusrpc._handler.operation_handler
+        def operation(self) -> nexusrpc._handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "operation": nexusrpc.Operation(
@@ -124,10 +124,10 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
             name="operation-override",
         )
 
-    @nexusrpc.handler.service_handler(service=Contract)
+    @nexusrpc._handler.service_handler(service=Contract)
     class Service:
-        @nexusrpc.handler.operation_handler(name="operation-override")
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
+        @nexusrpc._handler.operation_handler(name="operation-override")
+        def operation(self) -> nexusrpc._handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "operation": nexusrpc.Operation(
@@ -144,21 +144,23 @@ class SyncOperationWithCallableInstance(_TestCase):
     class Contract:
         sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
 
-    @nexusrpc.handler.service_handler(service=Contract)
+    @nexusrpc._handler.service_handler(service=Contract)
     class Service:
         class sync_operation_with_callable_instance:
             def __call__(
                 self,
                 _handler: Any,
-                ctx: nexusrpc.handler.StartOperationContext,
+                ctx: nexusrpc._handler.StartOperationContext,
                 input: Input,
             ) -> Output: ...
 
         # TODO(preview): improve the DX here. The decorator cannot be placed on the
         # callable class itself, because the user must be responsible for instantiating
         # the class to obtain the callable instance.
-        sync_operation_with_callable_instance = nexusrpc.handler.sync_operation_handler(  # type: ignore
-            sync_operation_with_callable_instance()
+        sync_operation_with_callable_instance = (
+            nexusrpc._handler.sync_operation_handler(  # type: ignore
+                sync_operation_with_callable_instance()
+            )
         )
 
     expected_operations = {
@@ -209,10 +211,10 @@ async def test_collected_operation_definitions(
 
 def test_operation_without_decorator():
     class Service:
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
+        def operation(self) -> nexusrpc._handler.OperationHandler[Input, Output]: ...
 
     with pytest.warns(
         UserWarning,
         match=r"Did you forget to apply the @nexusrpc.handler.operation_handler decorator\?",
     ):
-        nexusrpc.handler.service_handler(Service)
+        nexusrpc._handler.service_handler(Service)

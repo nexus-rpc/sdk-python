@@ -21,8 +21,8 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
-import nexusrpc._service_definition
-from nexusrpc.handler._util import is_async_callable
+import nexusrpc._service
+from nexusrpc._handler._util import is_async_callable
 from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._common import (
@@ -36,7 +36,7 @@ from ._common import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
-from ._serializer import LazyValue
+from .._serializer import LazyValue
 
 
 class BaseHandler(ABC):

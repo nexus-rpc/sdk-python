@@ -6,9 +6,9 @@ from typing import Any, Type
 import pytest
 
 import nexusrpc
-import nexusrpc._service_definition
-import nexusrpc.handler
-from nexusrpc.handler._core import ServiceHandler
+import nexusrpc._service
+import nexusrpc._handler
+from nexusrpc._handler._core import ServiceHandler
 
 # TODO(prerelease): check return type of op methods including fetch_result and fetch_info
 #         temporalio.common._type_hints_from_func(hello_nexus.hello2().fetch_result),
@@ -27,8 +27,8 @@ class MissingOperationFromDefinition(_DecoratorValidationTestCase):
         op_B: nexusrpc.Operation[bool, float]
 
     class UserServiceHandler:
-        @nexusrpc.handler.operation_handler
-        def op_A(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
+        @nexusrpc._handler.operation_handler
+        def op_A(self) -> nexusrpc._handler.OperationHandler[int, str]: ...
 
     expected_error_message_pattern = r"does not implement operation 'op_B'"
 
@@ -39,10 +39,10 @@ class MethodNameDoesNotMatchDefinition(_DecoratorValidationTestCase):
         op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")
 
     class UserServiceHandler:
-        @nexusrpc.handler.operation_handler
+        @nexusrpc._handler.operation_handler
         def op_A_incorrect_method_name(
             self,
-        ) -> nexusrpc.handler.OperationHandler[int, str]: ...
+        ) -> nexusrpc._handler.OperationHandler[int, str]: ...
 
     expected_error_message_pattern = (
         r"does not match an operation method name in the service definition."
@@ -60,7 +60,7 @@ def test_decorator_validates_definition_compliance(
     test_case: _DecoratorValidationTestCase,
 ):
     with pytest.raises(TypeError, match=test_case.expected_error_message_pattern):
-        nexusrpc.handler.service_handler(service=test_case.UserService)(
+        nexusrpc._handler.service_handler(service=test_case.UserService)(
             test_case.UserServiceHandler
         )
 
@@ -82,29 +82,29 @@ class ServiceHandlerInheritanceWithServiceDefinition(
         base_op: nexusrpc.Operation[int, str]
         child_op: nexusrpc.Operation[bool, float]
 
-    @nexusrpc.handler.service_handler(service=BaseUserService)
+    @nexusrpc._handler.service_handler(service=BaseUserService)
     class BaseUserServiceHandler:
-        @nexusrpc.handler.operation_handler
-        def base_op(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
+        @nexusrpc._handler.operation_handler
+        def base_op(self) -> nexusrpc._handler.OperationHandler[int, str]: ...
 
-    @nexusrpc.handler.service_handler(service=UserService)
+    @nexusrpc._handler.service_handler(service=UserService)
     class UserServiceHandler(BaseUserServiceHandler):
-        @nexusrpc.handler.operation_handler
-        def child_op(self) -> nexusrpc.handler.OperationHandler[bool, float]: ...
+        @nexusrpc._handler.operation_handler
+        def child_op(self) -> nexusrpc._handler.OperationHandler[bool, float]: ...
 
     expected_operations = {"base_op", "child_op"}
 
 
 class ServiceHandlerInheritanceWithoutDefinition(_ServiceHandlerInheritanceTestCase):
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class BaseUserServiceHandler:
-        @nexusrpc.handler.operation_handler
-        def base_op_nc(self) -> nexusrpc.handler.OperationHandler[int, str]: ...
+        @nexusrpc._handler.operation_handler
+        def base_op_nc(self) -> nexusrpc._handler.OperationHandler[int, str]: ...
 
-    @nexusrpc.handler.service_handler
+    @nexusrpc._handler.service_handler
     class UserServiceHandler(BaseUserServiceHandler):
-        @nexusrpc.handler.operation_handler
-        def child_op_nc(self) -> nexusrpc.handler.OperationHandler[bool, float]: ...
+        @nexusrpc._handler.operation_handler
+        def child_op_nc(self) -> nexusrpc._handler.OperationHandler[bool, float]: ...
 
     expected_operations = {"base_op_nc", "child_op_nc"}
 
@@ -169,9 +169,9 @@ def test_service_definition_inheritance_behavior(
         TypeError, match="does not implement operation 'op_from_child_definition'"
     ):
 
-        @nexusrpc.handler.service_handler(service=test_case.UserService)
+        @nexusrpc._handler.service_handler(service=test_case.UserService)
         class HandlerMissingChildOp:
-            @nexusrpc.handler.operation_handler
+            @nexusrpc._handler.operation_handler
             def op_from_base_definition(
                 self,
-            ) -> nexusrpc.handler.OperationHandler[int, str]: ...
+            ) -> nexusrpc._handler.OperationHandler[int, str]: ...

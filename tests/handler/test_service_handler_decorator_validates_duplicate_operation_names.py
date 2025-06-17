@@ -2,7 +2,7 @@ from typing import Any, Type
 
 import pytest
 
-import nexusrpc.handler
+import nexusrpc._handler
 
 
 class _TestCase:
@@ -12,12 +12,12 @@ class _TestCase:
 
 class DuplicateOperationName(_TestCase):
     class UserServiceHandler:
-        @nexusrpc.handler.operation_handler(name="a")
-        def op_1(self) -> nexusrpc.handler.OperationHandler[int, int]: ...
+        @nexusrpc._handler.operation_handler(name="a")
+        def op_1(self) -> nexusrpc._handler.OperationHandler[int, int]: ...
 
-        @nexusrpc.handler.sync_operation_handler(name="a")
+        @nexusrpc._handler.sync_operation_handler(name="a")
         def op_2(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
+            self, ctx: nexusrpc._handler.StartOperationContext, input: str
         ) -> int: ...
 
     expected_error_message = (
@@ -33,4 +33,4 @@ class DuplicateOperationName(_TestCase):
 )
 def test_service_handler_decorator(test_case: _TestCase):
     with pytest.raises(RuntimeError, match=test_case.expected_error_message):
-        nexusrpc.handler.service_handler(test_case.UserServiceHandler)
+        nexusrpc._handler.service_handler(test_case.UserServiceHandler)
