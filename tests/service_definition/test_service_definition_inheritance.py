@@ -51,6 +51,17 @@ class TypeAnnotationsWithValuesAllFromParentClass(_TestCase):
     expected_operation_names = {"a-name", "b-name"}
 
 
+class TypeAnnotationWithInheritedInstance(_TestCase):
+    class A1:
+        a: Operation[int, str] = Operation[int, str](name="a-name")
+
+    class A2(A1):
+        a: Operation[int, str]
+
+    UserService = A2
+    expected_operation_names = {"a-name", "b-name"}
+
+
 class InstanceWithoutTypeAnnotationIsAnError(_TestCase):
     class A1:
         a = Operation[int, str](name="a-name")

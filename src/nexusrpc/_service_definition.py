@@ -161,11 +161,12 @@ class ServiceDefinition:
 
         parent = user_class.mro()[1]
         parent_defn = ServiceDefinition.from_user_class(parent, parent.__name__)
+
+        # Update the inherited operations with those collected at this level.
         defn = ServiceDefinition(
             name=name,
-            operations=(
-                dict(parent_defn.operations)
-                | ServiceDefinition._collect_operations(user_class)
+            operations=ServiceDefinition._merge_operations(
+                parent_defn.operations, user_class
             ),
         )
         if errors := defn._validation_errors():
@@ -181,6 +182,39 @@ class ServiceDefinition:
         for op in self.operations.values():
             errors.extend(op._validation_errors())
         return errors
+
+    @staticmethod
+    def _merge_operations(
+        parent_operations: Mapping[str, Operation[Any, Any]],
+        user_class: Type[ServiceDefinitionT],
+    ) -> dict[str, Operation[Any, Any]]:
+        merged = dict(parent_operations)
+        parent_ops_by_method_name = {op.method_name: op for op in merged.values()}
+        for op_name, op in ServiceDefinition._collect_operations(user_class).items():
+            # If the operation at this level derives from an annotation alone (no
+            # accompanying instance), then merge information from the inherited
+            # operation, as long as it doesn't conflict. We look up by method name; if
+            # the op at this level derives from an annotation alone then it has not
+            # overridden its name.
+            if parent_op := parent_ops_by_method_name.get(op_name):
+                if op_name not in user_class.__dict__:
+                    # TODO(prerelease): what about if they are both type annotations? Then the later one should win.
+                    if op.input_type != parent_op.input_type:
+                        raise TypeError(
+                            f"Operation '{op_name}' in class '{user_class}' has input_type "
+                            f"({op.input_type}). This does not match the type of the same "
+                            f"operation in a parent class: ({parent_op.input_type})."
+                        )
+                    if op.output_type != parent_op.output_type:
+                        raise TypeError(
+                            f"Operation '{op_name}' in class '{user_class}' has output_type ({op.output_type}). "
+                            f"This does not match the type of the same operation in a parent class: ({parent_op.output_type})."
+                        )
+                else:
+                    merged[op_name] = parent_op
+            else:
+                merged[op_name] = op
+        return merged
 
     @staticmethod
     def _collect_operations(
@@ -261,4 +295,11 @@ class ServiceDefinition:
             if op.method_name is None:
                 op.method_name = key
 
-        return {op.name: op for op in operations.values()}
+        operations_by_name = {}
+        for op in operations.values():
+            if op.name in operations_by_name:
+                raise ValueError(
+                    f"Operation '{op.name}' in class '{user_class}' is defined multiple times"
+                )
+            operations_by_name[op.name] = op
+        return operations_by_name
