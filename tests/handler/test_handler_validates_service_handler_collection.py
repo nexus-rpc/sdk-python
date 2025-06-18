@@ -5,7 +5,7 @@ correctly.
 
 import pytest
 
-import nexusrpc._handler
+import nexusrpc.handler
 from nexusrpc.asyncio.handler import Handler
 
 
@@ -18,23 +18,23 @@ def test_service_must_use_decorator():
 
 
 def test_services_are_collected():
-    class OpHandler(nexusrpc._handler.SyncOperationHandler[int, int]):
+    class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
         async def start(
             self,
-            ctx: nexusrpc._handler.StartOperationContext,
+            ctx: nexusrpc.handler.StartOperationContext,
             input: int,
-        ) -> nexusrpc._handler.StartOperationResultSync[int]: ...
+        ) -> nexusrpc.handler.StartOperationResultSync[int]: ...
 
         async def cancel(
             self,
-            ctx: nexusrpc._handler.CancelOperationContext,
+            ctx: nexusrpc.handler.CancelOperationContext,
             token: str,
         ) -> None: ...
 
-    @nexusrpc._handler.service_handler
+    @nexusrpc.handler.service_handler
     class Service1:
-        @nexusrpc._handler.operation_handler
-        def op(self) -> nexusrpc._handler.OperationHandler[int, int]:
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[int, int]:
             return OpHandler()
 
     service_handlers = Handler([Service1()])
@@ -46,11 +46,11 @@ def test_services_are_collected():
 
 
 def test_service_names_must_be_unique():
-    @nexusrpc._handler.service_handler(name="a")
+    @nexusrpc.handler.service_handler(name="a")
     class Service1:
         pass
 
-    @nexusrpc._handler.service_handler(name="a")
+    @nexusrpc.handler.service_handler(name="a")
     class Service2:
         pass
 

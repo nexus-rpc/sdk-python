@@ -11,7 +11,7 @@ from typing import (
 
 import pytest
 
-from nexusrpc._handler import (
+from nexusrpc.handler import (
     StartOperationContext,
     get_start_method_input_and_output_types_annotations,
 )

@@ -13,8 +13,8 @@ from typing import (
     Union,
 )
 
-import nexusrpc._handler
-from nexusrpc._handler import (
+import nexusrpc.handler
+from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
@@ -23,10 +23,10 @@ from nexusrpc._handler import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
-from nexusrpc._handler._util import is_async_callable
+from nexusrpc.handler._util import is_async_callable
 
 
-class Handler(nexusrpc._handler.BaseHandler):
+class Handler(nexusrpc.handler.BaseHandler):
     """
     A Nexus handler with `async def` methods.
 
@@ -39,7 +39,7 @@ class Handler(nexusrpc._handler.BaseHandler):
     async def start_operation(
         self,
         ctx: StartOperationContext,
-        input: nexusrpc._handler.LazyValue,
+        input: nexusrpc.handler.LazyValue,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,

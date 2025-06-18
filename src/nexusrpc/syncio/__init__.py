@@ -7,12 +7,12 @@ from typing import (
     Type,
 )
 
-import nexusrpc._handler
-from nexusrpc._handler import Content
+import nexusrpc.handler
+from nexusrpc.handler import Content
 
 
-class LazyValue(nexusrpc._handler.LazyValue):
-    __doc__ = nexusrpc._handler.LazyValue.__doc__
+class LazyValue(nexusrpc.handler.LazyValue):
+    __doc__ = nexusrpc.handler.LazyValue.__doc__
     stream: Optional[Iterable[bytes]]
 
     def consume(self, as_type: Optional[Type[Any]] = None) -> Any:

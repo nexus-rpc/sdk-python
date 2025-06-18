@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 import nexusrpc
-import nexusrpc._handler
+import nexusrpc.handler
 
 
 @nexusrpc.service

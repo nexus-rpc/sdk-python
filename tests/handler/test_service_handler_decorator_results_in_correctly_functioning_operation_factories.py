@@ -8,10 +8,10 @@ from typing import Any, Type, Union, cast
 import pytest
 
 import nexusrpc._service
-import nexusrpc._handler
+import nexusrpc.handler
 from nexusrpc.types import InputT, OutputT
-from nexusrpc._handler._core import collect_operation_handler_factories
-from nexusrpc._handler._util import is_async_callable
+from nexusrpc.handler._core import collect_operation_handler_factories
+from nexusrpc.handler._util import is_async_callable
 
 
 @dataclass
@@ -21,15 +21,15 @@ class _TestCase:
 
 
 class ManualOperationDefinition(_TestCase):
-    @nexusrpc._handler.service_handler
+    @nexusrpc.handler.service_handler
     class Service:
-        @nexusrpc._handler.operation_handler
-        def operation(self) -> nexusrpc._handler.OperationHandler[int, int]:
-            class OpHandler(nexusrpc._handler.SyncOperationHandler[int, int]):
+        @nexusrpc.handler.operation_handler
+        def operation(self) -> nexusrpc.handler.OperationHandler[int, int]:
+            class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
                 async def start(
-                    self, ctx: nexusrpc._handler.StartOperationContext, input: int
-                ) -> nexusrpc._handler.StartOperationResultSync[int]:
-                    return nexusrpc._handler.StartOperationResultSync(7)
+                    self, ctx: nexusrpc.handler.StartOperationContext, input: int
+                ) -> nexusrpc.handler.StartOperationResultSync[int]:
+                    return nexusrpc.handler.StartOperationResultSync(7)
 
             return OpHandler()
 
@@ -37,11 +37,11 @@ class ManualOperationDefinition(_TestCase):
 
 
 class SyncOperation(_TestCase):
-    @nexusrpc._handler.service_handler
+    @nexusrpc.handler.service_handler
     class Service:
-        @nexusrpc._handler.sync_operation_handler
+        @nexusrpc.handler.sync_operation_handler
         def sync_operation_handler(
-            self, ctx: nexusrpc._handler.StartOperationContext, input: int
+            self, ctx: nexusrpc.handler.StartOperationContext, input: int
         ) -> int:
             return 7
 
@@ -68,24 +68,24 @@ async def test_collected_operation_factories_match_service_definition(
         test_case.Service, service
     )
     assert operation_factories.keys() == test_case.expected_operation_factories.keys()
-    ctx = nexusrpc._handler.StartOperationContext(
+    ctx = nexusrpc.handler.StartOperationContext(
         service="Service",
         operation="operation",
     )
 
     async def execute(
-        op: nexusrpc._handler.OperationHandler[InputT, OutputT],
-        ctx: nexusrpc._handler.StartOperationContext,
+        op: nexusrpc.handler.OperationHandler[InputT, OutputT],
+        ctx: nexusrpc.handler.StartOperationContext,
         input: InputT,
     ) -> Union[
-        nexusrpc._handler.StartOperationResultSync[OutputT],
-        nexusrpc._handler.StartOperationResultAsync,
+        nexusrpc.handler.StartOperationResultSync[OutputT],
+        nexusrpc.handler.StartOperationResultAsync,
     ]:
         if is_async_callable(op.start):
             return await op.start(ctx, input)
         else:
             return cast(
-                nexusrpc._handler.StartOperationResultSync[OutputT],
+                nexusrpc.handler.StartOperationResultSync[OutputT],
                 op.start(ctx, input),
             )
 
@@ -93,5 +93,5 @@ async def test_collected_operation_factories_match_service_definition(
         op_factory = operation_factories[op_name]
         op = op_factory(test_case.Service)
         result = await execute(op, ctx, 0)
-        assert isinstance(result, nexusrpc._handler.StartOperationResultSync)
+        assert isinstance(result, nexusrpc.handler.StartOperationResultSync)
         assert result.value == expected_result
