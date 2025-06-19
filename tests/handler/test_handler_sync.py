@@ -6,7 +6,6 @@ import pytest
 
 from nexusrpc._serializer import Content
 from nexusrpc.handler import (
-    Executor,
     StartOperationContext,
     service_handler,
 )
@@ -34,7 +33,7 @@ class SyncHandlerHappyPath:
 def test_sync_handler_happy_path(test_case: Type[_TestCase]):
     handler = Handler(
         user_service_handlers=[test_case.user_service_handler],
-        executor=Executor(executor=ThreadPoolExecutor(max_workers=1)),
+        executor=ThreadPoolExecutor(max_workers=1),
     )
     ctx = StartOperationContext(
         service="MyService",

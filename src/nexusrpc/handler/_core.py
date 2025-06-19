@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import inspect
 import typing
 import warnings
 from abc import ABC, abstractmethod
-from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -50,7 +50,7 @@ class BaseHandler(ABC):
     def __init__(
         self,
         user_service_handlers: Sequence[Any],
-        executor: Optional[Executor] = None,
+        executor: Optional[concurrent.futures.Executor] = None,
     ):
         """Initialize a :py:class:`Handler` instance from user service handler instances.
 
@@ -59,9 +59,9 @@ class BaseHandler(ABC):
 
         Args:
             user_service_handlers: A sequence of user service handlers.
-            executor: An executor to run non-`async def` operation handlers in.
+            executor: A concurrent.futures.Executor in which to run non-`async def` operation handlers.
         """
-        self.executor = executor
+        self.executor = _Executor(executor) if executor else None
         self.service_handlers = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
@@ -473,7 +473,7 @@ def service_from_operation_handler_methods(
     return nexusrpc.ServiceDefinition(name=service_name, operations=operations)
 
 
-# TODO(prerelease): Do we definitely want to require users to create this wrapper? Two
+# TODO(prerelease): Do we want to require users to create this wrapper? Two
 # alternatives:
 #
 # 1. Require them to pass in a `concurrent.futures.Executor`. This is what
@@ -489,10 +489,13 @@ def service_from_operation_handler_methods(
 #    nothing else, and require them to pass in anything that implements the interface.
 #    But this seems dangerous/a non-starter: run_in_executor is documented to require a
 #    `concurrent.futures.Executor`, even if it is currently typed as taking Any.
-class Executor:
+#
+# I've switched to alternative (1). The following class is no longer in the public API
+# of nexusrpc.
+class _Executor:
     """An executor for synchronous functions."""
 
-    def __init__(self, executor: ThreadPoolExecutor):
+    def __init__(self, executor: concurrent.futures.Executor):
         self._executor = executor
 
     def submit_to_event_loop(
@@ -500,5 +503,7 @@ class Executor:
     ) -> Awaitable[Any]:
         return asyncio.get_event_loop().run_in_executor(self._executor, fn, *args)
 
-    def submit(self, fn: Callable[..., Any], *args: Any) -> Future[Any]:
+    def submit(
+        self, fn: Callable[..., Any], *args: Any
+    ) -> concurrent.futures.Future[Any]:
         return self._executor.submit(fn, *args)

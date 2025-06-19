@@ -63,7 +63,7 @@ class Handler(nexusrpc.handler.BaseHandler):
             if not self.executor:
                 raise RuntimeError(
                     "Operation start handler method is not an `async def` but "
-                    "no sync executor was provided to the Handler constructor. "
+                    "no executor was provided to the Handler constructor. "
                 )
             result = await self.executor.submit_to_event_loop(
                 op_handler.start, ctx, deserialized_input
