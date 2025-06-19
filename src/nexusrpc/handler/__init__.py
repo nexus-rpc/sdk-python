@@ -53,7 +53,10 @@ from ._common import (
     StartOperationResultSync as StartOperationResultSync,
 )
 from ._core import (
-    BaseHandler as BaseHandler,
+    HandlerAsync as HandlerAsync,
+)
+from ._core import (
+    HandlerSync as HandlerSync,
 )
 from ._core import (
     OperationHandler as OperationHandler,

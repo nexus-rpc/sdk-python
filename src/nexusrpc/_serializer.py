@@ -63,6 +63,7 @@ class Serializer(Protocol):
 class LazyValue(ABC):
     """
     A container for a value encoded in an underlying stream.
+
     It is used to stream inputs and outputs in the various client and server APIs.
     """
 
@@ -92,3 +93,49 @@ class LazyValue(ABC):
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
         ...
+
+
+class LazyValueSync(LazyValue):
+    __doc__ = LazyValue.__doc__
+    stream: Optional[Iterable[bytes]]
+
+    def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
+        """
+        Consume the underlying reader stream, deserializing via the embedded serializer.
+        """
+        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
+        if self.stream is None:
+            return self.serializer.deserialize(
+                Content(headers=self.headers), as_type=as_type
+            )
+
+        return self.serializer.deserialize(
+            Content(
+                headers=self.headers,
+                data=b"".join([c for c in self.stream]),
+            ),
+            as_type=as_type,
+        )
+
+
+class LazyValueAsync(LazyValue):
+    __doc__ = LazyValue.__doc__
+    stream: Optional[AsyncIterable[bytes]]
+
+    async def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
+        """
+        Consume the underlying reader stream, deserializing via the embedded serializer.
+        """
+        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
+        if self.stream is None:
+            return await self.serializer.deserialize(
+                Content(headers=self.headers), as_type=as_type
+            )
+
+        return await self.serializer.deserialize(
+            Content(
+                headers=self.headers,
+                data=b"".join([c async for c in self.stream]),
+            ),
+            as_type=as_type,
+        )
