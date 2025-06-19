@@ -4,6 +4,7 @@ from typing import Any, Optional, Type
 
 import pytest
 
+from nexusrpc._serializer import Content
 from nexusrpc.handler import (
     StartOperationContext,
     SyncExecutor,
@@ -11,7 +12,6 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._common import StartOperationResultSync
 from nexusrpc.handler._decorators import sync_operation_handler
-from nexusrpc._serializer import Content
 from nexusrpc.syncio import LazyValue
 from nexusrpc.syncio.handler import Handler
 

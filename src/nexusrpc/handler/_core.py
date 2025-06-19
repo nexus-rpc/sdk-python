@@ -25,6 +25,7 @@ import nexusrpc._service
 from nexusrpc.handler._util import is_async_callable
 from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
+from .._serializer import LazyValue
 from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -36,7 +37,6 @@ from ._common import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
-from .._serializer import LazyValue
 
 
 class BaseHandler(ABC):
