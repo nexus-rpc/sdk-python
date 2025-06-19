@@ -473,6 +473,22 @@ def service_from_operation_handler_methods(
     return nexusrpc.ServiceDefinition(name=service_name, operations=operations)
 
 
+# TODO(prerelease): Do we definitely want to require users to create this wrapper? Two
+# alternatives:
+#
+# 1. Require them to pass in a `concurrent.futures.Executor`. This is what
+#    `run_in_executor` is documented to require. This would mean that nexusrpc would
+#    initially have a hard-coded dependency on the asyncio event loop. But perhaps that
+#    is not a problem: if we ever want to support other event loops, we can add the
+#    ability to pass in an event loop implementation at the level of Handler. And in
+#    fact perhaps that's better than having the user choose their event loop once in
+#    their Executor, and also in other places in nexusrpc.
+#    https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
+#
+# 2. Define an interface (typing.Protocol), containing `def submit(...)` and perhaps
+#    nothing else, and require them to pass in anything that implements the interface.
+#    But this seems dangerous/a non-starter: run_in_executor is documented to require a
+#    `concurrent.futures.Executor`, even if it is currently typed as taking Any.
 class Executor:
     """An executor for synchronous functions."""
 
