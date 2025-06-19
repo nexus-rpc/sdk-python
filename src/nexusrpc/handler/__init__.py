@@ -4,18 +4,12 @@
 # TODO(preview): pass pyright strict mode "python.analysis.typeCheckingMode": "strict"
 # TODO(preview): pass mypy
 
+# TODO(prerelease): docstrings
+# TODO(prerelease): check API docs
+
 
 from __future__ import annotations
 
-from .._serializer import (
-    Content as Content,
-)
-from .._serializer import (
-    LazyValue as LazyValue,
-)
-from .._serializer import (
-    Serializer as Serializer,
-)
 from ._common import (
     CancelOperationContext as CancelOperationContext,
 )
@@ -58,12 +52,6 @@ from ._core import (
 from ._core import (
     HandlerSync as HandlerSync,
 )
-from ._core import (
-    OperationHandler as OperationHandler,
-)
-from ._core import (
-    SyncOperationHandler as SyncOperationHandler,
-)
 from ._decorators import (
     operation_handler as operation_handler,
 )
@@ -73,9 +61,12 @@ from ._decorators import (
 from ._decorators import (
     sync_operation_handler as sync_operation_handler,
 )
+from ._operation_handler import (
+    OperationHandler as OperationHandler,
+)
+from ._operation_handler import (
+    SyncOperationHandler as SyncOperationHandler,
+)
 from ._util import (
     get_start_method_input_and_output_types_annotations as get_start_method_input_and_output_types_annotations,
 )
-
-# TODO(prerelease): docstrings
-# TODO(prerelease): check API docs

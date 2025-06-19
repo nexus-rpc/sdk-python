@@ -24,7 +24,7 @@ from ._common import (
     StartOperationContext,
     StartOperationResultSync,
 )
-from ._core import (
+from ._operation_handler import (
     OperationHandler,
     SyncOperationHandler,
     collect_operation_handler_factories,
