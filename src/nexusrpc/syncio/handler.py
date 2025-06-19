@@ -53,14 +53,12 @@ class Handler(nexusrpc.handler.BaseHandler):
                 "cannot be called from a sync handler. "
             )
         # TODO(preview): apply middleware stack as composed functions
-        if not self.sync_executor:
+        if not self.executor:
             raise RuntimeError(
                 "Operation start handler method is not an `async def` but "
                 "no sync executor was provided to the Handler constructor. "
             )
-        return self.sync_executor.submit(
-            op_handler.start, ctx, deserialized_input
-        ).result()
+        return self.executor.submit(op_handler.start, ctx, deserialized_input).result()
 
     def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
         """Handle a Cancel Operation request.
@@ -77,12 +75,12 @@ class Handler(nexusrpc.handler.BaseHandler):
                 "cannot be called from a sync handler. "
             )
         else:
-            if not self.sync_executor:
+            if not self.executor:
                 raise RuntimeError(
                     "Operation cancel handler method is not an `async def` function but "
                     "no executor was provided to the Handler constructor."
                 )
-            return self.sync_executor.submit(op_handler.cancel, ctx, token).result()
+            return self.executor.submit(op_handler.cancel, ctx, token).result()
 
     def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, token: str

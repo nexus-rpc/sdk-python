@@ -50,7 +50,7 @@ class BaseHandler(ABC):
     def __init__(
         self,
         user_service_handlers: Sequence[Any],
-        sync_executor: Optional[SyncExecutor] = None,
+        executor: Optional[Executor] = None,
     ):
         """Initialize a :py:class:`Handler` instance from user service handler instances.
 
@@ -59,9 +59,9 @@ class BaseHandler(ABC):
 
         Args:
             user_service_handlers: A sequence of user service handlers.
-            sync_executor: An executor to run non-`async def` operation handlers in.
+            executor: An executor to run non-`async def` operation handlers in.
         """
-        self.sync_executor = sync_executor
+        self.executor = executor
         self.service_handlers = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
@@ -78,7 +78,7 @@ class BaseHandler(ABC):
                 raise RuntimeError(
                     f"Service '{sh.service.name}' has already been registered."
                 )
-            if self.sync_executor is None:
+            if self.executor is None:
                 for op_name, operation_handler in sh.operation_handlers.items():
                     if not is_async_callable(operation_handler.start):
                         raise RuntimeError(
@@ -473,10 +473,8 @@ def service_from_operation_handler_methods(
     return nexusrpc.ServiceDefinition(name=service_name, operations=operations)
 
 
-class SyncExecutor:
-    """
-    Run a synchronous function in an executor.
-    """
+class Executor:
+    """An executor for synchronous functions."""
 
     def __init__(self, executor: ThreadPoolExecutor):
         self._executor = executor

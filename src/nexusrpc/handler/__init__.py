@@ -56,10 +56,10 @@ from ._core import (
     BaseHandler as BaseHandler,
 )
 from ._core import (
-    OperationHandler as OperationHandler,
+    Executor as Executor,
 )
 from ._core import (
-    SyncExecutor as SyncExecutor,
+    OperationHandler as OperationHandler,
 )
 from ._core import (
     SyncOperationHandler as SyncOperationHandler,
