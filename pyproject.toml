@@ -37,3 +37,5 @@ include = ["src", "tests"]
 [tool.ruff]
 target-version = "py39"
 
+[tool.ruff.lint.isort]
+combine-as-imports = true
