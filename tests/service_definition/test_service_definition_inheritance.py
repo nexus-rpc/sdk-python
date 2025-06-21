@@ -1,3 +1,8 @@
+# It's important to test that retrieving annotation works both with and without `from __future__ import annotations`.
+# Currently we do so by applying it in some test files and not others.
+# See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
+from __future__ import annotations
+
 from pprint import pprint
 from typing import Any, Optional, Type
 
@@ -105,7 +110,7 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
 def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     print(f"\n\n{test_case.UserService.__name__}:")
     print("\n__annotations__")
-    pprint(get_annotations(test_case.UserService))
+    pprint(get_annotations(test_case.UserService, eval_str=True))
     print("\n__dict__")
     pprint(test_case.UserService.__dict__)
 
