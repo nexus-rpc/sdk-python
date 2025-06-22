@@ -184,4 +184,5 @@ class StartOperationResultAsync:
     ``fetch_result``, or ``cancel`` requests.
     """
 
+    # TODO(prerelease): string or OperationToken Python object?
     token: str

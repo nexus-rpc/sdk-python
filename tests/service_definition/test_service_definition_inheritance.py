@@ -3,13 +3,11 @@
 # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 from __future__ import annotations
 
-from pprint import pprint
 from typing import Any, Optional, Type
 
 import pytest
 
 from nexusrpc import Operation, ServiceDefinition, service
-from nexusrpc._util import get_annotations
 
 # See https://docs.python.org/3/howto/annotations.html
 
@@ -108,12 +106,6 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
     ],
 )
 def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
-    print(f"\n\n{test_case.UserService.__name__}:")
-    print("\n__annotations__")
-    pprint(get_annotations(test_case.UserService, eval_str=True))
-    print("\n__dict__")
-    pprint(test_case.UserService.__dict__)
-
     if test_case.expected_error:
         with pytest.raises(Exception, match=test_case.expected_error):
             service(test_case.UserService)

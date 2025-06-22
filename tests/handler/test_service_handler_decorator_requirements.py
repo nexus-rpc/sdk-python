@@ -1,5 +1,4 @@
-# TODO(prerelease): The service definition decorator does not support forward type reference
-# from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Type
 
