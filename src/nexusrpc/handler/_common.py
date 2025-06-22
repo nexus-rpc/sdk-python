@@ -177,8 +177,11 @@ class StartOperationResultSync(Generic[OutputT]):
 @dataclass
 class StartOperationResultAsync:
     """
-    A value returned by the start method of a nexus operation handler indicating that the
-    operation is responding asynchronously.
+    A value returned by the start method of a nexus operation handler indicating that
+    the operation is responding asynchronously.
+
+    It contains a token that the caller can submit with subsequent ``fetch_info``,
+    ``fetch_result``, or ``cancel`` requests.
     """
 
     token: str
