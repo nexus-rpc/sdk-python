@@ -25,8 +25,8 @@ from ._common import (
     StartOperationResultSync as StartOperationResultSync,
 )
 from ._core import (
-    HandlerAsync as HandlerAsync,
-    HandlerSync as HandlerSync,
+    Handler as Handler,
+    SyncioHandler as SyncioHandler,
 )
 from ._decorators import (
     operation_handler as operation_handler,

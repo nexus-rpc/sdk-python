@@ -4,15 +4,14 @@ from typing import Any, Optional, Type
 
 import pytest
 
-from nexusrpc import LazyValueSync
-from nexusrpc._serializer import Content
+from nexusrpc._serializer import Content, LazyValue
 from nexusrpc.handler import (
     StartOperationContext,
+    SyncioHandler,
     service_handler,
 )
 from nexusrpc.handler._common import StartOperationResultSync
 from nexusrpc.handler._decorators import sync_operation_handler
-from nexusrpc.handler import HandlerSync
 
 
 class _TestCase:
@@ -31,7 +30,7 @@ class SyncHandlerHappyPath:
 
 @pytest.mark.parametrize("test_case", [SyncHandlerHappyPath])
 def test_sync_handler_happy_path(test_case: Type[_TestCase]):
-    handler = HandlerSync(
+    handler = SyncioHandler(
         user_service_handlers=[test_case.user_service_handler],
         executor=ThreadPoolExecutor(max_workers=1),
     )
@@ -39,7 +38,7 @@ def test_sync_handler_happy_path(test_case: Type[_TestCase]):
         service="MyService",
         operation="incr",
     )
-    result = handler.start_operation(ctx, LazyValueSync(DummySerializer(1), headers={}))
+    result = handler.start_operation(ctx, LazyValue(DummySerializer(1), headers={}))
     assert isinstance(result, StartOperationResultSync)
     assert result.value == 2
 

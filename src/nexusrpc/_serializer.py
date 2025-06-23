@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -39,8 +38,6 @@ class Serializer(Protocol):
     Serializer is used by the framework to serialize/deserialize input and output.
     """
 
-    # TODO(preview): support non-async def
-
     def serialize(self, value: Any) -> Union[Content, Awaitable[Content]]:
         """Serialize encodes a value into a Content."""
         ...
@@ -60,7 +57,7 @@ class Serializer(Protocol):
         ...
 
 
-class LazyValue(ABC):
+class LazyValue:
     """
     A container for a value encoded in an underlying stream.
 
@@ -85,43 +82,6 @@ class LazyValue(ABC):
         self.headers = headers
         self.stream = stream
 
-    @abstractmethod
-    def consume(
-        self, as_type: Optional[Type[Any]] = None
-    ) -> Union[Any, Awaitable[Any]]:
-        """
-        Consume the underlying reader stream, deserializing via the embedded serializer.
-        """
-        ...
-
-
-class LazyValueSync(LazyValue):
-    __doc__ = LazyValue.__doc__
-    stream: Optional[Iterable[bytes]]
-
-    def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
-        """
-        Consume the underlying reader stream, deserializing via the embedded serializer.
-        """
-        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
-        if self.stream is None:
-            return self.serializer.deserialize(
-                Content(headers=self.headers), as_type=as_type
-            )
-
-        return self.serializer.deserialize(
-            Content(
-                headers=self.headers,
-                data=b"".join([c for c in self.stream]),
-            ),
-            as_type=as_type,
-        )
-
-
-class LazyValueAsync(LazyValue):
-    __doc__ = LazyValue.__doc__
-    stream: Optional[AsyncIterable[bytes]]
-
     async def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
@@ -131,11 +91,33 @@ class LazyValueAsync(LazyValue):
             return await self.serializer.deserialize(
                 Content(headers=self.headers), as_type=as_type
             )
+        elif not isinstance(self.stream, AsyncIterable):
+            raise ValueError("When using consume, stream must be an AsyncIterable")
 
         return await self.serializer.deserialize(
             Content(
                 headers=self.headers,
                 data=b"".join([c async for c in self.stream]),
+            ),
+            as_type=as_type,
+        )
+
+    def consume_sync(self, as_type: Optional[Type[Any]] = None) -> Any:
+        """
+        Consume the underlying reader stream, deserializing via the embedded serializer.
+        """
+        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
+        if self.stream is None:
+            return self.serializer.deserialize(
+                Content(headers=self.headers), as_type=as_type
+            )
+        elif not isinstance(self.stream, Iterable):
+            raise ValueError("When using consume_sync, stream must be an Iterable")
+
+        return self.serializer.deserialize(
+            Content(
+                headers=self.headers,
+                data=b"".join([c for c in self.stream]),
             ),
             as_type=as_type,
         )

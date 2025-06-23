@@ -20,7 +20,7 @@ import nexusrpc
 import nexusrpc._service
 from nexusrpc.handler._util import is_async_callable
 
-from .._serializer import LazyValue, LazyValueAsync, LazyValueSync
+from .._serializer import LazyValue
 from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -154,85 +154,8 @@ class BaseHandler(ABC):
         return service
 
 
-class HandlerSync(BaseHandler):
+class Handler(BaseHandler):
     """
-    A Nexus handler with non-async `def` methods.
-
-    A Nexus handler manages a collection of Nexus service handlers.
-
-    Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
-    name in the operation context.
-    """
-
-    def start_operation(
-        self,
-        ctx: StartOperationContext,
-        input: LazyValueSync,
-    ) -> Union[
-        StartOperationResultSync[Any],
-        StartOperationResultAsync,
-    ]:
-        """Handle a Start Operation request.
-
-        Args:
-            ctx: The operation context.
-            input: The input to the operation, as a LazyValue.
-        """
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
-        op = service_handler.service.operations[ctx.operation]
-        deserialized_input = input.consume(as_type=op.input_type)
-
-        if is_async_callable(op_handler.start):
-            raise RuntimeError(
-                "Operation start handler method is an `async def` and "
-                "cannot be called from a sync handler. "
-            )
-        # TODO(preview): apply middleware stack as composed functions
-        if not self.executor:
-            raise RuntimeError(
-                "Operation start handler method is not an `async def` but "
-                "no executor was provided to the Handler constructor. "
-            )
-        return self.executor.submit(op_handler.start, ctx, deserialized_input).result()
-
-    def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
-        """Handle a Cancel Operation request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
-        if is_async_callable(op_handler.cancel):
-            raise RuntimeError(
-                "Operation cancel handler method is an `async def` and "
-                "cannot be called from a sync handler. "
-            )
-        else:
-            if not self.executor:
-                raise RuntimeError(
-                    "Operation cancel handler method is not an `async def` function but "
-                    "no executor was provided to the Handler constructor."
-                )
-            return self.executor.submit(op_handler.cancel, ctx, token).result()
-
-    def fetch_operation_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> OperationInfo:
-        raise NotImplementedError
-
-    def fetch_operation_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> Any:
-        raise NotImplementedError
-
-
-class HandlerAsync(BaseHandler):
-    """
-    A Nexus handler with `async def` methods.
-
     A Nexus handler manages a collection of Nexus service handlers.
 
     Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
@@ -242,7 +165,7 @@ class HandlerAsync(BaseHandler):
     async def start_operation(
         self,
         ctx: StartOperationContext,
-        input: LazyValueAsync,
+        input: LazyValue,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
@@ -311,6 +234,81 @@ class HandlerAsync(BaseHandler):
         raise NotImplementedError
 
     async def fetch_operation_result(
+        self, ctx: FetchOperationResultContext, token: str
+    ) -> Any:
+        raise NotImplementedError
+
+
+class SyncioHandler(BaseHandler):
+    """
+    A Nexus handler with non-async `def` methods.
+
+    A Nexus handler manages a collection of Nexus service handlers.
+
+    Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
+    name in the operation context.
+    """
+
+    def start_operation(
+        self,
+        ctx: StartOperationContext,
+        input: LazyValue,
+    ) -> Union[
+        StartOperationResultSync[Any],
+        StartOperationResultAsync,
+    ]:
+        """Handle a Start Operation request.
+
+        Args:
+            ctx: The operation context.
+            input: The input to the operation, as a LazyValue.
+        """
+        service_handler = self._get_service_handler(ctx.service)
+        op_handler = service_handler._get_operation_handler(ctx.operation)
+        op = service_handler.service.operations[ctx.operation]
+        deserialized_input = input.consume_sync(as_type=op.input_type)
+
+        if is_async_callable(op_handler.start):
+            raise RuntimeError(
+                "Operation start handler method is an `async def` and "
+                "cannot be called from a sync handler. "
+            )
+        # TODO(preview): apply middleware stack as composed functions
+        if not self.executor:
+            raise RuntimeError(
+                "Operation start handler method is not an `async def` but "
+                "no executor was provided to the Handler constructor. "
+            )
+        return self.executor.submit(op_handler.start, ctx, deserialized_input).result()
+
+    def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
+        """Handle a Cancel Operation request.
+
+        Args:
+            ctx: The operation context.
+            token: The operation token.
+        """
+        service_handler = self._get_service_handler(ctx.service)
+        op_handler = service_handler._get_operation_handler(ctx.operation)
+        if is_async_callable(op_handler.cancel):
+            raise RuntimeError(
+                "Operation cancel handler method is an `async def` and "
+                "cannot be called from a sync handler. "
+            )
+        else:
+            if not self.executor:
+                raise RuntimeError(
+                    "Operation cancel handler method is not an `async def` function but "
+                    "no executor was provided to the Handler constructor."
+                )
+            return self.executor.submit(op_handler.cancel, ctx, token).result()
+
+    def fetch_operation_info(
+        self, ctx: FetchOperationInfoContext, token: str
+    ) -> OperationInfo:
+        raise NotImplementedError
+
+    def fetch_operation_result(
         self, ctx: FetchOperationResultContext, token: str
     ) -> Any:
         raise NotImplementedError

@@ -6,7 +6,7 @@ correctly.
 import pytest
 
 import nexusrpc.handler
-from nexusrpc.handler import HandlerAsync
+from nexusrpc.handler import Handler
 
 
 def test_service_must_use_decorator():
@@ -14,7 +14,7 @@ def test_service_must_use_decorator():
         pass
 
     with pytest.raises(RuntimeError):
-        HandlerAsync([Service()])
+        Handler([Service()])
 
 
 def test_services_are_collected():
@@ -37,7 +37,7 @@ def test_services_are_collected():
         def op(self) -> nexusrpc.handler.OperationHandler[int, int]:
             return OpHandler()
 
-    service_handlers = HandlerAsync([Service1()])
+    service_handlers = Handler([Service1()])
     assert service_handlers.service_handlers.keys() == {"Service1"}
     assert service_handlers.service_handlers["Service1"].service.name == "Service1"
     assert service_handlers.service_handlers["Service1"].operation_handlers.keys() == {
@@ -55,4 +55,4 @@ def test_service_names_must_be_unique():
         pass
 
     with pytest.raises(RuntimeError):
-        HandlerAsync([Service1(), Service2()])
+        Handler([Service1(), Service2()])

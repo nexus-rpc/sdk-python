@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from ._serializer import (
-    Content as Content,
-    LazyValueAsync as LazyValueAsync,
-    LazyValueSync as LazyValueSync,
-)
+from ._serializer import Content as Content, LazyValue as LazyValue
 from ._service import (
     Operation as Operation,
     ServiceDefinition as ServiceDefinition,
