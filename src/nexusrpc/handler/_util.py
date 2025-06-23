@@ -21,7 +21,7 @@ from ._common import StartOperationContext
 
 
 def get_start_method_input_and_output_types_annotations(
-    start_method: Callable[
+    start: Callable[
         [ServiceHandlerT, StartOperationContext, InputT],
         Union[OutputT, Awaitable[OutputT]],
     ],
@@ -31,14 +31,14 @@ def get_start_method_input_and_output_types_annotations(
 ]:
     """Return operation input and output types.
 
-    `start_method` must be a type-annotated start method that returns a synchronous result.
+    `start` must be a type-annotated start method that returns a synchronous result.
     """
     try:
-        type_annotations = typing.get_type_hints(start_method)
+        type_annotations = typing.get_type_hints(start)
     except TypeError:
         # TODO(preview): stacklevel
         warnings.warn(
-            f"Expected decorated start method {start_method} to have type annotations"
+            f"Expected decorated start method {start} to have type annotations"
         )
         return None, None
     output_type = type_annotations.pop("return", None)
@@ -47,7 +47,7 @@ def get_start_method_input_and_output_types_annotations(
         # TODO(preview): stacklevel
         suffix = f": {type_annotations}" if type_annotations else ""
         warnings.warn(
-            f"Expected decorated start method {start_method} to have exactly 2 "
+            f"Expected decorated start method {start} to have exactly 2 "
             f"type-annotated parameters (ctx and input), but it has {len(type_annotations)}"
             f"{suffix}."
         )
@@ -57,7 +57,7 @@ def get_start_method_input_and_output_types_annotations(
         if not issubclass(ctx_type, StartOperationContext):
             # TODO(preview): stacklevel
             warnings.warn(
-                f"Expected first parameter of {start_method} to be an instance of "
+                f"Expected first parameter of {start} to be an instance of "
                 f"StartOperationContext, but is {ctx_type}."
             )
             input_type = None

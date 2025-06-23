@@ -29,17 +29,17 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
 
     def __init__(
         self,
-        start_method: Callable[[StartOperationContext, InputT], OutputT],
+        start: Callable[[StartOperationContext, InputT], OutputT],
     ):
-        if is_async_callable(start_method):
+        if is_async_callable(start):
             raise RuntimeError(
-                f"{start_method} is an `async def` method. "
+                f"{start} is an `async def` method. "
                 "syncio.SyncOperationHandler must be initialized with a `def` method. "
                 "To use `async def` methods, see :py:class:`nexusrpc.handler.SyncOperationHandler`."
             )
-        self.start_method = start_method
-        if start_method.__doc__:
-            self.start.__func__.__doc__ = start_method.__doc__
+        self._start = start
+        if start.__doc__:
+            self.start.__func__.__doc__ = start.__doc__
 
     def start(
         self, ctx: StartOperationContext, input: InputT
@@ -51,7 +51,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         operation. This version of the class uses `async def` methods. For the syncio
         version, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
         """
-        output = self.start_method(ctx, input)
+        output = self._start(ctx, input)
         return StartOperationResultSync(output)
 
     def fetch_info(
