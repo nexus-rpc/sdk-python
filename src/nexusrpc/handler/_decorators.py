@@ -214,52 +214,38 @@ def operation_handler(
     return decorator(method)
 
 
+OperationHandlerStartMethodT = Callable[
+    [ServiceHandlerT, StartOperationContext, InputT],
+    Union[OutputT, Awaitable[OutputT]],
+]
+
+OperationHandlerFactoryT = Callable[
+    [ServiceHandlerT], OperationHandler[InputT, OutputT]
+]
+
+
 @overload
 def sync_operation_handler(
-    start_method: Callable[
-        [ServiceHandlerT, StartOperationContext, InputT],
-        Union[OutputT, Awaitable[OutputT]],
-    ],
-) -> Callable[[ServiceHandlerT], OperationHandler[InputT, OutputT]]: ...
+    start_method: OperationHandlerStartMethodT,
+) -> OperationHandlerFactoryT: ...
 
 
 @overload
 def sync_operation_handler(
     *,
     name: Optional[str] = None,
-) -> Callable[
-    [
-        Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Union[OutputT, Awaitable[OutputT]],
-        ]
-    ],
-    Callable[[ServiceHandlerT], OperationHandler[InputT, OutputT]],
-]: ...
+) -> Callable[[OperationHandlerStartMethodT], OperationHandlerFactoryT]: ...
 
 
 # TODO(preview): how do we help users that accidentally use @sync_operation_handler on a function that
 # returns nexusrpc.handler.Operation[Input, Output]?
 def sync_operation_handler(
-    start_method: Optional[
-        Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Union[OutputT, Awaitable[OutputT]],
-        ]
-    ] = None,
+    start_method: Optional[OperationHandlerStartMethodT] = None,
     *,
     name: Optional[str] = None,
 ) -> Union[
-    Callable[[ServiceHandlerT], OperationHandler[InputT, OutputT]],
-    Callable[
-        [
-            Callable[
-                [ServiceHandlerT, StartOperationContext, InputT],
-                Union[OutputT, Awaitable[OutputT]],
-            ]
-        ],
-        Callable[[ServiceHandlerT], OperationHandler[InputT, OutputT]],
-    ],
+    OperationHandlerFactoryT,
+    Callable[[OperationHandlerStartMethodT], OperationHandlerFactoryT],
 ]:
     """Decorator marking a start method as a synchronous operation handler.
 
@@ -279,11 +265,8 @@ def sync_operation_handler(
     """
 
     def decorator(
-        start_method: Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Union[OutputT, Awaitable[OutputT]],
-        ],
-    ) -> Callable[[ServiceHandlerT], OperationHandler[InputT, OutputT]]:
+        start_method: OperationHandlerStartMethodT,
+    ) -> OperationHandlerFactoryT:
         def factory(service: ServiceHandlerT) -> OperationHandler[InputT, OutputT]:
             op = SyncOperationHandler[InputT, OutputT]()
 
