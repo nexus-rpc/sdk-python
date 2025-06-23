@@ -18,7 +18,7 @@ def test_service_must_use_decorator():
 
 
 def test_services_are_collected():
-    class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
+    class OpHandler(nexusrpc.handler.OperationHandler[int, int]):
         async def start(
             self,
             ctx: nexusrpc.handler.StartOperationContext,
@@ -30,6 +30,18 @@ def test_services_are_collected():
             ctx: nexusrpc.handler.CancelOperationContext,
             token: str,
         ) -> None: ...
+
+        async def fetch_info(
+            self,
+            ctx: nexusrpc.handler.FetchOperationInfoContext,
+            token: str,
+        ) -> nexusrpc.handler.OperationInfo: ...
+
+        async def fetch_result(
+            self,
+            ctx: nexusrpc.handler.FetchOperationResultContext,
+            token: str,
+        ) -> int: ...
 
     @nexusrpc.handler.service_handler
     class Service1:

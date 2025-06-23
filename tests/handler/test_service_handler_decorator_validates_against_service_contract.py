@@ -4,6 +4,7 @@ import pytest
 
 import nexusrpc
 import nexusrpc.handler
+from nexusrpc.handler._operation_handler import SyncOperationHandler
 
 
 class _InterfaceImplementationTestCase:
@@ -20,10 +21,13 @@ class ValidImpl(_InterfaceImplementationTestCase):
         def unrelated_method(self) -> None: ...
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: None
-        ) -> None: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[None, None]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: None
+            ) -> None: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -34,10 +38,13 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
         pass
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def extra_op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: None
-        ) -> None: ...
+        @nexusrpc.handler.operation_handler
+        def extra_op(self) -> nexusrpc.handler.OperationHandler[None, None]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: None
+            ) -> None: ...
+
+            return SyncOperationHandler(start)
 
         def unrelated_method(self) -> None: ...
 
@@ -50,8 +57,11 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[int, str]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(self, ctx, input): ...
+        @nexusrpc.handler.operation_handler
+        def op(self):
+            async def start(ctx, input): ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -73,10 +83,13 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, None]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input
-        ) -> None: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[None, None]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input
+            ) -> None: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -87,10 +100,15 @@ class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, None]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
-        ) -> None: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[str, None]:
+            async def start(
+                # TODO(prerelease) isn't this supposed to be missing the ctx annotation?
+                ctx: nexusrpc.handler.StartOperationContext,
+                input: str,
+            ) -> None: ...
+
+            return SyncOperationHandler(start)
 
     error_message = "is not compatible with the input type"
 
@@ -101,10 +119,13 @@ class WrongOutputType(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, int]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: None
-        ) -> str: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[None, str]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: None
+            ) -> str: ...
+
+            return SyncOperationHandler(start)
 
     error_message = "is not compatible with the output type"
 
@@ -115,10 +136,13 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[str, None]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
-        ) -> str: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[str, str]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: str
+            ) -> str: ...
+
+            return SyncOperationHandler(start)
 
     error_message = "is not compatible with the output type"
 
@@ -129,10 +153,13 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[str, None]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
-        ) -> None: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[str, None]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: str
+            ) -> None: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -143,10 +170,13 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[Any, Any]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        async def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
-        ) -> str: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[str, str]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: str
+            ) -> str: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -169,8 +199,13 @@ class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[X, X]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(self, ctx: nexusrpc.handler.StartOperationContext, input: X) -> X: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[X, X]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: X
+            ) -> X: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -181,10 +216,13 @@ class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[X, SuperClass]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: X
-        ) -> Subclass: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[X, Subclass]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: X
+            ) -> Subclass: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -197,10 +235,13 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
         op: nexusrpc.Operation[X, Subclass]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: X
-        ) -> SuperClass: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[X, SuperClass]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: X
+            ) -> SuperClass: ...
+
+            return SyncOperationHandler(start)
 
     error_message = "is not compatible with the output type"
 
@@ -211,8 +252,13 @@ class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase
         op: nexusrpc.Operation[X, X]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(self, ctx: nexusrpc.handler.StartOperationContext, input: X) -> X: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[X, X]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: X
+            ) -> X: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -223,10 +269,13 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
         op: nexusrpc.Operation[Subclass, X]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: SuperClass
-        ) -> X: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[SuperClass, X]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: SuperClass
+            ) -> X: ...
+
+            return SyncOperationHandler(start)
 
     error_message = None
 
@@ -237,10 +286,13 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
         op: nexusrpc.Operation[SuperClass, X]
 
     class Impl:
-        @nexusrpc.handler.sync_operation_handler
-        def op(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: Subclass
-        ) -> X: ...
+        @nexusrpc.handler.operation_handler
+        def op(self) -> nexusrpc.handler.OperationHandler[Subclass, X]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: Subclass
+            ) -> X: ...
+
+            return SyncOperationHandler(start)
 
     error_message = "is not compatible with the input type"
 

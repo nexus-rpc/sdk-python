@@ -9,9 +9,10 @@ import pytest
 
 import nexusrpc._service
 import nexusrpc.handler
-from nexusrpc.types import InputT, OutputT
 from nexusrpc.handler._core import collect_operation_handler_factories
+from nexusrpc.handler._operation_handler import SyncOperationHandler
 from nexusrpc.handler._util import is_async_callable
+from nexusrpc.types import InputT, OutputT
 
 
 @dataclass
@@ -25,11 +26,26 @@ class ManualOperationDefinition(_TestCase):
     class Service:
         @nexusrpc.handler.operation_handler
         def operation(self) -> nexusrpc.handler.OperationHandler[int, int]:
-            class OpHandler(nexusrpc.handler.SyncOperationHandler[int, int]):
+            class OpHandler(nexusrpc.handler.OperationHandler[int, int]):
                 async def start(
                     self, ctx: nexusrpc.handler.StartOperationContext, input: int
                 ) -> nexusrpc.handler.StartOperationResultSync[int]:
                     return nexusrpc.handler.StartOperationResultSync(7)
+
+                def fetch_info(
+                    self, ctx: nexusrpc.handler.FetchOperationInfoContext, token: str
+                ) -> nexusrpc.handler.OperationInfo:
+                    raise NotImplementedError
+
+                def fetch_result(
+                    self, ctx: nexusrpc.handler.FetchOperationResultContext, token: str
+                ) -> int:
+                    raise NotImplementedError
+
+                def cancel(
+                    self, ctx: nexusrpc.handler.CancelOperationContext, token: str
+                ) -> None:
+                    raise NotImplementedError
 
             return OpHandler()
 
@@ -39,11 +55,14 @@ class ManualOperationDefinition(_TestCase):
 class SyncOperation(_TestCase):
     @nexusrpc.handler.service_handler
     class Service:
-        @nexusrpc.handler.sync_operation_handler
-        def sync_operation_handler(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: int
-        ) -> int:
-            return 7
+        @nexusrpc.handler.operation_handler
+        def sync_operation_handler(self) -> nexusrpc.handler.OperationHandler[int, int]:
+            async def start(
+                ctx: nexusrpc.handler.StartOperationContext, input: int
+            ) -> int:
+                return 7
+
+            return SyncOperationHandler(start)
 
     expected_operation_factories = {"sync_operation_handler": 7}
 

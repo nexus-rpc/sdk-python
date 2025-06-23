@@ -1,39 +1,25 @@
 from __future__ import annotations
 
-import types
 import typing
 import warnings
-from functools import wraps
 from typing import (
     Any,
-    Awaitable,
     Callable,
     Optional,
     Type,
     TypeVar,
     Union,
-    cast,
     overload,
 )
 
 import nexusrpc
-from nexusrpc.types import InputT, OutputT, ServiceHandlerT
+from nexusrpc.types import ServiceHandlerT
 
-from ._common import (
-    CancelOperationContext,
-    StartOperationContext,
-    StartOperationResultSync,
-)
 from ._operation_handler import (
     OperationHandler,
-    SyncOperationHandler,
     collect_operation_handler_factories,
     service_from_operation_handler_methods,
     validate_operation_handler_methods,
-)
-from ._util import (
-    get_start_method_input_and_output_types_annotations,
-    is_async_callable,
 )
 
 
@@ -69,8 +55,7 @@ def service_handler(
     operation handler implementations for all operations in the service.
 
     The class should implement Nexus operation handlers as methods decorated with
-    operation handler decorators such as :py:func:`@nexusrpc.handler.operation_handler`
-    or :py:func:`@nexusrpc.handler.sync_operation_handler`.
+    operation handler decorators such as :py:func:`@nexusrpc.handler.operation_handler`.
 
     Args:
         cls: The service handler class to decorate.
@@ -212,139 +197,3 @@ def operation_handler(
         return decorator
 
     return decorator(method)
-
-
-OperationHandlerStartMethodT = Callable[
-    [ServiceHandlerT, StartOperationContext, InputT],
-    Union[OutputT, Awaitable[OutputT]],
-]
-
-OperationHandlerFactoryT = Callable[
-    [ServiceHandlerT], OperationHandler[InputT, OutputT]
-]
-
-
-@overload
-def sync_operation_handler(
-    start_method: OperationHandlerStartMethodT,
-) -> OperationHandlerFactoryT: ...
-
-
-@overload
-def sync_operation_handler(
-    *,
-    name: Optional[str] = None,
-) -> Callable[[OperationHandlerStartMethodT], OperationHandlerFactoryT]: ...
-
-
-# TODO(preview): how do we help users that accidentally use @sync_operation_handler on a function that
-# returns nexusrpc.handler.Operation[Input, Output]?
-def sync_operation_handler(
-    start_method: Optional[OperationHandlerStartMethodT] = None,
-    *,
-    name: Optional[str] = None,
-) -> Union[
-    OperationHandlerFactoryT,
-    Callable[[OperationHandlerStartMethodT], OperationHandlerFactoryT],
-]:
-    """Decorator marking a start method as a synchronous operation handler.
-
-    Apply this decorator to a start method to convert it into an operation handler
-    factory method.
-
-    Args:
-        start_method: The start method to decorate.
-        name: Optional name for the operation. If not provided, the method name will be used.
-
-    Examples:
-        .. code-block:: python
-
-            @nexusrpc.handler.sync_operation_handler
-            def my_operation(self, ctx: StartOperationContext, input: InputT) -> OutputT:
-                ...
-    """
-
-    def decorator(
-        start_method: OperationHandlerStartMethodT,
-    ) -> OperationHandlerFactoryT:
-        def factory(service: ServiceHandlerT) -> OperationHandler[InputT, OutputT]:
-            op = SyncOperationHandler[InputT, OutputT]()
-
-            # Non-async functions returning Awaitable are not supported
-            if is_async_callable(start_method):
-                start_method_async = cast(
-                    Callable[
-                        [ServiceHandlerT, StartOperationContext, InputT],
-                        Awaitable[OutputT],
-                    ],
-                    start_method,
-                )
-
-                @wraps(start_method)
-                async def start_async(
-                    _, ctx: StartOperationContext, input: InputT
-                ) -> StartOperationResultSync[OutputT]:
-                    result = await start_method_async(service, ctx, input)
-                    return StartOperationResultSync(result)
-
-                op.start = types.MethodType(start_async, op)
-
-                async def cancel_async(_, ctx: CancelOperationContext, token: str):
-                    raise NotImplementedError(
-                        "An operation that responded synchronously cannot be cancelled."
-                    )
-
-                op.cancel = types.MethodType(cancel_async, op)
-
-            else:
-                start_method_sync = cast(
-                    Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-                    start_method,
-                )
-
-                @wraps(start_method)
-                def start(
-                    _, ctx: StartOperationContext, input: InputT
-                ) -> StartOperationResultSync[OutputT]:
-                    result = start_method_sync(service, ctx, input)
-                    return StartOperationResultSync(result)
-
-                op.start = types.MethodType(start, op)
-
-                def cancel(_, ctx: CancelOperationContext, token: str):
-                    raise NotImplementedError(
-                        "An operation that responded synchronously cannot be cancelled."
-                    )
-
-                op.cancel = types.MethodType(cancel, op)
-            return op
-
-        input_type, output_type = get_start_method_input_and_output_types_annotations(
-            start_method
-        )
-        method_name = getattr(start_method, "__name__", None)
-        if (
-            not method_name
-            and callable(start_method)
-            and hasattr(start_method, "__call__")
-        ):
-            method_name = start_method.__class__.__name__
-        if not method_name:
-            raise TypeError(
-                f"Could not determine operation method name: "
-                f"expected {start_method} to be a function or callable instance."
-            )
-
-        factory.__nexus_operation__ = nexusrpc.Operation(
-            name=name or method_name,
-            method_name=method_name,
-            input_type=input_type,
-            output_type=output_type,
-        )
-
-        return factory
-
-    if start_method is None:
-        return decorator
-
-    return decorator(start_method)

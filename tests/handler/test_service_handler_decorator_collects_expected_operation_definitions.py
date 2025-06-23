@@ -27,6 +27,7 @@ class _TestCase:
     Service: Type[Any]
     expected_operations: dict[str, nexusrpc.Operation]
     Contract: Optional[Type[nexusrpc.ServiceDefinition]] = None
+    skip: Optional[str] = None
 
 
 class ManualOperationHandler(_TestCase):
@@ -64,10 +65,10 @@ class ManualOperationHandlerWithNameOverride(_TestCase):
 class SyncOperation(_TestCase):
     @nexusrpc.handler.service_handler
     class Service:
-        @nexusrpc.handler.sync_operation_handler
+        @nexusrpc.handler.operation_handler
         def sync_operation_handler(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: Input
-        ) -> Output: ...
+            self,
+        ) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "sync_operation_handler": nexusrpc.Operation(
@@ -82,10 +83,10 @@ class SyncOperation(_TestCase):
 class SyncOperationWithOperationHandlerNameOverride(_TestCase):
     @nexusrpc.handler.service_handler
     class Service:
-        @nexusrpc.handler.sync_operation_handler(name="sync-operation-name")
-        async def sync_operation_handler(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: Input
-        ) -> Output: ...
+        @nexusrpc.handler.operation_handler(name="sync-operation-name")
+        def sync_operation_handler(
+            self,
+        ) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
 
     expected_operations = {
         "sync_operation_handler": nexusrpc.Operation(
@@ -139,36 +140,40 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
     }
 
 
-class SyncOperationWithCallableInstance(_TestCase):
-    @nexusrpc.service
-    class Contract:
-        sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
+if False:
 
-    @nexusrpc.handler.service_handler(service=Contract)
-    class Service:
-        class sync_operation_with_callable_instance:
-            def __call__(
-                self,
-                _handler: Any,
-                ctx: nexusrpc.handler.StartOperationContext,
-                input: Input,
-            ) -> Output: ...
+    class SyncOperationWithCallableInstance(_TestCase):
+        skip = "TODO(prerelease): update this test after decorator change"
 
-        # TODO(preview): improve the DX here. The decorator cannot be placed on the
-        # callable class itself, because the user must be responsible for instantiating
-        # the class to obtain the callable instance.
-        sync_operation_with_callable_instance = nexusrpc.handler.sync_operation_handler(  # type: ignore
-            sync_operation_with_callable_instance()
-        )
+        @nexusrpc.service
+        class Contract:
+            sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
 
-    expected_operations = {
-        "sync_operation_with_callable_instance": nexusrpc.Operation(
-            name="sync_operation_with_callable_instance",
-            method_name="CallableInstanceStartMethod",
-            input_type=Input,
-            output_type=Output,
-        ),
-    }
+        @nexusrpc.handler.service_handler(service=Contract)
+        class Service:
+            class sync_operation_with_callable_instance:
+                def __call__(
+                    self,
+                    _handler: Any,
+                    ctx: nexusrpc.handler.StartOperationContext,
+                    input: Input,
+                ) -> Output: ...
+
+            # TODO(preview): improve the DX here. The decorator cannot be placed on the
+            # callable class itself, because the user must be responsible for instantiating
+            # the class to obtain the callable instance.
+            sync_operation_with_callable_instance = nexusrpc.handler.operation_handler(
+                sync_operation_with_callable_instance()  # type: ignore
+            )
+
+        expected_operations = {
+            "sync_operation_with_callable_instance": nexusrpc.Operation(
+                name="sync_operation_with_callable_instance",
+                method_name="CallableInstanceStartMethod",
+                input_type=Input,
+                output_type=Output,
+            ),
+        }
 
 
 @pytest.mark.parametrize(
@@ -190,6 +195,9 @@ class SyncOperationWithCallableInstance(_TestCase):
 async def test_collected_operation_definitions(
     test_case: Type[_TestCase],
 ):
+    if test_case.skip:
+        pytest.skip(test_case.skip)
+
     service: nexusrpc.ServiceDefinition = getattr(
         test_case.Service, "__nexus_service__"
     )

@@ -3,7 +3,9 @@ from unittest import mock
 import pytest
 
 import nexusrpc.handler
+from nexusrpc.handler import SyncOperationHandler
 from nexusrpc.handler._util import is_async_callable
+from nexusrpc.handler.syncio import SyncOperationHandler as SyncioSyncOperationHandler
 
 
 @nexusrpc.handler.service_handler
@@ -11,23 +13,27 @@ class MyServiceHandler:
     def __init__(self):
         self.mutable_container = []
 
-    @nexusrpc.handler.sync_operation_handler
-    def my_def_op(self, ctx: nexusrpc.handler.StartOperationContext, input: int) -> int:
-        """
-        This is the docstring for the `my_def_op` sync operation.
-        """
-        self.mutable_container.append(input)
-        return input + 1
+    @nexusrpc.handler.operation_handler
+    def my_def_op(self) -> nexusrpc.handler.OperationHandler[int, int]:
+        def start(ctx: nexusrpc.handler.StartOperationContext, input: int) -> int:
+            """
+            This is the docstring for the `my_def_op` sync operation.
+            """
+            self.mutable_container.append(input)
+            return input + 1
 
-    @nexusrpc.handler.sync_operation_handler
-    async def my_async_def_op(
-        self, ctx: nexusrpc.handler.StartOperationContext, input: int
-    ) -> int:
-        """
-        This is the docstring for the `my_async_def_op` sync operation.
-        """
-        self.mutable_container.append(input)
-        return input + 2
+        return SyncioSyncOperationHandler(start)
+
+    @nexusrpc.handler.operation_handler
+    def my_async_def_op(self) -> nexusrpc.handler.OperationHandler[int, int]:
+        async def start(ctx: nexusrpc.handler.StartOperationContext, input: int) -> int:
+            """
+            This is the docstring for the `my_async_def_op` sync operation.
+            """
+            self.mutable_container.append(input)
+            return input + 2
+
+        return SyncOperationHandler(start)
 
 
 def test_def_sync_handler():

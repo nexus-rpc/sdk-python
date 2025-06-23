@@ -15,10 +15,8 @@ class DuplicateOperationName(_TestCase):
         @nexusrpc.handler.operation_handler(name="a")
         def op_1(self) -> nexusrpc.handler.OperationHandler[int, int]: ...
 
-        @nexusrpc.handler.sync_operation_handler(name="a")
-        def op_2(
-            self, ctx: nexusrpc.handler.StartOperationContext, input: str
-        ) -> int: ...
+        @nexusrpc.handler.operation_handler(name="a")
+        def op_2(self) -> nexusrpc.handler.OperationHandler[str, int]: ...
 
     expected_error_message = (
         "Operation 'a' in service 'UserServiceHandler' is defined multiple times."

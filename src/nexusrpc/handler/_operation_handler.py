@@ -16,6 +16,7 @@ from typing import (
 
 import nexusrpc
 import nexusrpc._service
+from nexusrpc.handler._util import is_async_callable
 from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._common import (
@@ -37,10 +38,9 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
     that takes `self` and returns an instance of :py:class:`OperationHandler`, and apply
     the :py:func:`@nexusrpc.handler.operation_handler` decorator.
 
-    Alternatively, to create an operation handler that is limited to returning
-    synchronously, create the start method of the :py:class:`OperationHandler` on your
-    service handler class and apply the
-    :py:func:`@nexusrpc.handler.sync_operation_handler` decorator.
+    To create an operation handler that is limited to returning synchronously, use
+    :py:func:`@nexusrpc.handler.SyncOperationHandler` to create the
+    instance of :py:class:`OperationHandler` from the start method.
     """
 
     # TODO(preview): We are using `def` signatures with union return types in this abstract
@@ -97,44 +97,61 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
         ...
 
 
+# TODO(prerelease): I'm worried that it will be confusing to users that they can't
+# subclass this class and override the start method (currently, they would have to use
+# SyncOperationHandler for that).
 class SyncOperationHandler(OperationHandler[InputT, OutputT]):
     """
     An :py:class:`OperationHandler` that is limited to responding synchronously.
+
+    This version of the class uses `async def` methods. For the syncio version, see
+    :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
     """
 
-    def start(
+    def __init__(
+        self,
+        start_method: Callable[[StartOperationContext, InputT], Awaitable[OutputT]],
+    ):
+        if not is_async_callable(start_method):
+            raise RuntimeError(
+                f"{start_method} is not an `async def` method. "
+                "SyncOperationHandler must be initialized with an `async def` method. "
+                "To use `def` methods, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`."
+            )
+        self.start_method = start_method
+        if start_method.__doc__:
+            self.start.__func__.__doc__ = start_method.__doc__
+
+    async def start(
         self, ctx: StartOperationContext, input: InputT
-    ) -> Union[
-        StartOperationResultSync[OutputT],
-        Awaitable[StartOperationResultSync[OutputT]],
-    ]:
+    ) -> StartOperationResultSync[OutputT]:
         """
         Start the operation and return its final result synchronously.
 
-        Note that this method may be either `async def` or `def`. The name
-        'SyncOperationHandler' means that the operation responds synchronously according
-        to the Nexus protocol; it doesn't refer to whether or not the implementation of
-        the start method is an `async def` or `def`.
+        The name 'SyncOperationHandler' means that it responds synchronously in the
+        sense that the start method delivers the final operation result as its return
+        value, rather than returning an operation token representing an in-progress
+        operation. This version of the class uses `async def` methods. For the syncio
+        version, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
         """
-        raise NotImplementedError(
-            "Start method must be implemented by subclasses of SyncOperationHandler."
-        )
+        output = await self.start_method(ctx, input)
+        return StartOperationResultSync(output)
 
-    def fetch_info(
+    async def fetch_info(
         self, ctx: FetchOperationInfoContext, token: str
     ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
         raise NotImplementedError(
             "Cannot fetch operation info for an operation that responded synchronously."
         )
 
-    def fetch_result(
+    async def fetch_result(
         self, ctx: FetchOperationResultContext, token: str
     ) -> Union[OutputT, Awaitable[OutputT]]:
         raise NotImplementedError(
             "Cannot fetch the result of an operation that responded synchronously."
         )
 
-    def cancel(
+    async def cancel(
         self, ctx: CancelOperationContext, token: str
     ) -> Union[None, Awaitable[None]]:
         raise NotImplementedError(
@@ -212,8 +229,7 @@ def validate_operation_handler_methods(
                 f"Method '{method}' in class '{user_service_cls.__name__}' "
                 f"does not have a valid __nexus_operation__ attribute. "
                 f"Did you forget to decorate the operation method with an operation handler decorator such as "
-                f":py:func:`@nexusrpc.handler.operation_handler` or "
-                f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
+                f":py:func:`@nexusrpc.handler.operation_handler`?"
             )
         # Input type is contravariant: op handler input must be superclass of op defn output
         if (
@@ -275,8 +291,7 @@ def service_from_operation_handler_methods(
                 f"In service '{service_name}', could not locate operation definition for "
                 f"user operation handler method '{name}'. Did you forget to decorate the operation "
                 f"method with an operation handler decorator such as "
-                f":py:func:`@nexusrpc.handler.operation_handler` or "
-                f":py:func:`@nexusrpc.handler.sync_operation_handler`?"
+                f":py:func:`@nexusrpc.handler.operation_handler`?"
             )
         operations[op.name] = op
 

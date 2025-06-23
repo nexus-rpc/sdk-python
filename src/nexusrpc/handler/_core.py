@@ -239,6 +239,9 @@ class Handler(BaseHandler):
         raise NotImplementedError
 
 
+# TODO(prerelease): we have a syncio module now housing the syncio version of
+# SyncOperationHandler. If we're retaining that then this (and an async version of
+# LazyValue) should go in there.
 class SyncioHandler(BaseHandler):
     """
     A Nexus handler with non-async `def` methods.
@@ -320,8 +323,7 @@ class ServiceHandler:
 
     A user's service implementation is a class decorated with
     :py:func:`@nexusrpc.handler.service_handler` that defines operation handler methods
-    using decorators such as :py:func:`@nexusrpc.handler.operation_handler` or
-    :py:func:`@nexusrpc.handler.sync_operation_handler`.
+    using decorators such as :py:func:`@nexusrpc.handler.operation_handler`.
 
     Instances of this class are created automatically from user service handler instances
     on creation of a Handler instance, at Nexus handler start time. While the user's class
