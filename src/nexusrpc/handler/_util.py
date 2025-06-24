@@ -15,14 +15,14 @@ from typing import (
 
 from typing_extensions import TypeGuard
 
-from nexusrpc.types import InputT, OutputT, ServiceHandlerT
+from nexusrpc.types import InputT, OutputT
 
 from ._common import StartOperationContext
 
 
-def get_start_method_input_and_output_types_annotations(
+def get_start_method_input_and_output_type_annotations(
     start: Callable[
-        [ServiceHandlerT, StartOperationContext, InputT],
+        [StartOperationContext, InputT],
         Union[OutputT, Awaitable[OutputT]],
     ],
 ) -> tuple[

@@ -2,7 +2,6 @@ import warnings
 from typing import (
     Any,
     Awaitable,
-    Callable,
     Type,
     Union,
     get_args,
@@ -13,7 +12,7 @@ import pytest
 
 from nexusrpc.handler import (
     StartOperationContext,
-    get_start_method_input_and_output_types_annotations,
+    get_start_method_input_and_output_type_annotations,
 )
 
 
@@ -26,82 +25,94 @@ class Output:
 
 
 class _TestCase:
-    start: Callable
+    @staticmethod
+    def start(ctx: StartOperationContext, i: Input) -> Output: ...
+
     expected_types: tuple[Any, Any]
 
 
 class SyncMethod(_TestCase):
-    def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i: Input) -> Output: ...
 
     expected_types = (Input, Output)
 
 
 class AsyncMethod(_TestCase):
-    async def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
+    @staticmethod
+    async def start(ctx: StartOperationContext, i: Input) -> Output: ...
 
     expected_types = (Input, Output)
 
 
 class UnionMethod(_TestCase):
+    @staticmethod
     def start(
-        self, ctx: StartOperationContext, i: Input
+        ctx: StartOperationContext, i: Input
     ) -> Union[Output, Awaitable[Output]]: ...
 
     expected_types = (Input, Union[Output, Awaitable[Output]])
 
 
 class MissingInputAnnotationInUnionMethod(_TestCase):
-    def start(
-        self, ctx: StartOperationContext, i
-    ) -> Union[Output, Awaitable[Output]]: ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i) -> Union[Output, Awaitable[Output]]: ...
 
     expected_types = (None, Union[Output, Awaitable[Output]])
 
 
 class TooFewParams(_TestCase):
-    def start(self, i: Input) -> Output: ...
+    @staticmethod
+    def start(i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class TooManyParams(_TestCase):
-    def start(self, ctx: StartOperationContext, i: Input, extra: int) -> Output: ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i: Input, extra: int) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class WrongOptionsType(_TestCase):
-    def start(self, ctx: int, i: Input) -> Output: ...
+    @staticmethod
+    def start(ctx: int, i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class NoReturnHint(_TestCase):
-    def start(self, ctx: StartOperationContext, i: Input): ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i: Input): ...
 
     expected_types = (Input, None)
 
 
 class NoInputAnnotation(_TestCase):
-    def start(self, ctx: StartOperationContext, i) -> Output: ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class NoOptionsAnnotation(_TestCase):
-    def start(self, ctx, i: Input) -> Output: ...
+    @staticmethod
+    def start(ctx, i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class AllAnnotationsMissing(_TestCase):
-    def start(self, ctx: StartOperationContext, i): ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i): ...
 
     expected_types = (None, None)
 
 
 class ExplicitNoneTypes(_TestCase):
-    def start(self, ctx: StartOperationContext, i: None) -> None: ...
+    @staticmethod
+    def start(ctx: StartOperationContext, i: None) -> None: ...
 
     expected_types = (type(None), type(None))
 
@@ -126,7 +137,7 @@ class ExplicitNoneTypes(_TestCase):
 def test_get_input_and_output_types(test_case: Type[_TestCase]):
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
-        input_type, output_type = get_start_method_input_and_output_types_annotations(
+        input_type, output_type = get_start_method_input_and_output_type_annotations(
             test_case.start
         )
         expected_input_type, expected_output_type = test_case.expected_types
