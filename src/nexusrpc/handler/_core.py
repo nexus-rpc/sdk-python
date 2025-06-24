@@ -231,12 +231,48 @@ class Handler(BaseHandler):
     async def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, token: str
     ) -> OperationInfo:
-        raise NotImplementedError
+        service_handler = self._get_service_handler(ctx.service)
+        op_handler = service_handler._get_operation_handler(ctx.operation)
+        if is_async_callable(op_handler.fetch_info):
+            return await op_handler.fetch_info(ctx, token)
+        else:
+            if not self.executor:
+                raise RuntimeError(
+                    "Operation fetch_info handler method is not an `async def` function but "
+                    "no executor was provided to the Handler constructor."
+                )
+            result = await self.executor.submit_to_event_loop(
+                op_handler.fetch_info, ctx, token
+            )
+            if inspect.isawaitable(result):
+                raise RuntimeError(
+                    f"Operation fetch_info handler method {op_handler.fetch_info} returned an "
+                    "awaitable but is not an `async def` function."
+                )
+            return result
 
     async def fetch_operation_result(
         self, ctx: FetchOperationResultContext, token: str
     ) -> Any:
-        raise NotImplementedError
+        service_handler = self._get_service_handler(ctx.service)
+        op_handler = service_handler._get_operation_handler(ctx.operation)
+        if is_async_callable(op_handler.fetch_result):
+            return await op_handler.fetch_result(ctx, token)
+        else:
+            if not self.executor:
+                raise RuntimeError(
+                    "Operation fetch_result handler method is not an `async def` function but "
+                    "no executor was provided to the Handler constructor."
+                )
+            result = await self.executor.submit_to_event_loop(
+                op_handler.fetch_result, ctx, token
+            )
+            if inspect.isawaitable(result):
+                raise RuntimeError(
+                    f"Operation fetch_result handler method {op_handler.fetch_result} returned an "
+                    "awaitable but is not an `async def` function."
+                )
+            return result
 
 
 # TODO(prerelease): we have a syncio module now housing the syncio version of
