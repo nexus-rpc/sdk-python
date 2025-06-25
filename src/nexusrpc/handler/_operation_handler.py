@@ -202,7 +202,6 @@ def collect_operation_handler_factories(
         op_defn = getattr(method, "__nexus_operation__", None)
         if isinstance(op_defn, nexusrpc.Operation):
             # This is a method decorated with one of the *operation_handler decorators
-            # assert op_defn.name == name
             if op_defn.name in factories:
                 raise RuntimeError(
                     f"Operation '{op_defn.name}' in service '{user_service_cls.__name__}' "
