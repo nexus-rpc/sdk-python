@@ -213,14 +213,3 @@ async def test_collected_operation_definitions(
         assert actual_op.name == expected_op.name
         assert actual_op.input_type == expected_op.input_type
         assert actual_op.output_type == expected_op.output_type
-
-
-def test_operation_without_decorator():
-    class Service:
-        def operation(self) -> nexusrpc.handler.OperationHandler[Input, Output]: ...
-
-    with pytest.warns(
-        UserWarning,
-        match=r"Did you forget to apply the @nexusrpc.handler.operation_handler decorator\?",
-    ):
-        nexusrpc.handler.service_handler(Service)

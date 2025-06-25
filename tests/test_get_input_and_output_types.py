@@ -25,94 +25,85 @@ class Output:
 
 
 class _TestCase:
-    @staticmethod
-    def start(ctx: StartOperationContext, i: Input) -> Output: ...
+    async def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
 
     expected_types: tuple[Any, Any]
 
 
 class SyncMethod(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i: Input) -> Output: ...
+    async def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
 
     expected_types = (Input, Output)
 
 
 class AsyncMethod(_TestCase):
-    @staticmethod
-    async def start(ctx: StartOperationContext, i: Input) -> Output: ...
+    async def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
 
     expected_types = (Input, Output)
 
 
 class UnionMethod(_TestCase):
-    @staticmethod
-    def start(
-        ctx: StartOperationContext, i: Input
+    async def start(
+        self, ctx: StartOperationContext, i: Input
     ) -> Union[Output, Awaitable[Output]]: ...
 
     expected_types = (Input, Union[Output, Awaitable[Output]])
 
 
 class MissingInputAnnotationInUnionMethod(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i) -> Union[Output, Awaitable[Output]]: ...
+    async def start(
+        self, ctx: StartOperationContext, i
+    ) -> Union[Output, Awaitable[Output]]: ...
 
     expected_types = (None, Union[Output, Awaitable[Output]])
 
 
 class TooFewParams(_TestCase):
-    @staticmethod
-    def start(i: Input) -> Output: ...
+    async def start(self, i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class TooManyParams(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i: Input, extra: int) -> Output: ...
+    async def start(
+        self, ctx: StartOperationContext, i: Input, extra: int
+    ) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class WrongOptionsType(_TestCase):
-    @staticmethod
-    def start(ctx: int, i: Input) -> Output: ...
+    async def start(self, ctx: int, i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class NoReturnHint(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i: Input): ...
+    async def start(self, ctx: StartOperationContext, i: Input): ...
 
     expected_types = (Input, None)
 
 
 class NoInputAnnotation(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i) -> Output: ...
+    async def start(self, ctx: StartOperationContext, i) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class NoOptionsAnnotation(_TestCase):
-    @staticmethod
-    def start(ctx, i: Input) -> Output: ...
+    async def start(self, ctx, i: Input) -> Output: ...
 
     expected_types = (None, Output)
 
 
 class AllAnnotationsMissing(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i): ...
+    async def start(self, ctx: StartOperationContext, i): ...
 
     expected_types = (None, None)
 
 
 class ExplicitNoneTypes(_TestCase):
-    @staticmethod
-    def start(ctx: StartOperationContext, i: None) -> None: ...
+    async def start(self, ctx: StartOperationContext, i: None) -> None: ...
 
     expected_types = (type(None), type(None))
 

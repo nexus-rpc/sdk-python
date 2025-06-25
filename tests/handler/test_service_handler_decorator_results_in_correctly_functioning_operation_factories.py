@@ -16,11 +16,11 @@ from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
-    SyncOperationHandler,
     operation_handler,
+    service_handler,
+    sync_operation_handler,
 )
 from nexusrpc.handler._core import collect_operation_handler_factories
-from nexusrpc.handler._decorators import service_handler
 from nexusrpc.handler._util import is_async_callable
 from nexusrpc.types import InputT, OutputT
 
@@ -63,14 +63,13 @@ class ManualOperationDefinition(_TestCase):
 class SyncOperation(_TestCase):
     @service_handler
     class Service:
-        @operation_handler
-        def sync_operation_handler(self) -> OperationHandler[int, int]:
-            async def start(ctx: StartOperationContext, input: int) -> int:
-                return 7
+        @sync_operation_handler
+        async def sync_operation_handler(
+            self, ctx: StartOperationContext, input: int
+        ) -> int:
+            return 7
 
-            return SyncOperationHandler.from_callable(start)
-
-    expected_operation_factories = {"sync_operation_handler": 7}
+    expected_operation_factories = {"sync_operation_handler": 7}  # type: ignore
 
 
 @pytest.mark.parametrize(

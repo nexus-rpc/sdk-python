@@ -30,11 +30,10 @@ from ._core import (
 from ._decorators import (
     operation_handler as operation_handler,
     service_handler as service_handler,
+    sync_operation_handler as sync_operation_handler,
 )
-from ._operation_handler import (
-    OperationHandler as OperationHandler,
-    SyncOperationHandler as SyncOperationHandler,
-)
+from ._operation_handler import OperationHandler as OperationHandler
 from ._util import (
+    get_operation_factory as get_operation_factory,
     get_start_method_input_and_output_type_annotations as get_start_method_input_and_output_type_annotations,
 )

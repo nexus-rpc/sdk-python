@@ -4,18 +4,16 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Optional,
-    Type,
-)
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type
 
 from typing_extensions import TypeGuard
 
+import nexusrpc
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.types import InputT, OutputT, ServiceHandlerT
+
+if TYPE_CHECKING:
+    from nexusrpc.handler._operation_handler import OperationHandler
 
 
 def get_start_method_input_and_output_type_annotations(
@@ -60,6 +58,23 @@ def get_start_method_input_and_output_type_annotations(
             input_type = None
 
     return input_type, output_type
+
+
+def get_operation_factory(
+    obj: Any,
+) -> tuple[
+    Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
+    Optional[nexusrpc.Operation[InputT, OutputT]],
+]:
+    op_defn = getattr(obj, "__nexus_operation__", None)
+    if op_defn:
+        factory = obj
+    else:
+        if factory := getattr(obj, "__nexus_operation_factory__", None):
+            op_defn = getattr(factory, "__nexus_operation__", None)
+    if not isinstance(op_defn, nexusrpc.Operation):
+        return None, None
+    return factory, op_defn
 
 
 # Copied from https://github.com/modelcontextprotocol/python-sdk

@@ -4,6 +4,7 @@ import typing
 import warnings
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Optional,
     Type,
@@ -13,12 +14,15 @@ from typing import (
 )
 
 import nexusrpc
-from nexusrpc.types import ServiceHandlerT
+from nexusrpc.handler._common import StartOperationContext
+from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations
+from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._operation_handler import (
     OperationHandler,
+    SyncOperationHandler,
     collect_operation_handler_factories,
-    service_from_operation_handler_methods,
+    service_definition_from_operation_handler_methods,
     validate_operation_handler_methods,
 )
 
@@ -105,7 +109,7 @@ def service_handler(
             raise ValueError("Service name must not be empty.")
 
         op_factories = collect_operation_handler_factories(cls, _service)
-        service = _service or service_from_operation_handler_methods(
+        service = _service or service_definition_from_operation_handler_methods(
             _name, op_factories
         )
         validate_operation_handler_methods(cls, op_factories, service)
@@ -197,3 +201,44 @@ def operation_handler(
         return decorator
 
     return decorator(method)
+
+
+def sync_operation_handler(
+    start: Callable[
+        [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
+    ],
+) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]:
+    """
+    Decorator marking a method as the start method for a synchronous operation.
+    """
+
+    def decorator(
+        start: Callable[
+            [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
+        ],
+    ) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]:
+        def operation_handler_factory(
+            self: ServiceHandlerT,
+        ) -> OperationHandler[InputT, OutputT]:
+            async def _start(ctx: StartOperationContext, input: InputT) -> OutputT:
+                return await start(self, ctx, input)
+
+            _start.__doc__ = start.__doc__
+            return SyncOperationHandler(_start)
+
+        input_type, output_type = get_start_method_input_and_output_type_annotations(
+            start
+        )
+
+        operation_handler_factory.__nexus_operation__ = nexusrpc.Operation(
+            # TODO(prerelease): extend decorator to support name override param
+            name=start.__name__,
+            method_name=start.__name__,
+            input_type=input_type,
+            output_type=output_type,
+        )
+
+        start.__nexus_operation_factory__ = operation_handler_factory
+        return start
+
+    return decorator(start)
