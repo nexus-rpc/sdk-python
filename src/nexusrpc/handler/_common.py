@@ -149,19 +149,6 @@ class FetchOperationResultContext(OperationContext):
     Includes information from the request."""
 
 
-@dataclass
-class OperationInfo:
-    """
-    Information about an operation.
-    """
-
-    # Token identifying the operation (returned on operation start).
-    token: str
-
-    # The operation's state
-    state: OperationState
-
-
 # TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
 @dataclass
 class StartOperationResultSync(Generic[OutputT]):

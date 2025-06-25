@@ -8,12 +8,12 @@ from typing import (
     Union,
 )
 
+from nexusrpc import OperationInfo
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
     OperationHandler,
-    OperationInfo,
     StartOperationContext,
     StartOperationResultSync,
 )

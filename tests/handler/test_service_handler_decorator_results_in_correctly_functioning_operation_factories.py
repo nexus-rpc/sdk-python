@@ -34,7 +34,7 @@ class ManualOperationDefinition(_TestCase):
 
                 def fetch_info(
                     self, ctx: nexusrpc.handler.FetchOperationInfoContext, token: str
-                ) -> nexusrpc.handler.OperationInfo:
+                ) -> nexusrpc.OperationInfo:
                     raise NotImplementedError
 
                 def fetch_result(

@@ -33,3 +33,16 @@ class OperationState(Enum):
     FAILED = "failed"
     CANCELED = "canceled"
     RUNNING = "running"
+
+
+@dataclass
+class OperationInfo:
+    """
+    Information about an operation.
+    """
+
+    # Token identifying the operation (returned on operation start).
+    token: str
+
+    # The operation's state
+    state: OperationState

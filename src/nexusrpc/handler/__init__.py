@@ -19,7 +19,6 @@ from ._common import (
     OperationContext as OperationContext,
     OperationError as OperationError,
     OperationErrorState as OperationErrorState,
-    OperationInfo as OperationInfo,
     StartOperationContext as StartOperationContext,
     StartOperationResultAsync as StartOperationResultAsync,
     StartOperationResultSync as StartOperationResultSync,

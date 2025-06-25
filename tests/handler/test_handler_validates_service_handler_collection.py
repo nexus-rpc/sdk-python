@@ -35,7 +35,7 @@ def test_services_are_collected():
             self,
             ctx: nexusrpc.handler.FetchOperationInfoContext,
             token: str,
-        ) -> nexusrpc.handler.OperationInfo: ...
+        ) -> nexusrpc.OperationInfo: ...
 
         async def fetch_result(
             self,
