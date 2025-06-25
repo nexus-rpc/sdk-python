@@ -203,11 +203,42 @@ def operation_handler(
     return decorator(method)
 
 
+# TODO(prerelease) `def` support
+@overload
 def sync_operation_handler(
     start: Callable[
         [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
     ],
-) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]:
+) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]: ...
+
+
+@overload
+def sync_operation_handler(
+    *,
+    name: Optional[str] = None,
+) -> Callable[
+    [Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]],
+    Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+]: ...
+
+
+def sync_operation_handler(
+    start: Optional[
+        Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]
+    ] = None,
+    *,
+    name: Optional[str] = None,
+) -> Union[
+    Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+    Callable[
+        [
+            Callable[
+                [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
+            ]
+        ],
+        Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+    ],
+]:
     """
     Decorator marking a method as the start method for a synchronous operation.
     """
@@ -231,8 +262,7 @@ def sync_operation_handler(
         )
 
         operation_handler_factory.__nexus_operation__ = nexusrpc.Operation(
-            # TODO(prerelease): extend decorator to support name override param
-            name=start.__name__,
+            name=name or start.__name__,
             method_name=start.__name__,
             input_type=input_type,
             output_type=output_type,
@@ -240,5 +270,8 @@ def sync_operation_handler(
 
         start.__nexus_operation_factory__ = operation_handler_factory
         return start
+
+    if start is None:
+        return decorator
 
     return decorator(start)

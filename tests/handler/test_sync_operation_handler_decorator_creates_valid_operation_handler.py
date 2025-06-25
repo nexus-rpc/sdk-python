@@ -24,7 +24,7 @@ class MyServiceHandler:
         self.mutable_container.append(input)
         return input + 1
 
-    @sync_operation_handler
+    @sync_operation_handler(name="foo")
     async def my_async_def_op(self, ctx: StartOperationContext, input: int) -> int:
         """
         This is the docstring for the `my_async_def_op` sync operation.
