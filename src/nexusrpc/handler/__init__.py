@@ -35,3 +35,6 @@ from ._operation_handler import (
     OperationHandler as OperationHandler,
     SyncOperationHandler as SyncOperationHandler,
 )
+from ._util import (
+    get_start_method_input_and_output_type_annotations as get_start_method_input_and_output_type_annotations,
+)
