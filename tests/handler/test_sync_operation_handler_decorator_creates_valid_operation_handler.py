@@ -2,20 +2,26 @@ from unittest import mock
 
 import pytest
 
-import nexusrpc.handler
-from nexusrpc.handler import SyncOperationHandler
+from nexusrpc.handler import (
+    OperationHandler,
+    StartOperationContext,
+    StartOperationResultSync,
+    SyncOperationHandler,
+    operation_handler,
+    service_handler,
+)
 from nexusrpc.handler._util import is_async_callable
 from nexusrpc.handler.syncio import SyncOperationHandler as SyncioSyncOperationHandler
 
 
-@nexusrpc.handler.service_handler
+@service_handler
 class MyServiceHandler:
     def __init__(self):
         self.mutable_container = []
 
-    @nexusrpc.handler.operation_handler
-    def my_def_op(self) -> nexusrpc.handler.OperationHandler[int, int]:
-        def start(ctx: nexusrpc.handler.StartOperationContext, input: int) -> int:
+    @operation_handler
+    def my_def_op(self) -> OperationHandler[int, int]:
+        def start(ctx: StartOperationContext, input: int) -> int:
             """
             This is the docstring for the `my_def_op` sync operation.
             """
@@ -24,9 +30,9 @@ class MyServiceHandler:
 
         return SyncioSyncOperationHandler.from_callable(start)
 
-    @nexusrpc.handler.operation_handler
-    def my_async_def_op(self) -> nexusrpc.handler.OperationHandler[int, int]:
-        async def start(ctx: nexusrpc.handler.StartOperationContext, input: int) -> int:
+    @operation_handler
+    def my_async_def_op(self) -> OperationHandler[int, int]:
+        async def start(ctx: StartOperationContext, input: int) -> int:
             """
             This is the docstring for the `my_async_def_op` sync operation.
             """
@@ -45,9 +51,9 @@ def test_def_sync_handler():
         == "This is the docstring for the `my_def_op` sync operation."
     )
     assert not user_instance.mutable_container
-    ctx = mock.Mock(spec=nexusrpc.handler.StartOperationContext)
+    ctx = mock.Mock(spec=StartOperationContext)
     result = op_handler.start(ctx, 1)
-    assert isinstance(result, nexusrpc.handler.StartOperationResultSync)
+    assert isinstance(result, StartOperationResultSync)
     assert result.value == 2
     assert user_instance.mutable_container == [1]
 
@@ -62,8 +68,8 @@ async def test_async_def_sync_handler():
         == "This is the docstring for the `my_async_def_op` sync operation."
     )
     assert not user_instance.mutable_container
-    ctx = mock.Mock(spec=nexusrpc.handler.StartOperationContext)
+    ctx = mock.Mock(spec=StartOperationContext)
     result = await op_handler.start(ctx, 1)
-    assert isinstance(result, nexusrpc.handler.StartOperationResultSync)
+    assert isinstance(result, StartOperationResultSync)
     assert result.value == 3
     assert user_instance.mutable_container == [1]

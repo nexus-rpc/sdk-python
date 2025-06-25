@@ -3,8 +3,13 @@ from typing import Any, Optional, Type
 import pytest
 
 import nexusrpc
-import nexusrpc.handler
-from nexusrpc.handler._operation_handler import SyncOperationHandler
+from nexusrpc.handler import (
+    OperationHandler,
+    StartOperationContext,
+    SyncOperationHandler,
+    operation_handler,
+    service_handler,
+)
 
 
 class _InterfaceImplementationTestCase:
@@ -21,11 +26,9 @@ class ValidImpl(_InterfaceImplementationTestCase):
         def unrelated_method(self) -> None: ...
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[None, None]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: None
-            ) -> None: ...
+        @operation_handler
+        def op(self) -> OperationHandler[None, None]:
+            async def start(ctx: StartOperationContext, input: None) -> None: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -38,11 +41,9 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
         pass
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def extra_op(self) -> nexusrpc.handler.OperationHandler[None, None]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: None
-            ) -> None: ...
+        @operation_handler
+        def extra_op(self) -> OperationHandler[None, None]:
+            async def start(ctx: StartOperationContext, input: None) -> None: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -57,7 +58,7 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[int, str]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
+        @operation_handler
         def op(self):
             async def start(ctx, input): ...
 
@@ -83,11 +84,9 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, None]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[None, None]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input
-            ) -> None: ...
+        @operation_handler
+        def op(self) -> OperationHandler[None, None]:
+            async def start(ctx: StartOperationContext, input) -> None: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -100,11 +99,11 @@ class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, None]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[str, None]:
+        @operation_handler
+        def op(self) -> OperationHandler[str, None]:
             async def start(
                 # TODO(prerelease) isn't this supposed to be missing the ctx annotation?
-                ctx: nexusrpc.handler.StartOperationContext,
+                ctx: StartOperationContext,
                 input: str,
             ) -> None: ...
 
@@ -119,11 +118,9 @@ class WrongOutputType(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[None, int]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[None, str]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: None
-            ) -> str: ...
+        @operation_handler
+        def op(self) -> OperationHandler[None, str]:
+            async def start(ctx: StartOperationContext, input: None) -> str: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -136,11 +133,9 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[str, None]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[str, str]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: str
-            ) -> str: ...
+        @operation_handler
+        def op(self) -> OperationHandler[str, str]:
+            async def start(ctx: StartOperationContext, input: str) -> str: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -153,11 +148,9 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[str, None]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[str, None]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: str
-            ) -> None: ...
+        @operation_handler
+        def op(self) -> OperationHandler[str, None]:
+            async def start(ctx: StartOperationContext, input: str) -> None: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -170,11 +163,9 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[Any, Any]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[str, str]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: str
-            ) -> str: ...
+        @operation_handler
+        def op(self) -> OperationHandler[str, str]:
+            async def start(ctx: StartOperationContext, input: str) -> str: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -199,11 +190,9 @@ class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[X, X]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[X, X]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: X
-            ) -> X: ...
+        @operation_handler
+        def op(self) -> OperationHandler[X, X]:
+            async def start(ctx: StartOperationContext, input: X) -> X: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -216,11 +205,9 @@ class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
         op: nexusrpc.Operation[X, SuperClass]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[X, Subclass]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: X
-            ) -> Subclass: ...
+        @operation_handler
+        def op(self) -> OperationHandler[X, Subclass]:
+            async def start(ctx: StartOperationContext, input: X) -> Subclass: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -235,11 +222,9 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
         op: nexusrpc.Operation[X, Subclass]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[X, SuperClass]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: X
-            ) -> SuperClass: ...
+        @operation_handler
+        def op(self) -> OperationHandler[X, SuperClass]:
+            async def start(ctx: StartOperationContext, input: X) -> SuperClass: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -252,11 +237,9 @@ class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase
         op: nexusrpc.Operation[X, X]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[X, X]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: X
-            ) -> X: ...
+        @operation_handler
+        def op(self) -> OperationHandler[X, X]:
+            async def start(ctx: StartOperationContext, input: X) -> X: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -269,11 +252,9 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
         op: nexusrpc.Operation[Subclass, X]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[SuperClass, X]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: SuperClass
-            ) -> X: ...
+        @operation_handler
+        def op(self) -> OperationHandler[SuperClass, X]:
+            async def start(ctx: StartOperationContext, input: SuperClass) -> X: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -286,11 +267,9 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
         op: nexusrpc.Operation[SuperClass, X]
 
     class Impl:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[Subclass, X]:
-            async def start(
-                ctx: nexusrpc.handler.StartOperationContext, input: Subclass
-            ) -> X: ...
+        @operation_handler
+        def op(self) -> OperationHandler[Subclass, X]:
+            async def start(ctx: StartOperationContext, input: Subclass) -> X: ...
 
             return SyncOperationHandler.from_callable(start)
 
@@ -325,13 +304,11 @@ def test_service_decorator_enforces_interface_implementation(
 ):
     if test_case.error_message:
         with pytest.raises(Exception) as ei:
-            nexusrpc.handler.service_handler(service=test_case.Interface)(
-                test_case.Impl
-            )
+            service_handler(service=test_case.Interface)(test_case.Impl)
         err = ei.value
         assert test_case.error_message in str(err)
     else:
-        nexusrpc.handler.service_handler(service=test_case.Interface)(test_case.Impl)
+        service_handler(service=test_case.Interface)(test_case.Impl)
 
 
 # TODO(preview): duplicate test?
@@ -341,11 +318,11 @@ def test_service_does_not_implement_operation_name():
         operation_a: nexusrpc.Operation[None, None]
 
     class Service:
-        @nexusrpc.handler.operation_handler
-        def operation_b(self) -> nexusrpc.handler.OperationHandler[None, None]: ...
+        @operation_handler
+        def operation_b(self) -> OperationHandler[None, None]: ...
 
     with pytest.raises(
         TypeError,
         match="does not match an operation method name in the service definition",
     ):
-        nexusrpc.handler.service_handler(service=Contract)(Service)
+        service_handler(service=Contract)(Service)
