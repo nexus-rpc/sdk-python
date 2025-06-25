@@ -62,7 +62,7 @@ class SyncOperation(_TestCase):
             ) -> int:
                 return 7
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     expected_operation_factories = {"sync_operation_handler": 7}
 

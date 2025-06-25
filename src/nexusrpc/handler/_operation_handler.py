@@ -97,10 +97,7 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
         ...
 
 
-# TODO(prerelease): I'm worried that it will be confusing to users that they can't
-# subclass this class and override the start method (currently, they would have to use
-# SyncOperationHandler for that).
-class SyncOperationHandler(OperationHandler[InputT, OutputT]):
+class SyncOperationHandler(OperationHandler[InputT, OutputT], ABC):
     """
     An :py:class:`OperationHandler` that is limited to responding synchronously.
 
@@ -110,18 +107,31 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
 
     def __init__(
         self,
-        start: Callable[[StartOperationContext, InputT], Awaitable[OutputT]],
+        start: Optional[
+            Callable[[StartOperationContext, InputT], Awaitable[OutputT]]
+        ] = None,
     ):
-        if not is_async_callable(start):
-            raise RuntimeError(
-                f"{start} is not an `async def` method. "
-                "SyncOperationHandler must be initialized with an `async def` method. "
-                "To use `def` methods, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`."
-            )
-        self._start = start
-        if start.__doc__:
-            self.start.__func__.__doc__ = start.__doc__
+        if start is not None:
+            if not is_async_callable(start):
+                raise RuntimeError(
+                    f"{start} is not an `async def` method. "
+                    "SyncOperationHandler must be initialized with an `async def` method. "
+                    "To use `def` methods, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`."
+                )
+            self._start = start
+            if start.__doc__:
+                self.start.__func__.__doc__ = start.__doc__
+        else:
+            self._start = None
 
+    @classmethod
+    def from_callable(
+        cls,
+        start: Callable[[StartOperationContext, InputT], Awaitable[OutputT]],
+    ) -> SyncOperationHandler[InputT, OutputT]:
+        return _SyncOperationHandler(start)
+
+    @abstractmethod
     async def start(
         self, ctx: StartOperationContext, input: InputT
     ) -> StartOperationResultSync[OutputT]:
@@ -134,8 +144,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         operation. This version of the class uses `async def` methods. For the syncio
         version, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
         """
-        output = await self._start(ctx, input)
-        return StartOperationResultSync(output)
+        ...
 
     async def fetch_info(
         self, ctx: FetchOperationInfoContext, token: str
@@ -157,6 +166,19 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         raise NotImplementedError(
             "An operation that responded synchronously cannot be cancelled."
         )
+
+
+class _SyncOperationHandler(SyncOperationHandler[InputT, OutputT]):
+    async def start(
+        self, ctx: StartOperationContext, input: InputT
+    ) -> StartOperationResultSync[OutputT]:
+        if self._start is None:
+            raise RuntimeError(
+                "Do not use _SyncOperationHandler directly. "
+                "Use SyncOperationHandler.from_callable instead."
+            )
+        output = await self._start(ctx, input)
+        return StartOperationResultSync(output)
 
 
 def collect_operation_handler_factories(

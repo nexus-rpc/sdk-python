@@ -27,7 +27,7 @@ class ValidImpl(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: None
             ) -> None: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -44,7 +44,7 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
                 ctx: nexusrpc.handler.StartOperationContext, input: None
             ) -> None: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
         def unrelated_method(self) -> None: ...
 
@@ -61,7 +61,7 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
         def op(self):
             async def start(ctx, input): ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -89,7 +89,7 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input
             ) -> None: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -108,7 +108,7 @@ class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
                 input: str,
             ) -> None: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = "is not compatible with the input type"
 
@@ -125,7 +125,7 @@ class WrongOutputType(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: None
             ) -> str: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = "is not compatible with the output type"
 
@@ -142,7 +142,7 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: str
             ) -> str: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = "is not compatible with the output type"
 
@@ -159,7 +159,7 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: str
             ) -> None: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -176,7 +176,7 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: str
             ) -> str: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -205,7 +205,7 @@ class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: X
             ) -> X: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -222,7 +222,7 @@ class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
                 ctx: nexusrpc.handler.StartOperationContext, input: X
             ) -> Subclass: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -241,7 +241,7 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
                 ctx: nexusrpc.handler.StartOperationContext, input: X
             ) -> SuperClass: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = "is not compatible with the output type"
 
@@ -258,7 +258,7 @@ class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase
                 ctx: nexusrpc.handler.StartOperationContext, input: X
             ) -> X: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -275,7 +275,7 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
                 ctx: nexusrpc.handler.StartOperationContext, input: SuperClass
             ) -> X: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = None
 
@@ -292,7 +292,7 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
                 ctx: nexusrpc.handler.StartOperationContext, input: Subclass
             ) -> X: ...
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     error_message = "is not compatible with the input type"
 

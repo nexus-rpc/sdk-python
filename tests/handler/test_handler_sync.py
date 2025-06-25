@@ -28,7 +28,7 @@ class SyncHandlerHappyPath:
             def start(ctx: StartOperationContext, input: int) -> int:
                 return input + 1
 
-            return SyncOperationHandler(start)
+            return SyncOperationHandler.from_callable(start)
 
     user_service_handler = MyService()
 

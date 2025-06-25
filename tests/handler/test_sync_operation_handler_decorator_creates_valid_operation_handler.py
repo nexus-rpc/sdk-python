@@ -22,7 +22,7 @@ class MyServiceHandler:
             self.mutable_container.append(input)
             return input + 1
 
-        return SyncioSyncOperationHandler(start)
+        return SyncioSyncOperationHandler.from_callable(start)
 
     @nexusrpc.handler.operation_handler
     def my_async_def_op(self) -> nexusrpc.handler.OperationHandler[int, int]:
@@ -33,7 +33,7 @@ class MyServiceHandler:
             self.mutable_container.append(input)
             return input + 2
 
-        return SyncOperationHandler(start)
+        return SyncOperationHandler.from_callable(start)
 
 
 def test_def_sync_handler():
