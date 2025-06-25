@@ -4,7 +4,7 @@ from typing import Any, Optional, Type
 
 import pytest
 
-from nexusrpc._serializer import Content, LazyValue
+from nexusrpc import Content, LazyValue
 from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,

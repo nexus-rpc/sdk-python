@@ -2,22 +2,13 @@ from __future__ import annotations
 
 import functools
 import inspect
-import typing
-import warnings
 from typing import (
     Any,
     Awaitable,
     Callable,
-    Optional,
-    Type,
-    Union,
 )
 
 from typing_extensions import TypeGuard
-
-from nexusrpc.types import InputT, OutputT
-
-from ._common import StartOperationContext
 
 
 # Copied from https://github.com/modelcontextprotocol/python-sdk

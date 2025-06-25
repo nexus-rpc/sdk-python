@@ -87,11 +87,11 @@ class BaseHandler(ABC):
                 for op_name, operation_handler in sh.operation_handlers.items():
                     if not is_async_callable(operation_handler.start):
                         raise RuntimeError(
-                            f"Service '{sh.service.name}' operation '{op_name}' start must be an `async def` if no executor is provided."
+                            f"Service '{sh.service.name}' operation '{op_name}' start method must be an `async def` if no executor is provided."
                         )
                     if not is_async_callable(operation_handler.cancel):
                         raise RuntimeError(
-                            f"Service '{sh.service.name}' operation '{op_name}' cancel must be an `async def` if no executor is provided."
+                            f"Service '{sh.service.name}' operation '{op_name}' cancel method must be an `async def` if no executor is provided."
                         )
             self.service_handlers[sh.service.name] = sh
 

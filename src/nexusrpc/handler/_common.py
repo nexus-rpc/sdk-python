@@ -9,7 +9,7 @@ from typing import (
     Sequence,
 )
 
-from nexusrpc import Link, OperationState
+from nexusrpc import Link
 from nexusrpc.types import OutputT
 
 
