@@ -5,8 +5,18 @@ correctly.
 
 import pytest
 
-import nexusrpc.handler
-from nexusrpc.handler import Handler
+from nexusrpc import OperationInfo
+from nexusrpc.handler import (
+    CancelOperationContext,
+    FetchOperationInfoContext,
+    FetchOperationResultContext,
+    Handler,
+    OperationHandler,
+    StartOperationContext,
+    StartOperationResultSync,
+    service_handler,
+)
+from nexusrpc.handler._decorators import operation_handler
 
 
 def test_service_must_use_decorator():
@@ -18,35 +28,35 @@ def test_service_must_use_decorator():
 
 
 def test_services_are_collected():
-    class OpHandler(nexusrpc.handler.OperationHandler[int, int]):
+    class OpHandler(OperationHandler[int, int]):
         async def start(
             self,
-            ctx: nexusrpc.handler.StartOperationContext,
+            ctx: StartOperationContext,
             input: int,
-        ) -> nexusrpc.handler.StartOperationResultSync[int]: ...
+        ) -> StartOperationResultSync[int]: ...
 
         async def cancel(
             self,
-            ctx: nexusrpc.handler.CancelOperationContext,
+            ctx: CancelOperationContext,
             token: str,
         ) -> None: ...
 
         async def fetch_info(
             self,
-            ctx: nexusrpc.handler.FetchOperationInfoContext,
+            ctx: FetchOperationInfoContext,
             token: str,
-        ) -> nexusrpc.OperationInfo: ...
+        ) -> OperationInfo: ...
 
         async def fetch_result(
             self,
-            ctx: nexusrpc.handler.FetchOperationResultContext,
+            ctx: FetchOperationResultContext,
             token: str,
         ) -> int: ...
 
-    @nexusrpc.handler.service_handler
+    @service_handler
     class Service1:
-        @nexusrpc.handler.operation_handler
-        def op(self) -> nexusrpc.handler.OperationHandler[int, int]:
+        @operation_handler
+        def op(self) -> OperationHandler[int, int]:
             return OpHandler()
 
     service_handlers = Handler([Service1()])
@@ -58,11 +68,11 @@ def test_services_are_collected():
 
 
 def test_service_names_must_be_unique():
-    @nexusrpc.handler.service_handler(name="a")
+    @service_handler(name="a")
     class Service1:
         pass
 
-    @nexusrpc.handler.service_handler(name="a")
+    @service_handler(name="a")
     class Service2:
         pass
 

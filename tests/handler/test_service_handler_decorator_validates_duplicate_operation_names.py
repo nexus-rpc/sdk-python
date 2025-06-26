@@ -2,7 +2,11 @@ from typing import Any, Type
 
 import pytest
 
-import nexusrpc.handler
+from nexusrpc.handler import (
+    OperationHandler,
+    service_handler,
+)
+from nexusrpc.handler._decorators import operation_handler
 
 
 class _TestCase:
@@ -12,11 +16,11 @@ class _TestCase:
 
 class DuplicateOperationName(_TestCase):
     class UserServiceHandler:
-        @nexusrpc.handler.operation_handler(name="a")
-        def op_1(self) -> nexusrpc.handler.OperationHandler[int, int]: ...
+        @operation_handler(name="a")
+        def op_1(self) -> OperationHandler[int, int]: ...
 
-        @nexusrpc.handler.operation_handler(name="a")
-        def op_2(self) -> nexusrpc.handler.OperationHandler[str, int]: ...
+        @operation_handler(name="a")
+        def op_2(self) -> OperationHandler[str, int]: ...
 
     expected_error_message = (
         "Operation 'a' in service 'UserServiceHandler' is defined multiple times."
@@ -31,4 +35,4 @@ class DuplicateOperationName(_TestCase):
 )
 def test_service_handler_decorator(test_case: _TestCase):
     with pytest.raises(RuntimeError, match=test_case.expected_error_message):
-        nexusrpc.handler.service_handler(test_case.UserServiceHandler)
+        service_handler(test_case.UserServiceHandler)

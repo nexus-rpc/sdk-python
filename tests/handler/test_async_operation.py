@@ -13,9 +13,9 @@ from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,
-    operation_handler,
     service_handler,
 )
+from nexusrpc.handler._decorators import operation_handler
 
 
 class _TestCase:

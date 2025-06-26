@@ -16,11 +16,11 @@ from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
-    operation_handler,
     service_handler,
     sync_operation,
 )
 from nexusrpc.handler._core import collect_operation_handler_factories
+from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._util import is_async_callable
 from nexusrpc.types import InputT, OutputT
 
