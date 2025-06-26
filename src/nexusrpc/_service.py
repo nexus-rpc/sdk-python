@@ -115,7 +115,7 @@ def service(
     def decorator(cls: Type[ServiceDefinitionT]) -> Type[ServiceDefinitionT]:
         if name is not None and not name:
             raise ValueError("Service name must not be empty.")
-        defn = ServiceDefinition.from_user_class(cls, name or cls.__name__)
+        defn = ServiceDefinition.from_class(cls, name or cls.__name__)
         setattr(cls, "__nexus_service__", defn)
 
         # In order for callers to refer to operations at run-time, a decorated user
@@ -139,7 +139,7 @@ class ServiceDefinition:
     operations: Mapping[str, Operation[Any, Any]]
 
     @staticmethod
-    def from_user_class(
+    def from_class(
         user_class: Type[ServiceDefinitionT], name: str
     ) -> ServiceDefinition:
         """Create a ServiceDefinition from a user service definition class.
@@ -160,7 +160,7 @@ class ServiceDefinition:
             return ServiceDefinition(name=user_class.__name__, operations={})
 
         parent = user_class.mro()[1]
-        parent_defn = ServiceDefinition.from_user_class(parent, parent.__name__)
+        parent_defn = ServiceDefinition.from_class(parent, parent.__name__)
 
         # Update the inherited operations with those collected at this level.
         defn = ServiceDefinition(
