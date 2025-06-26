@@ -78,6 +78,18 @@ def get_operation_factory(
     return factory, op_defn
 
 
+def get_callable_name(fn: Callable[..., Any]) -> str:
+    method_name = getattr(fn, "__name__", None)
+    if not method_name and callable(fn) and hasattr(fn, "__call__"):
+        method_name = fn.__class__.__name__
+    if not method_name:
+        raise TypeError(
+            f"Could not determine callable name: "
+            f"expected {fn} to be a function or callable instance."
+        )
+    return method_name
+
+
 # Copied from https://github.com/modelcontextprotocol/python-sdk
 #
 # Copyright (c) 2024 Anthropic, PBC.
