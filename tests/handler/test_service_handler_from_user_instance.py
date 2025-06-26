@@ -17,7 +17,7 @@ class MyServiceHandlerWithCallableInstance:
         ) -> int:
             return input
 
-    sync_operation_with_callable_instance = nexusrpc.handler.sync_operation_handler(
+    sync_operation_with_callable_instance = nexusrpc.handler.sync_operation(
         name="sync_operation_with_callable_instance",
     )(
         SyncOperationWithCallableInstance(),

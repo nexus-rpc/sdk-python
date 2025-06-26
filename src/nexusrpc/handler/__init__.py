@@ -30,7 +30,7 @@ from ._core import (
 from ._decorators import (
     operation_handler as operation_handler,
     service_handler as service_handler,
-    sync_operation_handler as sync_operation_handler,
+    sync_operation as sync_operation,
 )
 from ._operation_handler import OperationHandler as OperationHandler
 from ._util import (

@@ -10,7 +10,7 @@ from nexusrpc.handler import (
     StartOperationResultSync,
     SyncioHandler,
     service_handler,
-    sync_operation_handler,
+    sync_operation,
 )
 
 
@@ -21,7 +21,7 @@ class _TestCase:
 class SyncHandlerHappyPath:
     @service_handler
     class MyService:
-        @sync_operation_handler
+        @sync_operation
         def incr(self, ctx: StartOperationContext, input: int) -> int:
             return input + 1
 

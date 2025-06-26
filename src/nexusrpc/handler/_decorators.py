@@ -210,7 +210,7 @@ def operation_handler(
 
 
 @overload
-def sync_operation_handler(
+def sync_operation(
     start: Callable[
         [ServiceHandlerT, StartOperationContext, InputT],
         Union[OutputT, Awaitable[OutputT]],
@@ -222,7 +222,7 @@ def sync_operation_handler(
 
 
 @overload
-def sync_operation_handler(
+def sync_operation(
     *,
     name: Optional[str] = None,
 ) -> Callable[
@@ -239,7 +239,7 @@ def sync_operation_handler(
 ]: ...
 
 
-def sync_operation_handler(
+def sync_operation(
     start: Optional[
         Callable[
             [ServiceHandlerT, StartOperationContext, InputT],

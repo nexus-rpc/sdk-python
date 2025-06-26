@@ -18,7 +18,7 @@ from nexusrpc.handler import (
     StartOperationResultSync,
     operation_handler,
     service_handler,
-    sync_operation_handler,
+    sync_operation,
 )
 from nexusrpc.handler._core import collect_operation_handler_factories
 from nexusrpc.handler._util import is_async_callable
@@ -63,7 +63,7 @@ class ManualOperationDefinition(_TestCase):
 class SyncOperation(_TestCase):
     @service_handler
     class Service:
-        @sync_operation_handler
+        @sync_operation
         async def sync_operation_handler(
             self, ctx: StartOperationContext, input: int
         ) -> int:
