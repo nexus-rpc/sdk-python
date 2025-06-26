@@ -29,8 +29,8 @@ class Content:
     User provided keys are treated case-insensitively.
     """
 
-    data: Optional[bytes] = None
-    """Request or response data. May be undefined for empty data."""
+    data: Optional[bytes]
+    """Request or response data."""
 
 
 class Serializer(Protocol):
@@ -89,7 +89,7 @@ class LazyValue:
         # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
         if self.stream is None:
             return await self.serializer.deserialize(
-                Content(headers=self.headers), as_type=as_type
+                Content(headers=self.headers, data=None), as_type=as_type
             )
         elif not isinstance(self.stream, AsyncIterable):
             raise ValueError("When using consume, stream must be an AsyncIterable")
@@ -109,7 +109,7 @@ class LazyValue:
         # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
         if self.stream is None:
             return self.serializer.deserialize(
-                Content(headers=self.headers), as_type=as_type
+                Content(headers=self.headers, data=None), as_type=as_type
             )
         elif not isinstance(self.stream, Iterable):
             raise ValueError("When using consume_sync, stream must be an Iterable")
