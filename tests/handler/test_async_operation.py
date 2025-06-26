@@ -62,6 +62,8 @@ async def test_async_operation_happy_path():
     start_ctx = StartOperationContext(
         service="MyService",
         operation="incr",
+        headers={},
+        request_id="request_id",
     )
     start_result = await handler.start_operation(
         start_ctx, LazyValue(DummySerializer(1), headers={})
@@ -72,6 +74,7 @@ async def test_async_operation_happy_path():
     fetch_info_ctx = FetchOperationInfoContext(
         service="MyService",
         operation="incr",
+        headers={},
     )
     info = await handler.fetch_operation_info(fetch_info_ctx, start_result.token)
     assert info.state == OperationState.RUNNING
@@ -79,6 +82,7 @@ async def test_async_operation_happy_path():
     fetch_result_ctx = FetchOperationResultContext(
         service="MyService",
         operation="incr",
+        headers={},
     )
     result = await handler.fetch_operation_result(fetch_result_ctx, start_result.token)
     assert result == 2
@@ -86,6 +90,7 @@ async def test_async_operation_happy_path():
     cancel_ctx = CancelOperationContext(
         service="MyService",
         operation="incr",
+        headers={},
     )
     await handler.cancel_operation(cancel_ctx, start_result.token)
     assert start_result.token not in _operation_results

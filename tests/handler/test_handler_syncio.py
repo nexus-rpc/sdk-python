@@ -37,6 +37,8 @@ def test_sync_handler_happy_path(test_case: Type[_TestCase]):
     ctx = StartOperationContext(
         service="MyService",
         operation="incr",
+        headers={},
+        request_id="request_id",
     )
     result = handler.start_operation(ctx, LazyValue(DummySerializer(1), headers={}))
     assert isinstance(result, StartOperationResultSync)

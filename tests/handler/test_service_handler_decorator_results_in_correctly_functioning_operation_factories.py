@@ -95,6 +95,8 @@ async def test_collected_operation_factories_match_service_definition(
     ctx = StartOperationContext(
         service="Service",
         operation="operation",
+        headers={},
+        request_id="request_id",
     )
 
     async def execute(
