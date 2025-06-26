@@ -15,13 +15,14 @@ from typing import (
 )
 
 import nexusrpc
+from nexusrpc import InputT, OutputT
+from nexusrpc._types import ServiceHandlerT
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_callable_name,
     get_start_method_input_and_output_type_annotations,
     is_async_callable,
 )
-from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 from ._operation_handler import (
     OperationHandler,

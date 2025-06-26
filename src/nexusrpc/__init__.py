@@ -7,6 +7,7 @@ from ._service import (
     ServiceDefinition as ServiceDefinition,
     service as service,
 )
+from ._types import InputT as InputT, OutputT as OutputT
 
 
 @dataclass(frozen=True)

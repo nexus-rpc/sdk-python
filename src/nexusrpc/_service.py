@@ -20,12 +20,8 @@ from typing import (
     overload,
 )
 
+from nexusrpc._types import InputT, OutputT, ServiceDefinitionT
 from nexusrpc._util import get_annotations
-from nexusrpc.types import (
-    InputT,
-    OutputT,
-    ServiceDefinitionT,
-)
 
 
 @dataclass

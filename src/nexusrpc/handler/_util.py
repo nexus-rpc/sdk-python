@@ -4,16 +4,27 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from typing_extensions import TypeGuard
 
 import nexusrpc
+from nexusrpc import InputT, OutputT
 from nexusrpc.handler._common import StartOperationContext
-from nexusrpc.types import InputT, OutputT, ServiceHandlerT
 
 if TYPE_CHECKING:
     from nexusrpc.handler._operation_handler import OperationHandler
+
+ServiceHandlerT = TypeVar("ServiceHandlerT")
 
 
 def get_start_method_input_and_output_type_annotations(

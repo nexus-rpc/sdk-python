@@ -9,8 +9,7 @@ from typing import (
     Sequence,
 )
 
-from nexusrpc import Link
-from nexusrpc.types import OutputT
+from nexusrpc import Link, OutputT
 
 
 class HandlerErrorType(Enum):

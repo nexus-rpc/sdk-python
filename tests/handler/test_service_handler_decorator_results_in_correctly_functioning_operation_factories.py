@@ -8,6 +8,7 @@ from typing import Any, Type, Union, cast
 import pytest
 
 import nexusrpc._service
+from nexusrpc import InputT, OutputT
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -22,7 +23,6 @@ from nexusrpc.handler import (
 from nexusrpc.handler._core import collect_operation_handler_factories
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._util import is_async_callable
-from nexusrpc.types import InputT, OutputT
 
 
 @dataclass
