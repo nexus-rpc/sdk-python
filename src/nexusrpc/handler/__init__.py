@@ -17,8 +17,6 @@ from ._common import (
     HandlerError as HandlerError,
     HandlerErrorType as HandlerErrorType,
     OperationContext as OperationContext,
-    OperationError as OperationError,
-    OperationErrorState as OperationErrorState,
     StartOperationContext as StartOperationContext,
     StartOperationResultAsync as StartOperationResultAsync,
     StartOperationResultSync as StartOperationResultSync,

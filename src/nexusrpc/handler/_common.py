@@ -66,25 +66,6 @@ class HandlerError(Exception):
         self.retryable = retryable
 
 
-class OperationErrorState(Enum):
-    """
-    The state of an operation as described by an OperationError.
-    """
-
-    FAILED = "failed"
-    CANCELED = "canceled"
-
-
-class OperationError(Exception):
-    """
-    An error that represents "failed" and "canceled" operation results.
-    """
-
-    def __init__(self, message: str, *, state: OperationErrorState):
-        super().__init__(message)
-        self.state = state
-
-
 @dataclass
 class OperationContext:
     """Context for the execution of the requested operation method.
