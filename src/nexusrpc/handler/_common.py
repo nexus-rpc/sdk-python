@@ -72,6 +72,13 @@ class OperationContext:
 
     Includes information from the request."""
 
+    def __new__(cls, *args, **kwargs):
+        if cls is OperationContext:
+            raise TypeError(
+                "OperationContext is an abstract class and cannot be instantiated directly"
+            )
+        return super().__new__(cls)
+
     # The name of the service that the operation belongs to.
     service: str
     # The name of the operation.
