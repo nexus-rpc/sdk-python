@@ -28,7 +28,6 @@ from ._core import (
     SyncioHandler as SyncioHandler,
 )
 from ._decorators import (
-    operation_handler as operation_handler,
     service_handler as service_handler,
     sync_operation as sync_operation,
 )
