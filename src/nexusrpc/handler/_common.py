@@ -138,7 +138,7 @@ class FetchOperationResultContext(OperationContext):
 
 
 # TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
-@dataclass
+@dataclass(frozen=True)
 class StartOperationResultSync(Generic[OutputT]):
     """
     A result returned synchronously by the start method of a nexus operation handler.
@@ -149,7 +149,7 @@ class StartOperationResultSync(Generic[OutputT]):
 
 # TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
 # TODO(prelease) Demonstrate a type-safe fetch_result
-@dataclass
+@dataclass(frozen=True)
 class StartOperationResultAsync:
     """
     A value returned by the start method of a nexus operation handler indicating that

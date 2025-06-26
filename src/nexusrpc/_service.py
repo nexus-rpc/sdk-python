@@ -133,7 +133,7 @@ def service(
         return decorator(cls)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ServiceDefinition:
     name: str
     operations: Mapping[str, Operation[Any, Any]]

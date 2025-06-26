@@ -353,7 +353,7 @@ class SyncioHandler(BaseHandler):
         raise NotImplementedError
 
 
-@dataclass
+@dataclass(frozen=True)
 class ServiceHandler:
     """Internal representation of a user's Nexus service implementation instance.
 

@@ -9,7 +9,7 @@ from ._service import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Link:
     """
     Link contains a URL and a Type that can be used to decode the URL.
@@ -35,7 +35,7 @@ class OperationState(Enum):
     RUNNING = "running"
 
 
-@dataclass
+@dataclass(frozen=True)
 class OperationInfo:
     """
     Information about an operation.

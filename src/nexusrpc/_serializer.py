@@ -14,7 +14,7 @@ from typing import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Content:
     """
     A container for a map of headers and a byte array of data.
