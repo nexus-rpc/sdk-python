@@ -66,7 +66,7 @@ class HandlerError(Exception):
         self.retryable = retryable
 
 
-@dataclass
+@dataclass(frozen=True)
 class OperationContext:
     """Context for the execution of the requested operation method.
 
@@ -80,7 +80,7 @@ class OperationContext:
     headers: Mapping[str, str] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True)
 class StartOperationContext(OperationContext):
     """Context for the start method.
 
@@ -109,21 +109,21 @@ class StartOperationContext(OperationContext):
     outbound_links: list[Link] = field(default_factory=list)
 
 
-@dataclass
+@dataclass(frozen=True)
 class CancelOperationContext(OperationContext):
     """Context for the cancel method.
 
     Includes information from the request."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class FetchOperationInfoContext(OperationContext):
     """Context for the fetch_info method.
 
     Includes information from the request."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class FetchOperationResultContext(OperationContext):
     """Context for the fetch_result method.
 
