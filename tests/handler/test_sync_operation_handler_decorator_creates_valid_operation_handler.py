@@ -33,9 +33,6 @@ class MyServiceHandler:
         return input + 2
 
 
-@pytest.mark.skip(
-    reason="TODO(prerelease): sync_operation_handler does not handle `def` yet"
-)
 def test_def_sync_handler():
     user_instance = MyServiceHandler()
     op_handler_factory, _ = get_operation_factory(user_instance.my_def_op)

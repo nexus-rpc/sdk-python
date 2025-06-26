@@ -6,14 +6,12 @@ import pytest
 
 from nexusrpc import Content, LazyValue
 from nexusrpc.handler import (
-    OperationHandler,
     StartOperationContext,
     StartOperationResultSync,
     SyncioHandler,
-    operation_handler,
     service_handler,
+    sync_operation_handler,
 )
-from nexusrpc.handler.syncio import SyncOperationHandler
 
 
 class _TestCase:
@@ -23,12 +21,9 @@ class _TestCase:
 class SyncHandlerHappyPath:
     @service_handler
     class MyService:
-        @operation_handler
-        def incr(self) -> OperationHandler[int, int]:
-            def start(ctx: StartOperationContext, input: int) -> int:
-                return input + 1
-
-            return SyncOperationHandler.from_callable(start)
+        @sync_operation_handler
+        def incr(self, ctx: StartOperationContext, input: int) -> int:
+            return input + 1
 
     user_service_handler = MyService()
 

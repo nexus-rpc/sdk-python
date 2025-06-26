@@ -100,7 +100,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
     An :py:class:`OperationHandler` that is limited to responding synchronously.
 
     This version of the class uses `async def` methods. For the syncio version, see
-    :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
+    :py:class:`SyncioSyncOperationHandler`.
     """
 
     def __init__(
@@ -132,21 +132,67 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
 
     async def fetch_info(
         self, ctx: FetchOperationInfoContext, token: str
-    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
+    ) -> OperationInfo:
         raise NotImplementedError(
             "Cannot fetch operation info for an operation that responded synchronously."
         )
 
     async def fetch_result(
         self, ctx: FetchOperationResultContext, token: str
-    ) -> Union[OutputT, Awaitable[OutputT]]:
+    ) -> OutputT:
         raise NotImplementedError(
             "Cannot fetch the result of an operation that responded synchronously."
         )
 
-    async def cancel(
-        self, ctx: CancelOperationContext, token: str
-    ) -> Union[None, Awaitable[None]]:
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        raise NotImplementedError(
+            "An operation that responded synchronously cannot be cancelled."
+        )
+
+
+class SyncioSyncOperationHandler(OperationHandler[InputT, OutputT]):
+    """
+    An :py:class:`OperationHandler` that is limited to responding synchronously.
+
+    The name 'SyncOperationHandler' means that it responds synchronously, in the
+    sense that the start method delivers the final operation result as its return
+    value, rather than returning an operation token representing an in-progress
+    operation.
+
+    This version of the class uses `def` methods. For the async version, see
+    :py:class:`SyncOperationHandler`.
+    """
+
+    def __init__(self, start: Callable[[StartOperationContext, InputT], OutputT]):
+        if is_async_callable(start):
+            raise RuntimeError(
+                f"{start} is an `async def` method. "
+                "SyncioSyncOperationHandler must be initialized with a `def` method. "
+                "To use `async def` methods, use SyncOperationHandler."
+            )
+        self._start = start
+        if start.__doc__:
+            self.start.__func__.__doc__ = start.__doc__
+
+    def start(
+        self, ctx: StartOperationContext, input: InputT
+    ) -> StartOperationResultSync[OutputT]:
+        """
+        Start the operation and return its final result synchronously.
+        """
+        return StartOperationResultSync(self._start(ctx, input))
+
+    def fetch_info(self, ctx: FetchOperationInfoContext, token: str) -> OperationInfo:
+        raise NotImplementedError(
+            "Cannot fetch operation info for an operation that responded synchronously."
+        )
+
+    def fetch_result(self, ctx: FetchOperationResultContext, token: str) -> OutputT:
+        raise NotImplementedError(
+            "Cannot fetch the result of an operation that responded synchronously."
+        )
+
+    def cancel(self, ctx: CancelOperationContext, token: str) -> None:
         raise NotImplementedError(
             "An operation that responded synchronously cannot be cancelled."
         )
@@ -227,6 +273,7 @@ def validate_operation_handler_methods(
                 f" in interface '{service_definition.name}'. The input type must be the same as or a "
                 f"superclass of the operation definition input type."
             )
+
         # Output type is covariant: op handler output must be subclass of op defn output
         if (
             method_op_defn.output_type is not None

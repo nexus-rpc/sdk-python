@@ -4,7 +4,7 @@ import functools
 import inspect
 import typing
 import warnings
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type, Union
 
 from typing_extensions import TypeGuard
 
@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
 def get_start_method_input_and_output_type_annotations(
     start: Callable[
-        [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
+        [ServiceHandlerT, StartOperationContext, InputT],
+        Union[OutputT, Awaitable[OutputT]],
     ],
 ) -> tuple[
     Optional[Type[InputT]],

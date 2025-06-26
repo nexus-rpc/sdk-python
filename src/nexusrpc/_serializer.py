@@ -102,8 +102,6 @@ class LazyValue:
             as_type=as_type,
         )
 
-    # TODO(prerelease): we have a syncio module now for the syncio version of SyncOperationHandler
-    # SHould this go in a syncio module?
     def consume_sync(self, as_type: Optional[Type[Any]] = None) -> Any:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
