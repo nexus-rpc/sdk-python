@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import timedelta
 from enum import Enum
 from typing import (
     Generic,
@@ -134,6 +135,11 @@ class FetchOperationResultContext(OperationContext):
     """Context for the fetch_result method.
 
     Includes information from the request."""
+
+    # Allowed time to wait for the operation result (long poll). If by the end of the
+    # wait period the operation is still running, a response with 412 status code will
+    # be returned, and the caller may re-issue the request to start a new long poll.
+    wait: Optional[timedelta] = None
 
 
 # TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?

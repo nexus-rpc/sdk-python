@@ -1,5 +1,7 @@
+import dataclasses
 import uuid
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Optional, Type
 
 import pytest
@@ -15,6 +17,7 @@ from nexusrpc.handler import (
     StartOperationResultAsync,
     service_handler,
 )
+from nexusrpc.handler._common import HandlerError, HandlerErrorType
 from nexusrpc.handler._decorators import operation_handler
 
 
@@ -46,6 +49,11 @@ class MyAsyncOperationHandler(OperationHandler[int, int]):
         )
 
     async def fetch_result(self, ctx: FetchOperationResultContext, token: str) -> int:
+        if ctx.wait:
+            raise HandlerError(
+                "Operation timed out",
+                type=HandlerErrorType.UPSTREAM_TIMEOUT,
+            )
         return _operation_results[token]
 
 
@@ -86,6 +94,11 @@ async def test_async_operation_happy_path():
     )
     result = await handler.fetch_operation_result(fetch_result_ctx, start_result.token)
     assert result == 2
+
+    # Fetch it again but with wait set
+    fetch_result_ctx = dataclasses.replace(fetch_result_ctx, wait=timedelta(seconds=0))
+    with pytest.raises(NotImplementedError):
+        await handler.fetch_operation_result(fetch_result_ctx, start_result.token)
 
     cancel_ctx = CancelOperationContext(
         service="MyService",

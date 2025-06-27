@@ -254,6 +254,11 @@ class Handler(BaseHandler):
     async def fetch_operation_result(
         self, ctx: FetchOperationResultContext, token: str
     ) -> Any:
+        if ctx.wait is not None or ctx.headers.get("request-timeout"):
+            raise NotImplementedError(
+                "The Nexus SDK is in pre-release and does not support the fetch result "
+                "wait parameter or request-timeout header."
+            )
         service_handler = self._get_service_handler(ctx.service)
         op_handler = service_handler._get_operation_handler(ctx.operation)
         if is_async_callable(op_handler.fetch_result):
