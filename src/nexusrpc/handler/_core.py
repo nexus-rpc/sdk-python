@@ -67,7 +67,7 @@ class BaseHandler(ABC):
             executor: A concurrent.futures.Executor in which to run non-`async def` operation handlers.
         """
         self.executor = _Executor(executor) if executor else None
-        self.service_handlers = {}
+        self.service_handlers: dict[str, ServiceHandler] = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
                 raise TypeError(
@@ -94,6 +94,16 @@ class BaseHandler(ABC):
                             f"Service '{sh.service.name}' operation '{op_name}' cancel method must be an `async def` if no executor is provided."
                         )
             self.service_handlers[sh.service.name] = sh
+
+    def _get_service_handler(self, service_name: str) -> ServiceHandler:
+        """Return a service handler, given the service name."""
+        service = self.service_handlers.get(service_name)
+        if service is None:
+            raise HandlerError(
+                f"No handler for service '{service_name}'.",
+                type=HandlerErrorType.NOT_FOUND,
+            )
+        return service
 
     @abstractmethod
     def start_operation(
@@ -142,16 +152,6 @@ class BaseHandler(ABC):
             token: The operation token.
         """
         ...
-
-    def _get_service_handler(self, service_name: str) -> ServiceHandler:
-        """Return a service handler, given the service name."""
-        service = self.service_handlers.get(service_name)
-        if service is None:
-            raise HandlerError(
-                f"No handler for service '{service_name}'.",
-                type=HandlerErrorType.NOT_FOUND,
-            )
-        return service
 
 
 class Handler(BaseHandler):
