@@ -18,6 +18,7 @@ import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc._types import ServiceHandlerT
 from nexusrpc._util import (
+    get_operation_definition,
     get_service_definition,
     set_operation_definition,
     set_operation_factory,
@@ -122,15 +123,22 @@ def service_handler(
             raise ValueError("Service name must not be empty.")
 
         # Note: this is ignored if the service definition was supplied
-        op_factories = collect_operation_handler_factories(cls, _service)
+        factories_by_method_name = {}
+        for factory in collect_operation_handler_factories(cls, _service).values():
+            op_defn = get_operation_definition(factory)
+            if not op_defn:
+                raise ValueError(
+                    f"Operation handler factory {factory} does not have an operation definition."
+                )
+            factories_by_method_name[op_defn.method_name] = factory
 
         # TODO(prerelease): if service defn was supplied then check that no operation
         # handler has attempted to set a conflicting name override.
 
         service = _service or service_definition_from_operation_handler_methods(
-            _name, op_factories
+            _name, factories_by_method_name
         )
-        validate_operation_handler_methods(cls, op_factories, service)
+        validate_operation_handler_methods(cls, factories_by_method_name, service)
 
         set_service_definition(cls, service)
         return cls

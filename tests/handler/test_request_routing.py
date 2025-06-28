@@ -25,10 +25,10 @@ class _TestCase:
     class UserServiceHandler:
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
             assert (service_defn := get_service_definition(self.__class__))
-            _, op_defn = get_operation_factory(self.op)
-            assert op_defn
             assert ctx.service == service_defn.name
-            assert ctx.operation == op_defn.name
+            _, op_handler_op_defn = get_operation_factory(self.op)
+            assert op_handler_op_defn
+            assert service_defn.operations.get(ctx.operation)
             return True
 
 

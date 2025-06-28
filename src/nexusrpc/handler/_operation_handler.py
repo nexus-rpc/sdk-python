@@ -239,15 +239,34 @@ def collect_operation_handler_factories(
 
 def validate_operation_handler_methods(
     user_service_cls: Type[ServiceHandlerT],
-    user_methods: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]],
+    user_methods_by_method_name: dict[
+        str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]
+    ],
     service_definition: nexusrpc.ServiceDefinition,
 ) -> None:
-    """Validate operation handler methods against a service definition."""
-    for op_name, op_defn in service_definition.operations.items():
-        method = user_methods.get(op_name)
+    """Validate operation handler methods against a service definition.
+
+    For every operation in ``service_definition``:
+
+    1. There must be a method in ``user_methods`` whose method name matches the method
+       name from the service definition.
+
+    2. The input and output types of the user method must be such that the user method
+       is a subtype of the operation defined in the service definition, i.e. respecting
+       input type contravariance and output type covariance.
+    """
+    for op_defn in service_definition.operations.values():
+        if not op_defn.method_name:
+            raise RuntimeError(
+                f"Operation '{op_defn}' in service definition '{service_definition}' "
+                f"does not have a method name. "
+            )
+        method = user_methods_by_method_name.get(op_defn.method_name)
         if not method:
             raise TypeError(
-                f"Service '{user_service_cls}' does not implement operation '{op_name}' in interface '{service_definition}'. "
+                f"Service '{user_service_cls}' does not implement an operation with "
+                f"method name '{op_defn.method_name}'. But this operation is in service "
+                f"definition '{service_definition}'."
             )
         # TODO(prerelease): it should be guaranteed that `method` is a factory, so this next call should be unnecessary.
         method, method_op_defn = get_operation_factory(method)
@@ -269,9 +288,10 @@ def validate_operation_handler_methods(
             )
         ):
             raise TypeError(
-                f"Operation '{op_name}' in service '{user_service_cls}' has input type '{method_op_defn.input_type}', "
-                f"which is not compatible with the input type '{op_defn.input_type}' "
-                f" in interface '{service_definition.name}'. The input type must be the same as or a "
+                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
+                f"has input type '{method_op_defn.input_type}', which is not "
+                f"compatible with the input type '{op_defn.input_type}' in interface "
+                f"'{service_definition.name}'. The input type must be the same as or a "
                 f"superclass of the operation definition input type."
             )
 
@@ -283,19 +303,21 @@ def validate_operation_handler_methods(
             and not is_subtype(method_op_defn.output_type, op_defn.output_type)
         ):
             raise TypeError(
-                f"Operation '{op_name}' in service '{user_service_cls}' has output type '{method_op_defn.output_type}', "
-                f"which is not compatible with the output type '{op_defn.output_type}' in interface '{service_definition}'. "
-                f"The output type must be the same as or a subclass of the operation definition output type."
+                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
+                f"has output type '{method_op_defn.output_type}', which is not "
+                f"compatible with the output type '{op_defn.output_type}' in interface "
+                f" '{service_definition}'. The output type must be the same as or a "
+                f"subclass of the operation definition output type."
             )
-    if service_definition.operations.keys() > user_methods.keys():
+    if service_definition.operations.keys() > user_methods_by_method_name.keys():
         raise TypeError(
             f"Service '{user_service_cls}' does not implement all operations in interface '{service_definition}'. "
-            f"Missing operations: {service_definition.operations.keys() - user_methods.keys()}"
+            f"Missing operations: {service_definition.operations.keys() - user_methods_by_method_name.keys()}"
         )
-    if user_methods.keys() > service_definition.operations.keys():
+    if user_methods_by_method_name.keys() > service_definition.operations.keys():
         raise TypeError(
             f"Service '{user_service_cls}' implements more operations than the interface '{service_definition}'. "
-            f"Extra operations: {user_methods.keys() - service_definition.operations.keys()}"
+            f"Extra operations: {user_methods_by_method_name.keys() - service_definition.operations.keys()}"
         )
 
 
