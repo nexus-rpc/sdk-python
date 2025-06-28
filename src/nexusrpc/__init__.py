@@ -8,7 +8,10 @@ from ._service import (
     service as service,
 )
 from ._types import InputT as InputT, OutputT as OutputT
-from ._util import get_service_definition as get_service_definition
+from ._util import (
+    get_operation_factory as get_operation_factory,
+    get_service_definition as get_service_definition,
+)
 
 
 @dataclass(frozen=True)

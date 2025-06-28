@@ -5,7 +5,6 @@ import inspect
 import typing
 import warnings
 from typing import (
-    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -17,12 +16,8 @@ from typing import (
 
 from typing_extensions import TypeGuard
 
-import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc.handler._common import StartOperationContext
-
-if TYPE_CHECKING:
-    from nexusrpc.handler._operation import OperationHandler
 
 ServiceHandlerT = TypeVar("ServiceHandlerT")
 
@@ -70,23 +65,6 @@ def get_start_method_input_and_output_type_annotations(
             input_type = None
 
     return input_type, output_type
-
-
-def get_operation_factory(
-    obj: Any,
-) -> tuple[
-    Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
-    Optional[nexusrpc.Operation[InputT, OutputT]],
-]:
-    op_defn = getattr(obj, "__nexus_operation__", None)
-    if op_defn:
-        factory = obj
-    else:
-        if factory := getattr(obj, "__nexus_operation_factory__", None):
-            op_defn = getattr(factory, "__nexus_operation__", None)
-    if not isinstance(op_defn, nexusrpc.Operation):
-        return None, None
-    return factory, op_defn
 
 
 def get_callable_name(fn: Callable[..., Any]) -> str:

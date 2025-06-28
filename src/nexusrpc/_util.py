@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Optional, Type
+
+import nexusrpc
 
 if TYPE_CHECKING:
     import nexusrpc
+    from nexusrpc import InputT, OutputT
     from nexusrpc._types import ServiceDefinitionT
+    from nexusrpc.handler._operation_handler import OperationHandler
 
 
 def get_service_definition(
@@ -33,6 +37,23 @@ def get_operation_definition(
 ) -> Optional[nexusrpc.Operation]:
     """Return the :py:class:`nexusrpc.Operation` for the object, or None"""
     return getattr(obj, "__nexus_operation__", None)
+
+
+def get_operation_factory(
+    obj: Any,
+) -> tuple[
+    Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
+    Optional[nexusrpc.Operation[InputT, OutputT]],
+]:
+    op_defn = getattr(obj, "__nexus_operation__", None)
+    if op_defn:
+        factory = obj
+    else:
+        if factory := getattr(obj, "__nexus_operation_factory__", None):
+            op_defn = getattr(factory, "__nexus_operation__", None)
+    if not isinstance(op_defn, nexusrpc.Operation):
+        return None, None
+    return factory, op_defn
 
 
 # See
