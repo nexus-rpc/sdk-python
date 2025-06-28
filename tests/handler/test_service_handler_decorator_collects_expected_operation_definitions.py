@@ -9,7 +9,7 @@ from typing import Any, Optional, Type
 import pytest
 
 import nexusrpc
-from nexusrpc._util import get_service_definition
+from nexusrpc._util import get_operation_definition, get_service_definition
 from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
@@ -214,7 +214,7 @@ async def test_collected_operation_definitions(
         assert service.name == "Service"
 
     for method_name, expected_op in test_case.expected_operations.items():
-        actual_op = getattr(test_case.Service, method_name).__nexus_operation__
+        actual_op = get_operation_definition(getattr(test_case.Service, method_name))
         assert isinstance(actual_op, nexusrpc.Operation)
         assert actual_op.name == expected_op.name
         assert actual_op.input_type == expected_op.input_type

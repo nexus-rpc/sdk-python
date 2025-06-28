@@ -17,7 +17,12 @@ from typing import (
 import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc._types import ServiceHandlerT
-from nexusrpc._util import get_service_definition, set_service_definition
+from nexusrpc._util import (
+    get_service_definition,
+    set_operation_definition,
+    set_operation_factory,
+    set_service_definition,
+)
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_callable_name,
@@ -195,11 +200,14 @@ def operation_handler(
                     f"but operation {method.__name__} has {len(type_args)} type parameters: {type_args}"
                 )
 
-        method.__nexus_operation__ = nexusrpc.Operation(
-            name=name or method.__name__,
-            method_name=method.__name__,
-            input_type=input_type,
-            output_type=output_type,
+        set_operation_definition(
+            method,
+            nexusrpc.Operation(
+                name=name or method.__name__,
+                method_name=method.__name__,
+                input_type=input_type,
+                output_type=output_type,
+            ),
         )
         return method
 
@@ -304,14 +312,17 @@ def sync_operation(
         )
 
         method_name = get_callable_name(start)
-        operation_handler_factory.__nexus_operation__ = nexusrpc.Operation(
-            name=name or method_name,
-            method_name=method_name,
-            input_type=input_type,
-            output_type=output_type,
+        set_operation_definition(
+            operation_handler_factory,
+            nexusrpc.Operation(
+                name=name or method_name,
+                method_name=method_name,
+                input_type=input_type,
+                output_type=output_type,
+            ),
         )
 
-        start.__nexus_operation_factory__ = operation_handler_factory
+        set_operation_factory(start, operation_handler_factory)
         return start
 
     if start is None:

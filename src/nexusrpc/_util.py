@@ -39,21 +39,37 @@ def get_operation_definition(
     return getattr(obj, "__nexus_operation__", None)
 
 
+def set_operation_definition(
+    obj: Any,
+    operation_definition: nexusrpc.Operation,
+) -> None:
+    """Set the :py:class:`nexusrpc.Operation` for this object."""
+    setattr(obj, "__nexus_operation__", operation_definition)
+
+
 def get_operation_factory(
     obj: Any,
 ) -> tuple[
     Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
     Optional[nexusrpc.Operation[InputT, OutputT]],
 ]:
-    op_defn = getattr(obj, "__nexus_operation__", None)
+    op_defn = get_operation_definition(obj)
     if op_defn:
         factory = obj
     else:
         if factory := getattr(obj, "__nexus_operation_factory__", None):
-            op_defn = getattr(factory, "__nexus_operation__", None)
+            op_defn = get_operation_definition(factory)
     if not isinstance(op_defn, nexusrpc.Operation):
         return None, None
     return factory, op_defn
+
+
+def set_operation_factory(
+    obj: Any,
+    operation_factory: Callable[[Any], OperationHandler[InputT, OutputT]],
+) -> None:
+    """Set the :py:class:`OperationHandler` factory for this object."""
+    setattr(obj, "__nexus_operation_factory__", operation_factory)
 
 
 # See
