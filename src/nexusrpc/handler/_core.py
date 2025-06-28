@@ -1,3 +1,101 @@
+"""
+This module contains Handler classes. A Handler manages a collection of Nexus
+service handlers. It receives and responds to incoming Nexus requests, dispatching to
+the corresponding operation handler.
+
+A description of the dispatch logic follows.
+
+There are two cases:
+
+Case 1: Every user service handler class has a corresponding service definition
+==============================================================================
+
+I.e., there are service definitions that look like
+
+@service
+class MyServiceDefinition:
+    my_op: nexusrpc.Operation[I, O]
+
+
+and every service handler class looks like
+
+@service_handler(service=MyServiceDefinition)
+class MyServiceHandler:
+    @sync_operation
+    def my_op(self, ...)
+
+
+Import time
+-----------
+
+1. The @service decorator builds a ServiceDefinition instance and attaches it to
+   MyServiceDefinition.
+
+   The ServiceDefinition contains `name` and a map of Operation instances,
+   keyed by Operation.name (this is the publicly advertised name).
+
+   An Operation contains `name`, `method_name`, and input and output types.
+
+2. The @sync_operation decorator builds a second Operation instance and attaches
+   it to a factory method that is attached to the my_op method object.
+
+3. The @service_handler decorator acquires the ServiceDefinition instance from
+   MyServiceDefinition and attaches it to the MyServiceHandler class.
+
+
+Handler-registration time
+-------------------------
+
+4. Handler.__init__ is called with [MyServiceHandler()]
+
+5. A ServiceHandler instance is built from the user service handler class. The task
+   here is to build a map {op.name: OperationHandler} by calling factory functions.
+   The factory is attached to my_op. The key (op.name) is the key in the operations
+   map which is present in two places: on the service definition, and on the service
+   handler class.
+   What we attempt to do is call collect_operation_handler_factories. This visits
+   all op methods, retrieves the Operation instance that was stashed there, and uses
+   op.name as the key. But this Operation instance was created by sync_operation, and
+   this should not have to know the override name provided in the service definition.
+
+   In this case, what we want is the Operation instance inside the ServiceDefinition
+   attached to the service handler class.
+
+   [Incidentally, note that we already visited all the op methods in sync_operation,
+   in order to gather factories to create a service definition. When the service
+   definition is supplied, we don't need to do this, but currently we do, and we check
+   the collected factory input/output types against the service definition.]
+
+
+Request-handling time
+---------------------
+
+Now suppose a request has arrived for service S and operation O.
+
+5. The Handler does self.service_handlers[S], yielding an instance of ServiceHandler.
+
+6. The ServiceHandler does self.operation_handlers[O], yielding an instance of
+   OperationHandler
+
+Therefore we require that Handler.service_handlers and ServiceHandler.operation_handlers
+are keyed by the publicly advertised service and operation name respectively.
+
+
+
+
+
+Case 2: There exists a user service handler class without a corresonding service definition
+===========================================================================================
+
+I.e., at least one user service handler class looks like
+
+@service_handler
+class MyServiceHandler:
+    @sync_operation
+    def my_op(...)
+
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -366,7 +464,7 @@ class ServiceHandler:
     :py:func:`@nexusrpc.handler.service_handler` that defines operation handler methods
     using decorators such as :py:func:`@nexusrpc.handler.operation_handler`.
 
-    Instances of this class are created automatically from user service handler instances
+    Instances of this class are created automatically from user service implementation instances
     on creation of a Handler instance, at Nexus handler start time. While the user's class
     defines operation handlers as factory methods to be called at handler start time, this
     class contains the :py:class:`OperationHandler` instances themselves.
@@ -389,6 +487,8 @@ class ServiceHandler:
                 f"Use the :py:func:`@nexusrpc.handler.service_handler` decorator on your class to define "
                 f"a Nexus service implementation."
             )
+        # Bug! If there's a service definition, name here must be taken from the
+        # Operation in that.
         op_handlers = {
             name: factory(user_instance)
             for name, factory in collect_operation_handler_factories(
