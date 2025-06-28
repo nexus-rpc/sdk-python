@@ -18,10 +18,18 @@ from ..helpers import DummySerializer
 
 class _TestCase:
     UserService: Type[Any]
-    UserServiceHandler: Type[Any]
     # `expected` is (request, handler), where both request and handler are
     # (service_name, op_name)
     supported_request: tuple[str, str]
+
+    class UserServiceHandler:
+        async def op(self, ctx: StartOperationContext, input: None) -> bool:
+            assert (service_defn := get_service_definition(self.__class__))
+            _, op_defn = get_operation_factory(self.op)
+            assert op_defn
+            assert ctx.service == service_defn.name
+            assert ctx.operation == op_defn.name
+            return True
 
 
 class NoOverrides(_TestCase):
@@ -30,36 +38,41 @@ class NoOverrides(_TestCase):
         op: nexusrpc.Operation[None, bool]
 
     @service_handler(service=UserService)
-    class UserServiceHandler:
+    class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            assert (service_defn := get_service_definition(self.__class__))
-            _, op_defn = get_operation_factory(self.op)
-            assert op_defn
-            assert ctx.service == service_defn.name
-            assert ctx.operation == op_defn.name
-            return True
+            return await super().op(ctx, input)
 
     supported_request = ("UserService", "op")
 
 
 class OverrideServiceName(_TestCase):
-    @nexusrpc.service(name="UserServiceNameOverride")
+    @nexusrpc.service(name="UserServiceRenamed")
     class UserService:
         op: nexusrpc.Operation[None, bool]
 
     @service_handler(service=UserService)
-    class UserServiceHandler:
+    class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            assert (service_defn := get_service_definition(self.__class__))
-            _, op_defn = get_operation_factory(self.op)
-            assert op_defn
-            assert ctx.service == service_defn.name
-            assert ctx.operation == op_defn.name
-            return True
+            return await super().op(ctx, input)
 
-    supported_request = ("UserServiceNameOverride", "op")
+    supported_request = ("UserServiceRenamed", "op")
+
+
+class OverrideOperationName(_TestCase):
+    @nexusrpc.service
+    class UserService:
+        op: nexusrpc.Operation[None, bool] = nexusrpc.Operation(name="op-renamed")
+
+    @service_handler(service=UserService)
+    class UserServiceHandler(_TestCase.UserServiceHandler):
+        # TODO(prerelease): this should not be required
+        @sync_operation(name="op-renamed")
+        async def op(self, ctx: StartOperationContext, input: None) -> bool:
+            return await super().op(ctx, input)
+
+    supported_request = ("UserService", "op-renamed")
 
 
 @pytest.mark.parametrize(
@@ -67,6 +80,7 @@ class OverrideServiceName(_TestCase):
     [
         NoOverrides,
         OverrideServiceName,
+        OverrideOperationName,
     ],
 )
 @pytest.mark.asyncio
