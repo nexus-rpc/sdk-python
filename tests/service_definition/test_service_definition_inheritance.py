@@ -115,5 +115,5 @@ def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     assert isinstance(service_defn, ServiceDefinition)
     assert set(service_defn.operations) == test_case.expected_operation_names
     for op in service_defn.operations.values():
-        assert op.input_type == int
-        assert op.output_type == str
+        assert op.input_type is int
+        assert op.output_type is str

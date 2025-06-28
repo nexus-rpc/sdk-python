@@ -7,7 +7,7 @@ from typing import Any, Type, Union, cast
 
 import pytest
 
-import nexusrpc._service
+import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc.handler import (
     CancelOperationContext,

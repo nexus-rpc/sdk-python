@@ -12,12 +12,13 @@ from nexusrpc.handler import (
     FetchOperationInfoContext,
     FetchOperationResultContext,
     Handler,
+    HandlerError,
+    HandlerErrorType,
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,
     service_handler,
 )
-from nexusrpc.handler._common import HandlerError, HandlerErrorType
 from nexusrpc.handler._decorators import operation_handler
 
 

@@ -2,7 +2,7 @@ from typing import Type
 
 import pytest
 
-import nexusrpc._service
+import nexusrpc
 
 
 class NameOverrideTestCase:

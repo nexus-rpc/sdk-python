@@ -3,7 +3,7 @@ from typing import Optional, Type
 import pytest
 
 import nexusrpc
-import nexusrpc.handler
+from nexusrpc.handler import service_handler
 
 
 @nexusrpc.service
@@ -23,7 +23,7 @@ class _NameOverrideTestCase:
 
 
 class NotCalled(_NameOverrideTestCase):
-    @nexusrpc.handler.service_handler
+    @service_handler
     class ServiceImpl:
         pass
 
@@ -31,7 +31,7 @@ class NotCalled(_NameOverrideTestCase):
 
 
 class CalledWithoutArgs(_NameOverrideTestCase):
-    @nexusrpc.handler.service_handler()
+    @service_handler()
     class ServiceImpl:
         pass
 
@@ -39,7 +39,7 @@ class CalledWithoutArgs(_NameOverrideTestCase):
 
 
 class CalledWithNameArg(_NameOverrideTestCase):
-    @nexusrpc.handler.service_handler(name="my-service-impl-🌈")
+    @service_handler(name="my-service-impl-🌈")
     class ServiceImpl:
         pass
 
@@ -47,7 +47,7 @@ class CalledWithNameArg(_NameOverrideTestCase):
 
 
 class CalledWithInterface(_NameOverrideTestCase):
-    @nexusrpc.handler.service_handler(service=ServiceInterface)
+    @service_handler(service=ServiceInterface)
     class ServiceImpl:
         pass
 
@@ -55,7 +55,7 @@ class CalledWithInterface(_NameOverrideTestCase):
 
 
 class CalledWithInterfaceWithNameOverride(_NameOverrideTestCase):
-    @nexusrpc.handler.service_handler(service=ServiceInterfaceWithNameOverride)
+    @service_handler(service=ServiceInterfaceWithNameOverride)
     class ServiceImpl:
         pass
 
@@ -80,11 +80,9 @@ def test_service_decorator_name_overrides(test_case: Type[_NameOverrideTestCase]
 
 def test_name_must_not_be_empty():
     with pytest.raises(ValueError):
-        nexusrpc.handler.service_handler(name="")(object)
+        service_handler(name="")(object)
 
 
 def test_name_and_interface_are_mutually_exclusive():
     with pytest.raises(ValueError):
-        nexusrpc.handler.service_handler(
-            name="my-service-impl-🌈", service=ServiceInterface
-        )  # type: ignore (enforced by overloads)
+        service_handler(name="my-service-impl-🌈", service=ServiceInterface)  # type: ignore (enforced by overloads)
