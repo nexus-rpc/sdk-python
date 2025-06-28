@@ -20,8 +20,10 @@ from nexusrpc._types import ServiceHandlerT
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_callable_name,
+    get_service_definition,
     get_start_method_input_and_output_type_annotations,
     is_async_callable,
+    set_service_definition,
 )
 
 from ._operation_handler import (
@@ -98,13 +100,11 @@ def service_handler(
         )
     _service = None
     if service:
-        # TODO(prerelease): This allows a non-decorated class to act as a service
-        # definition if it inherits from a decorated class. Is this what we want?
-        _service = getattr(service, "__nexus_service__", None)
+        _service = get_service_definition(service)
         if not _service:
             raise ValueError(
                 f"{service} is not a valid Nexus service definition. "
-                f"Use the @nexusrpc.service decorator on your class to define a Nexus service definition."
+                f"Use the @nexusrpc.service decorator on a class to define a Nexus service definition."
             )
 
     def decorator(cls: Type[ServiceHandlerT]) -> Type[ServiceHandlerT]:
@@ -120,7 +120,7 @@ def service_handler(
             _name, op_factories
         )
         validate_operation_handler_methods(cls, op_factories, service)
-        cls.__nexus_service__ = service  # type: ignore
+        set_service_definition(cls, service)
         return cls
 
     if cls is None:

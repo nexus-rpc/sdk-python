@@ -22,6 +22,7 @@ from typing import (
 
 from nexusrpc._types import InputT, OutputT, ServiceDefinitionT
 from nexusrpc._util import get_annotations
+from nexusrpc.handler._util import get_service_definition, set_service_definition
 
 
 @dataclass
@@ -112,7 +113,7 @@ def service(
         if name is not None and not name:
             raise ValueError("Service name must not be empty.")
         defn = ServiceDefinition.from_class(cls, name or cls.__name__)
-        setattr(cls, "__nexus_service__", defn)
+        set_service_definition(cls, defn)
 
         # In order for callers to refer to operations at run-time, a decorated user
         # service class must itself have a class attribute for every operation, even if
@@ -148,7 +149,7 @@ class ServiceDefinition:
 
         # If this class is decorated then return the already-computed ServiceDefinition.
         # Do not use getattr since it would retrieve a value from a decorated parent class.
-        if defn := user_class.__dict__.get("__nexus_service__"):
+        if defn := get_service_definition(user_class):
             if isinstance(defn, ServiceDefinition):
                 return defn
 

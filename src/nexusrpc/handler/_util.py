@@ -19,6 +19,7 @@ from typing_extensions import TypeGuard
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
+from nexusrpc._types import ServiceDefinitionT
 from nexusrpc.handler._common import StartOperationContext
 
 if TYPE_CHECKING:
@@ -87,6 +88,24 @@ def get_operation_factory(
     if not isinstance(op_defn, nexusrpc.Operation):
         return None, None
     return factory, op_defn
+
+
+def get_service_definition(
+    cls: Type[ServiceDefinitionT],
+) -> Optional[nexusrpc.ServiceDefinition]:
+    if not isinstance(cls, type):
+        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    # getattr would allow a non-decorated class to act as a service
+    # definition if it inherits from a decorated class.
+    return cls.__dict__.get("__nexus_service__")
+
+
+def set_service_definition(
+    cls: Type[ServiceDefinitionT], service_definition: nexusrpc.ServiceDefinition
+) -> None:
+    if not isinstance(cls, type):
+        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    setattr(cls, "__nexus_service__", service_definition)
 
 
 def get_callable_name(fn: Callable[..., Any]) -> str:
