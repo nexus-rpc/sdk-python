@@ -1,12 +1,11 @@
 import dataclasses
 import uuid
-from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Optional, Type
+from typing import Any
 
 import pytest
 
-from nexusrpc import Content, LazyValue, OperationInfo, OperationState
+from nexusrpc import LazyValue, OperationInfo, OperationState
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -20,6 +19,7 @@ from nexusrpc.handler import (
     service_handler,
 )
 from nexusrpc.handler._decorators import operation_handler
+from tests.helpers import DummySerializer
 
 
 class _TestCase:
@@ -108,16 +108,3 @@ async def test_async_operation_happy_path():
     )
     await handler.cancel_operation(cancel_ctx, start_result.token)
     assert start_result.token not in _operation_results
-
-
-@dataclass
-class DummySerializer:
-    value: int
-
-    async def serialize(self, value: Any) -> Content:
-        raise NotImplementedError
-
-    async def deserialize(
-        self, content: Content, as_type: Optional[Type[Any]] = None
-    ) -> Any:
-        return self.value
