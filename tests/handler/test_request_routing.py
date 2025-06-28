@@ -67,8 +67,7 @@ class OverrideOperationName(_TestCase):
 
     @service_handler(service=UserService)
     class UserServiceHandler(_TestCase.UserServiceHandler):
-        # TODO(prerelease): this should not be required
-        @sync_operation(name="op-renamed")
+        @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
             return await super().op(ctx, input)
 
