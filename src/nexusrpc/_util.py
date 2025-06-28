@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 if TYPE_CHECKING:
     import nexusrpc
@@ -8,21 +8,31 @@ if TYPE_CHECKING:
 
 
 def get_service_definition(
-    cls: Type[ServiceDefinitionT],
+    obj: Any,
 ) -> Optional[nexusrpc.ServiceDefinition]:
-    if not isinstance(cls, type):
-        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    """Return the :py:class:`nexusrpc.ServiceDefinition` for the object, or None"""
     # getattr would allow a non-decorated class to act as a service
     # definition if it inherits from a decorated class.
-    return cls.__dict__.get("__nexus_service__")
+    if isinstance(obj, type):
+        return obj.__dict__.get("__nexus_service__")
+    else:
+        return getattr(obj, "__dict__", {}).get("__nexus_service__")
 
 
 def set_service_definition(
     cls: Type[ServiceDefinitionT], service_definition: nexusrpc.ServiceDefinition
 ) -> None:
+    """Set the :py:class:`nexusrpc.ServiceDefinition` for this object."""
     if not isinstance(cls, type):
         raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
     setattr(cls, "__nexus_service__", service_definition)
+
+
+def get_operation_definition(
+    obj: Any,
+) -> Optional[nexusrpc.Operation]:
+    """Return the :py:class:`nexusrpc.Operation` for the object, or None"""
+    return getattr(obj, "__nexus_operation__", None)
 
 
 # See
