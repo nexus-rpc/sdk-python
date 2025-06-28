@@ -48,40 +48,27 @@ Handler-registration time
 
 4. Handler.__init__ is called with [MyServiceHandler()]
 
-5. A ServiceHandler instance is built from the user service handler class. The task
-   here is to build a map {op.name: OperationHandler} by calling factory functions.
-   The factory is attached to my_op. The key (op.name) is the key in the operations
-   map which is present in two places: on the service definition, and on the service
-   handler class.
-   What we attempt to do is call collect_operation_handler_factories. This visits
-   all op methods, retrieves the Operation instance that was stashed there, and uses
-   op.name as the key. But this Operation instance was created by sync_operation, and
-   this should not have to know the override name provided in the service definition.
+5. A ServiceHandler instance is built from the user service handler class. This comprises a
+   ServiceDefinition and a map {op.name: OperationHandler}. The map is built by taking
+   every operation in the service definition and locating the operation handler factory method
+   whose *method name* matches the method name of the operation in the service definition.
 
-   In this case, what we want is the Operation instance inside the ServiceDefinition
-   attached to the service handler class.
-
-   [Incidentally, note that we already visited all the op methods in sync_operation,
-   in order to gather factories to create a service definition. When the service
-   definition is supplied, we don't need to do this, but currently we do, and we check
-   the collected factory input/output types against the service definition.]
-
+6. Finally we build a map {service_definition.name: ServiceHandler} using the service definition
+   in each ServiceHandler.
 
 Request-handling time
 ---------------------
 
 Now suppose a request has arrived for service S and operation O.
 
-5. The Handler does self.service_handlers[S], yielding an instance of ServiceHandler.
+6. The Handler does self.service_handlers[S], yielding an instance of ServiceHandler.
 
-6. The ServiceHandler does self.operation_handlers[O], yielding an instance of
+7. The ServiceHandler does self.operation_handlers[O], yielding an instance of
    OperationHandler
 
 Therefore we require that Handler.service_handlers and ServiceHandler.operation_handlers
-are keyed by the publicly advertised service and operation name respectively.
-
-
-
+are keyed by the publicly advertised service and operation name respectively. This was achieved
+at steps (6) and (5) respectively.
 
 
 Case 2: There exists a user service handler class without a corresonding service definition
@@ -94,6 +81,11 @@ class MyServiceHandler:
     @sync_operation
     def my_op(...)
 
+This follows Case 1 with the following differences:
+
+- Step (1) does not occur.
+- At step (3) the ServiceDefinition is synthesized by the @service_handler decorator from
+  MyServiceHandler.
 """
 
 from __future__ import annotations
@@ -115,7 +107,7 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
-from nexusrpc._util import get_service_definition
+from nexusrpc._util import get_operation_definition, get_service_definition
 from nexusrpc.handler._util import is_async_callable
 
 from .. import OperationInfo
@@ -487,14 +479,22 @@ class ServiceHandler:
                 f"Use the :py:func:`@nexusrpc.handler.service_handler` decorator on your class to define "
                 f"a Nexus service implementation."
             )
-        # Bug! If there's a service definition, name here must be taken from the
-        # Operation in that.
-        op_handlers = {
-            name: factory(user_instance)
-            for name, factory in collect_operation_handler_factories(
-                user_instance.__class__, service
-            ).items()
-        }
+
+        factories_by_method_name = {}
+        for factory in collect_operation_handler_factories(
+            user_instance.__class__, service
+        ).values():
+            op_defn = get_operation_definition(factory)
+            if not op_defn:
+                raise ValueError(
+                    f"Operation handler factory {factory} does not have an operation definition."
+                )
+            factories_by_method_name[op_defn.method_name] = factory
+
+        op_handlers = {}
+        for op_name, op in service.operations.items():
+            factory = factories_by_method_name[op.method_name]
+            op_handlers[op_name] = factory(user_instance)
         return cls(
             service=service,
             operation_handlers=op_handlers,
