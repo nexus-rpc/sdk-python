@@ -3,6 +3,7 @@ from typing import Any, Type
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_service_definition
 
 
 class Output:
@@ -35,8 +36,8 @@ class OperationDeclarations(OperationDeclarationTestCase):
 def test_interface_operation_declarations(
     test_case: Type[OperationDeclarationTestCase],
 ):
-    metadata = getattr(test_case.Interface, "__nexus_service__")
-    assert isinstance(metadata, nexusrpc.ServiceDefinition)
+    defn = get_service_definition(test_case.Interface)
+    assert isinstance(defn, nexusrpc.ServiceDefinition)
     actual_ops = {
         op.name: (op.input_type, op.output_type)
         for op in test_case.Interface.__dict__.values()

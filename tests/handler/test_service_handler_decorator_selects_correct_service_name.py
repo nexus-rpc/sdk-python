@@ -3,6 +3,7 @@ from typing import Optional, Type
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler import service_handler
 
 
@@ -73,7 +74,7 @@ class CalledWithInterfaceWithNameOverride(_NameOverrideTestCase):
     ],
 )
 def test_service_decorator_name_overrides(test_case: Type[_NameOverrideTestCase]):
-    service = getattr(test_case.ServiceImpl, "__nexus_service__")
+    service = get_service_definition(test_case.ServiceImpl)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     assert service.name == test_case.expected_name
 

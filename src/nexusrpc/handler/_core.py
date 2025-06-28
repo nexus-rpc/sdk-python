@@ -17,7 +17,7 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
-import nexusrpc._service
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler._util import is_async_callable
 
 from .. import OperationInfo
@@ -382,7 +382,7 @@ class ServiceHandler:
     def from_user_instance(cls, user_instance: Any) -> Self:
         """Create a :py:class:`ServiceHandler` from a user service instance."""
 
-        service = getattr(user_instance.__class__, "__nexus_service__", None)
+        service = get_service_definition(user_instance.__class__)
         if not isinstance(service, nexusrpc.ServiceDefinition):
             raise RuntimeError(
                 f"Service '{user_instance}' does not have a service definition. "

@@ -1,5 +1,33 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Type
+
+if TYPE_CHECKING:
+    import nexusrpc
+    from nexusrpc._types import ServiceDefinitionT
+
+
+def get_service_definition(
+    cls: Type[ServiceDefinitionT],
+) -> Optional[nexusrpc.ServiceDefinition]:
+    if not isinstance(cls, type):
+        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    # getattr would allow a non-decorated class to act as a service
+    # definition if it inherits from a decorated class.
+    return cls.__dict__.get("__nexus_service__")
+
+
+def set_service_definition(
+    cls: Type[ServiceDefinitionT], service_definition: nexusrpc.ServiceDefinition
+) -> None:
+    if not isinstance(cls, type):
+        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    setattr(cls, "__nexus_service__", service_definition)
+
+
 # See
 # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
+
 try:
     from inspect import get_annotations  # type: ignore
 except ImportError:

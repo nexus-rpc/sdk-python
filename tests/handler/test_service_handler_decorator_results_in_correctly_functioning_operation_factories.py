@@ -9,6 +9,7 @@ import pytest
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -83,9 +84,7 @@ class SyncOperation(_TestCase):
 async def test_collected_operation_factories_match_service_definition(
     test_case: Type[_TestCase],
 ):
-    service: nexusrpc.ServiceDefinition = getattr(
-        test_case.Service, "__nexus_service__"
-    )
+    service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     assert service.name == "Service"
     operation_factories = collect_operation_handler_factories(

@@ -3,6 +3,7 @@ from typing import Type
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_service_definition
 
 
 class NameOverrideTestCase:
@@ -43,8 +44,9 @@ class CalledWithNameArg(NameOverrideTestCase):
     ],
 )
 def test_interface_name_overrides(test_case: Type[NameOverrideTestCase]):
-    metadata = getattr(test_case.Interface, "__nexus_service__")
-    assert metadata.name == test_case.expected_name
+    defn = get_service_definition(test_case.Interface)
+    assert defn
+    assert defn.name == test_case.expected_name
 
 
 def test_name_must_not_be_empty():

@@ -9,6 +9,7 @@ from typing import Any, Optional, Type
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
@@ -203,15 +204,15 @@ async def test_collected_operation_definitions(
     if test_case.skip:
         pytest.skip(test_case.skip)
 
-    service: nexusrpc.ServiceDefinition = getattr(
-        test_case.Service, "__nexus_service__"
-    )
+    service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
-    assert (
-        service.name == "Service"
-        if test_case.Contract is None
-        else test_case.Contract.__nexus_service__.name  # type: ignore
-    )
+    if test_case.Contract:
+        defn = get_service_definition(test_case.Contract)
+        assert isinstance(defn, nexusrpc.ServiceDefinition)
+        assert defn.name == service.name
+    else:
+        assert service.name == "Service"
+
     for method_name, expected_op in test_case.expected_operations.items():
         actual_op = getattr(test_case.Service, method_name).__nexus_operation__
         assert isinstance(actual_op, nexusrpc.Operation)

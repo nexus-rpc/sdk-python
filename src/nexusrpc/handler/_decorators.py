@@ -17,13 +17,12 @@ from typing import (
 import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc._types import ServiceHandlerT
+from nexusrpc._util import get_service_definition, set_service_definition
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_callable_name,
-    get_service_definition,
     get_start_method_input_and_output_type_annotations,
     is_async_callable,
-    set_service_definition,
 )
 
 from ._operation_handler import (

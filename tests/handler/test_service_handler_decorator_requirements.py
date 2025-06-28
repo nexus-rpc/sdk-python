@@ -5,6 +5,7 @@ from typing import Any, Type
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler import (
     OperationHandler,
     service_handler,
@@ -154,7 +155,7 @@ class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
 def test_service_definition_inheritance_behavior(
     test_case: _ServiceDefinitionInheritanceTestCase,
 ):
-    service_defn = getattr(test_case.UserService, "__nexus_service__", None)
+    service_defn = get_service_definition(test_case.UserService)
 
     assert service_defn is not None, (
         f"{test_case.UserService.__name__} lacks __nexus_service__ attribute."

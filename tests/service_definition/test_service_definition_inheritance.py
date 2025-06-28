@@ -8,6 +8,7 @@ from typing import Any, Optional, Type
 import pytest
 
 from nexusrpc import Operation, ServiceDefinition, service
+from nexusrpc._util import get_service_definition
 
 # See https://docs.python.org/3/howto/annotations.html
 
@@ -111,7 +112,7 @@ def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
             service(test_case.UserService)
         return
 
-    service_defn = getattr(service(test_case.UserService), "__nexus_service__", None)
+    service_defn = get_service_definition(service(test_case.UserService))
     assert isinstance(service_defn, ServiceDefinition)
     assert set(service_defn.operations) == test_case.expected_operation_names
     for op in service_defn.operations.values():
