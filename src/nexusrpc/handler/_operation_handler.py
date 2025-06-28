@@ -16,7 +16,7 @@ import nexusrpc
 import nexusrpc._service
 from nexusrpc import InputT, OutputT
 from nexusrpc._types import ServiceHandlerT
-from nexusrpc.handler._util import get_operation_factory, is_async_callable
+from nexusrpc.handler._util import get_operation_factory, is_async_callable, is_subtype
 
 from .. import OperationInfo
 from ._common import (
@@ -265,7 +265,7 @@ def validate_operation_handler_methods(
             and Any not in (method_op_defn.input_type, op_defn.input_type)
             and not (
                 op_defn.input_type == method_op_defn.input_type
-                or issubclass(op_defn.input_type, method_op_defn.input_type)
+                or is_subtype(op_defn.input_type, method_op_defn.input_type)
             )
         ):
             raise TypeError(
@@ -280,7 +280,7 @@ def validate_operation_handler_methods(
             method_op_defn.output_type is not None
             and op_defn.output_type is not None
             and Any not in (method_op_defn.output_type, op_defn.output_type)
-            and not issubclass(method_op_defn.output_type, op_defn.output_type)
+            and not is_subtype(method_op_defn.output_type, op_defn.output_type)
         ):
             raise TypeError(
                 f"Operation '{op_name}' in service '{user_service_cls}' has output type '{method_op_defn.output_type}', "

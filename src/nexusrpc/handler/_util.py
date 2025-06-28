@@ -23,7 +23,7 @@ from nexusrpc._types import ServiceDefinitionT
 from nexusrpc.handler._common import StartOperationContext
 
 if TYPE_CHECKING:
-    from nexusrpc.handler._operation_handler import OperationHandler
+    from nexusrpc.handler._operation import OperationHandler
 
 ServiceHandlerT = TypeVar("ServiceHandlerT")
 
@@ -118,6 +118,14 @@ def get_callable_name(fn: Callable[..., Any]) -> str:
             f"expected {fn} to be a function or callable instance."
         )
     return method_name
+
+
+def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
+    # Note that issubclass() argument 2 cannot be a parameterized generic
+    # TODO(nexus-preview): review desired type compatibility logic
+    if type1 == type2:
+        return True
+    return issubclass(type1, typing.get_origin(type2) or type2)
 
 
 # Copied from https://github.com/modelcontextprotocol/python-sdk
