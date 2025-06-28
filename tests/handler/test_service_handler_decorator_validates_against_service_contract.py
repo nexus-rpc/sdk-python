@@ -64,7 +64,7 @@ class MissingOperation(_InterfaceImplementationTestCase):
     class Impl:
         pass
 
-    error_message = "does not implement operation 'op'"
+    error_message = "does not implement an operation with method name 'op'"
 
 
 class MissingInputAnnotation(_InterfaceImplementationTestCase):

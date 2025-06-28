@@ -33,7 +33,9 @@ class MissingOperationFromDefinition(_DecoratorValidationTestCase):
         @operation_handler
         def op_A(self) -> OperationHandler[int, str]: ...
 
-    expected_error_message_pattern = r"does not implement operation 'op_B'"
+    expected_error_message_pattern = (
+        r"does not implement an operation with method name 'op_B'"
+    )
 
 
 class MethodNameDoesNotMatchDefinition(_DecoratorValidationTestCase):
@@ -167,7 +169,8 @@ def test_service_definition_inheritance_behavior(
     assert set(service_defn.operations) == test_case.expected_ops
 
     with pytest.raises(
-        TypeError, match="does not implement operation 'op_from_child_definition'"
+        TypeError,
+        match="does not implement an operation with method name 'op_from_child_definition'",
     ):
 
         @service_handler(service=test_case.UserService)
