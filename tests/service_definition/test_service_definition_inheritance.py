@@ -21,6 +21,7 @@ class _TestCase:
 
 
 class TypeAnnotationsOnly(_TestCase):
+    @nexusrpc.service
     class A1:
         a: Operation[int, str]
 
@@ -32,6 +33,7 @@ class TypeAnnotationsOnly(_TestCase):
 
 
 class TypeAnnotationsWithValues(_TestCase):
+    @nexusrpc.service
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
 
@@ -45,6 +47,7 @@ class TypeAnnotationsWithValues(_TestCase):
 class TypeAnnotationsWithValuesAllFromParentClass(_TestCase):
     # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
     # A2.__annotations__ returns annotations from parent
+    @nexusrpc.service
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
         b: Operation[int, str] = Operation[int, str](name="b-name")
@@ -57,6 +60,7 @@ class TypeAnnotationsWithValuesAllFromParentClass(_TestCase):
 
 
 class TypeAnnotationWithInheritedInstance(_TestCase):
+    @nexusrpc.service
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
 
@@ -86,6 +90,7 @@ class InvalidUseOfTypeAsValue(_TestCase):
 
 
 class ChildClassSynthesizedWithTypeValues(_TestCase):
+    @nexusrpc.service
     class A1:
         a: Operation[int, str]
 
