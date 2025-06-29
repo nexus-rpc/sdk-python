@@ -219,7 +219,7 @@ def validate_operation_handler_methods(
     """
     for op_defn in service_definition.operations.values():
         if not op_defn.method_name:
-            raise RuntimeError(
+            raise ValueError(
                 f"Operation '{op_defn}' in service definition '{service_definition}' "
                 f"does not have a method name. "
             )
@@ -233,7 +233,7 @@ def validate_operation_handler_methods(
         # TODO(prerelease): it should be guaranteed that `method` is a factory, so this next call should be unnecessary.
         method, method_op_defn = get_operation_factory(method)
         if not isinstance(method_op_defn, nexusrpc.Operation):
-            raise RuntimeError(
+            raise ValueError(
                 f"Method '{method}' in class '{user_service_cls.__name__}' "
                 f"does not have a valid __nexus_operation__ attribute. "
                 f"Did you forget to decorate the operation method with an operation handler decorator such as "
@@ -299,7 +299,7 @@ def service_definition_from_operation_handler_methods(
     for name, method in user_methods.items():
         _, op_defn = get_operation_factory(method)
         if not isinstance(op_defn, nexusrpc.Operation):
-            raise RuntimeError(
+            raise ValueError(
                 f"In service '{service_name}', could not locate operation definition for "
                 f"user operation handler method '{name}'. Did you forget to decorate the operation "
                 f"method with an operation handler decorator such as "
