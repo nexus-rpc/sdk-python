@@ -8,10 +8,9 @@ from nexusrpc import Content, LazyValue
 from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultSync,
-    SyncioHandler,
     service_handler,
-    sync_operation,
 )
+from nexusrpc.handler.syncio import Handler, sync_operation
 
 
 class _TestCase:
@@ -30,7 +29,7 @@ class SyncHandlerHappyPath:
 
 @pytest.mark.parametrize("test_case", [SyncHandlerHappyPath])
 def test_sync_handler_happy_path(test_case: Type[_TestCase]):
-    handler = SyncioHandler(
+    handler = Handler(
         user_service_handlers=[test_case.user_service_handler],
         executor=ThreadPoolExecutor(max_workers=1),
     )

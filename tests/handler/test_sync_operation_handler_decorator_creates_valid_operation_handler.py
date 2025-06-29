@@ -8,6 +8,7 @@ from nexusrpc.handler import (
     StartOperationResultSync,
     service_handler,
     sync_operation,
+    syncio,
 )
 from nexusrpc.handler._util import is_async_callable
 
@@ -17,7 +18,7 @@ class MyServiceHandler:
     def __init__(self):
         self.mutable_container = []
 
-    @sync_operation
+    @syncio.sync_operation
     def my_def_op(self, ctx: StartOperationContext, input: int) -> int:
         """
         This is the docstring for the `my_def_op` sync operation.

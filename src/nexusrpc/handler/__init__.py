@@ -19,10 +19,7 @@ from ._common import (
     StartOperationResultAsync as StartOperationResultAsync,
     StartOperationResultSync as StartOperationResultSync,
 )
-from ._core import (
-    Handler as Handler,
-    SyncioHandler as SyncioHandler,
-)
+from ._core import Handler as Handler
 from ._decorators import (
     service_handler as service_handler,
     sync_operation as sync_operation,
