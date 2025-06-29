@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Nexus Python SDK"
 readme = "README.md"
 authors = [
-    { name = "Dan Davison", email = "dandavison7@gmail.com" }
+    { name = "Temporal Technologies", email = "sdk@temporal.io" }
 ]
 requires-python = ">=3.9"
 dependencies = [

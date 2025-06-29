@@ -22,11 +22,17 @@ class Link:
     It can be used to pass information about the caller to the handler, or vice versa.
     """
 
-    # The URL must be percent-encoded.
     url: str
-    # Can describe an actual data type for decoding the URL. Valid chars: alphanumeric, '_', '.',
-    # '/'
+    """
+    Link URL. Must be percent-encoded.
+    """
+
     type: str
+    """
+    Can describe an data type for decoding the URL.
+
+    Valid chars: alphanumeric, '_', '.', '/'
+    """
 
 
 class OperationState(Enum):
@@ -46,11 +52,15 @@ class OperationInfo:
     Information about an operation.
     """
 
-    # Token identifying the operation (returned on operation start).
     token: str
+    """
+    Token identifying the operation (returned on operation start).
+    """
 
-    # The operation's state
     state: OperationState
+    """
+    The operation's state.
+    """
 
 
 class OperationErrorState(Enum):

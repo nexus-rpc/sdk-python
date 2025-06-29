@@ -501,7 +501,7 @@ class ServiceHandler:
         if operation not in self.service.operations:
             msg = (
                 f"Nexus service definition '{self.service.name}' has no operation '{operation}'. "
-                f"There are {len(self.service.operations)} operations in the definition."
+                f"There are {len(self.service.operations)} operations in the definition"
             )
             if self.service.operations:
                 msg += f": {', '.join(sorted(self.service.operations.keys()))}"
