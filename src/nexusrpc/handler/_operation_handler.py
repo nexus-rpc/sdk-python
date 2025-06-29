@@ -181,11 +181,15 @@ def collect_operation_handler_factories_by_method_name(
                 )
             if service and op_defn.method_name not in service_method_names:
                 _names = ", ".join(f"'{s}'" for s in sorted(service_method_names))
-                raise TypeError(
+                msg = (
                     f"Operation method name '{op_defn.method_name}' in service handler {user_service_cls} "
                     f"does not match an operation method name in the service definition. "
-                    f"Available method names in the service definition: {_names}."
+                    f"Available method names in the service definition: "
                 )
+                msg += _names if _names else "[none]"
+                msg += "."
+                raise TypeError(msg)
+
             # TODO(preview) op_defn.method name should be non-nullable
             assert op_defn.method_name, (
                 f"Operation '{op_defn}' method name should not be None. This is an SDK bug."
