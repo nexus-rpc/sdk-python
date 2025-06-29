@@ -8,21 +8,21 @@ A description of the dispatch logic follows.
 There are two cases:
 
 Case 1: Every user service handler class has a corresponding service definition
-==============================================================================
+===============================================================================
 
-I.e., there are service definitions that look like
+I.e., there are service definitions that look like::
 
-@service
-class MyServiceDefinition:
-    my_op: nexusrpc.Operation[I, O]
+    @service
+    class MyServiceDefinition:
+        my_op: nexusrpc.Operation[I, O]
 
 
-and every service handler class looks like
+and every service handler class looks like::
 
-@service_handler(service=MyServiceDefinition)
-class MyServiceHandler:
-    @sync_operation
-    def my_op(self, ...)
+    @service_handler(service=MyServiceDefinition)
+    class MyServiceHandler:
+        @sync_operation
+        def my_op(self, ...)
 
 
 Import time
@@ -46,14 +46,14 @@ Import time
 Handler-registration time
 -------------------------
 
-4. Handler.__init__ is called with [MyServiceHandler()]
+1. Handler.__init__ is called with [MyServiceHandler()]
 
-5. A ServiceHandler instance is built from the user service handler class. This comprises a
+2. A ServiceHandler instance is built from the user service handler class. This comprises a
    ServiceDefinition and a map {op.name: OperationHandler}. The map is built by taking
    every operation in the service definition and locating the operation handler factory method
    whose *method name* matches the method name of the operation in the service definition.
 
-6. Finally we build a map {service_definition.name: ServiceHandler} using the service definition
+3. Finally we build a map {service_definition.name: ServiceHandler} using the service definition
    in each ServiceHandler.
 
 Request-handling time
@@ -61,27 +61,27 @@ Request-handling time
 
 Now suppose a request has arrived for service S and operation O.
 
-6. The Handler does self.service_handlers[S], yielding an instance of ServiceHandler.
+1. The Handler does self.service_handlers[S], yielding an instance of ServiceHandler.
 
-7. The ServiceHandler does self.operation_handlers[O], yielding an instance of
+2. The ServiceHandler does self.operation_handlers[O], yielding an instance of
    OperationHandler
 
 Therefore we require that Handler.service_handlers and ServiceHandler.operation_handlers
 are keyed by the publicly advertised service and operation name respectively. This was achieved
-at steps (6) and (5) respectively.
+at steps (3) and (2) respectively.
 
 
 Case 2: There exists a user service handler class without a corresponding service definition
-===========================================================================================
+============================================================================================
 
-I.e., at least one user service handler class looks like
+I.e., at least one user service handler class looks like::
 
-@service_handler
-class MyServiceHandler:
-    @sync_operation
-    def my_op(...)
+    @service_handler
+    class MyServiceHandler:
+        @sync_operation
+        def my_op(...)
 
-This follows Case 1 with the following differences:
+This follows Case 1 with the following differences at import time:
 
 - Step (1) does not occur.
 - At step (3) the ServiceDefinition is synthesized by the @service_handler decorator from
@@ -174,11 +174,13 @@ class BaseHandler(ABC):
                 for op_name, operation_handler in sh.operation_handlers.items():
                     if not is_async_callable(operation_handler.start):
                         raise RuntimeError(
-                            f"Service '{sh.service.name}' operation '{op_name}' start method must be an `async def` if no executor is provided."
+                            f"Service '{sh.service.name}' operation '{op_name}' "
+                            "start method must be an `async def` if no executor is provided."
                         )
                     if not is_async_callable(operation_handler.cancel):
                         raise RuntimeError(
-                            f"Service '{sh.service.name}' operation '{op_name}' cancel method must be an `async def` if no executor is provided."
+                            f"Service '{sh.service.name}' operation '{op_name}' "
+                            "cancel method must be an `async def` if no executor is provided."
                         )
             self.service_handlers[sh.service.name] = sh
 
