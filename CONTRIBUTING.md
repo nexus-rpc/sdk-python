@@ -1,19 +1,15 @@
-### Type-checking, Linting, and Formatting
+### Type-checking and linting
 
 ```sh
-uv run pyright
-uv run mypy --check-untyped-defs .
-uv run ruff check --select I
-uv run ruff format --check
+uv run poe lint
 ```
 
 ### Formatting
 ```
-uv run ruff check --select I --fix
-uv run ruff format
+uv run poe format
 ```
 
 ### API docs
 ```
-uv run pydoctor src/nexusrpc
+uv run poe docs
 ```
