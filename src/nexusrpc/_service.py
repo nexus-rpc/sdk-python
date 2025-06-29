@@ -122,6 +122,10 @@ def service(
         # service class must itself have a class attribute for every operation, even if
         # declared only via a type annotation, and whether inherited from a parent class
         # or not.
+        #
+        # TODO(preview): it is sufficient to do this setattr only for the subset of
+        # operations that were declared on *this* class. Currently however we are
+        # setting all inherited operations.
         for op_name, op in defn.operations.items():
             setattr(cls, op_name, op)
 
