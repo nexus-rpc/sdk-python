@@ -166,7 +166,6 @@ class HandlerError(Exception):
         message: str,
         *,
         type: HandlerErrorType,
-        cause: Optional[BaseException] = None,
         retryable: Optional[bool] = None,
     ):
         """
@@ -175,13 +174,10 @@ class HandlerError(Exception):
         :param message: A descriptive message for the error. This will become the `message`
                         in the resulting Nexus Failure object.
         :param type: The type of handler error.
-        :param cause: The original exception that caused this handler error, if any.
-                      This will be encoded in the `details` of the Nexus Failure object.
         :param retryable: Whether this error should be retried. If not
                           provided, the default behavior for the error type is used.
         """
         super().__init__(message)
-        self.__cause__ = cause
         self._type = type
         self._retryable = retryable
 
