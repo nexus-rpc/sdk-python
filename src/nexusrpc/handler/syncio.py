@@ -23,7 +23,7 @@ from nexusrpc.handler._common import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
-from nexusrpc.handler._core import BaseHandler
+from nexusrpc.handler._core import BaseServiceCollectionHandler
 from nexusrpc.handler._util import (
     get_callable_name,
     get_start_method_input_and_output_type_annotations,
@@ -33,7 +33,7 @@ from nexusrpc.handler._util import (
 from ._operation_handler import OperationHandler
 
 
-class Handler(BaseHandler):
+class Handler(BaseServiceCollectionHandler):
     """
     A Nexus handler with non-async `def` methods.
 

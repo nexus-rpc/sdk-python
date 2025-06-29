@@ -132,7 +132,61 @@ from ._operation_handler import (
 # TODO(preview): pass mypy
 
 
-class BaseHandler(ABC):
+class AbstractHandler(ABC):
+    @abstractmethod
+    def start_operation(
+        self,
+        ctx: StartOperationContext,
+        input: LazyValue,
+    ) -> Union[
+        StartOperationResultSync[Any],
+        StartOperationResultAsync,
+        Awaitable[
+            Union[
+                StartOperationResultSync[Any],
+                StartOperationResultAsync,
+            ]
+        ],
+    ]: ...
+
+    @abstractmethod
+    def fetch_operation_info(
+        self, ctx: FetchOperationInfoContext, token: str
+    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
+        """Handle a Fetch Operation Info request.
+
+        Args:
+            ctx: The operation context.
+            token: The operation token.
+        """
+        ...
+
+    @abstractmethod
+    def fetch_operation_result(
+        self, ctx: FetchOperationResultContext, token: str
+    ) -> Union[Any, Awaitable[Any]]:
+        """Handle a Fetch Operation Result request.
+
+        Args:
+            ctx: The operation context.
+            token: The operation token.
+        """
+        ...
+
+    @abstractmethod
+    def cancel_operation(
+        self, ctx: CancelOperationContext, token: str
+    ) -> Union[None, Awaitable[None]]:
+        """Handle a Cancel Operation request.
+
+        Args:
+            ctx: The operation context.
+            token: The operation token.
+        """
+        ...
+
+
+class BaseServiceCollectionHandler(AbstractHandler):
     """
     A Nexus handler, managing a collection of Nexus service handlers.
 
@@ -195,60 +249,8 @@ class BaseHandler(ABC):
             )
         return service
 
-    @abstractmethod
-    def start_operation(
-        self,
-        ctx: StartOperationContext,
-        input: LazyValue,
-    ) -> Union[
-        StartOperationResultSync[Any],
-        StartOperationResultAsync,
-        Awaitable[
-            Union[
-                StartOperationResultSync[Any],
-                StartOperationResultAsync,
-            ]
-        ],
-    ]: ...
 
-    @abstractmethod
-    def fetch_operation_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
-        """Handle a Fetch Operation Info request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        ...
-
-    @abstractmethod
-    def fetch_operation_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> Union[Any, Awaitable[Any]]:
-        """Handle a Fetch Operation Result request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        ...
-
-    @abstractmethod
-    def cancel_operation(
-        self, ctx: CancelOperationContext, token: str
-    ) -> Union[None, Awaitable[None]]:
-        """Handle a Cancel Operation request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        ...
-
-
-class Handler(BaseHandler):
+class Handler(BaseServiceCollectionHandler):
     """
     A Nexus handler manages a collection of Nexus service handlers.
 
