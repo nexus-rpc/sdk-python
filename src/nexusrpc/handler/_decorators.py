@@ -17,6 +17,7 @@ import nexusrpc
 from nexusrpc import InputT, OutputT
 from nexusrpc._types import ServiceHandlerT
 from nexusrpc._util import (
+    get_callable_name,
     get_service_definition,
     set_operation_definition,
     set_operation_factory,
@@ -24,7 +25,6 @@ from nexusrpc._util import (
 )
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
-    get_callable_name,
     get_start_method_input_and_output_type_annotations,
 )
 

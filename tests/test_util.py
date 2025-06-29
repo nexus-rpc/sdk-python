@@ -1,6 +1,6 @@
 from functools import partial
 
-from nexusrpc.handler._util import is_async_callable
+from nexusrpc._util import is_async_callable
 
 
 def test_async_def_is_async_callable():

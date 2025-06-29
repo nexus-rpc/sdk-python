@@ -3,13 +3,13 @@ from unittest import mock
 import pytest
 
 from nexusrpc import get_operation_factory
+from nexusrpc._util import is_async_callable
 from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultSync,
     service_handler,
     sync_operation,
 )
-from nexusrpc.handler._util import is_async_callable
 from nexusrpc.syncio import handler as syncio_handler
 
 

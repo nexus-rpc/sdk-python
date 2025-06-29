@@ -13,6 +13,8 @@ from nexusrpc import InputT, OperationInfo, OutputT
 from nexusrpc._serializer import LazyValueT
 from nexusrpc._types import ServiceHandlerT
 from nexusrpc._util import (
+    get_callable_name,
+    is_async_callable,
     set_operation_definition,
     set_operation_factory,
 )
@@ -25,11 +27,7 @@ from nexusrpc.handler._common import (
     StartOperationResultSync,
 )
 from nexusrpc.handler._core import BaseServiceCollectionHandler
-from nexusrpc.handler._util import (
-    get_callable_name,
-    get_start_method_input_and_output_type_annotations,
-    is_async_callable,
-)
+from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations
 
 from ..handler._operation_handler import OperationHandler
 

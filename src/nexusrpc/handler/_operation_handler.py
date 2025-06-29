@@ -16,7 +16,7 @@ import nexusrpc
 import nexusrpc._service
 from nexusrpc import InputT, OutputT, get_operation_factory
 from nexusrpc._types import ServiceHandlerT
-from nexusrpc.handler._util import is_async_callable, is_subtype
+from nexusrpc._util import is_async_callable, is_subtype
 
 from .. import OperationInfo
 from ._common import (

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Type
+import functools
+import inspect
+import typing
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type
+
+from typing_extensions import TypeGuard
 
 import nexusrpc
 
@@ -75,6 +80,47 @@ def set_operation_factory(
 ) -> None:
     """Set the :py:class:`OperationHandler` factory for this object."""
     setattr(obj, "__nexus_operation_factory__", operation_factory)
+
+
+# Copied from https://github.com/modelcontextprotocol/python-sdk
+#
+# Copyright (c) 2024 Anthropic, PBC.
+#
+# Modified to use TypeGuard.
+#
+# This file is licensed under the MIT License.
+def is_async_callable(obj: Any) -> TypeGuard[Callable[..., Awaitable[Any]]]:
+    """
+    Return True if `obj` is an async callable.
+
+    Supports partials of async callable class instances.
+    """
+    while isinstance(obj, functools.partial):
+        obj = obj.func
+
+    return inspect.iscoroutinefunction(obj) or (
+        callable(obj) and inspect.iscoroutinefunction(getattr(obj, "__call__", None))
+    )
+
+
+def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
+    # Note that issubclass() argument 2 cannot be a parameterized generic
+    # TODO(nexus-preview): review desired type compatibility logic
+    if type1 == type2:
+        return True
+    return issubclass(type1, typing.get_origin(type2) or type2)
+
+
+def get_callable_name(fn: Callable[..., Any]) -> str:
+    method_name = getattr(fn, "__name__", None)
+    if not method_name and callable(fn) and hasattr(fn, "__call__"):
+        method_name = fn.__class__.__name__
+    if not method_name:
+        raise TypeError(
+            f"Could not determine callable name: "
+            f"expected {fn} to be a function or callable instance."
+        )
+    return method_name
 
 
 # See

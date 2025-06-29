@@ -9,7 +9,7 @@ import pytest
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
-from nexusrpc._util import get_service_definition
+from nexusrpc._util import get_service_definition, is_async_callable
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -23,7 +23,6 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._core import collect_operation_handler_factories_by_method_name
 from nexusrpc.handler._decorators import operation_handler
-from nexusrpc.handler._util import is_async_callable
 
 
 @dataclass
