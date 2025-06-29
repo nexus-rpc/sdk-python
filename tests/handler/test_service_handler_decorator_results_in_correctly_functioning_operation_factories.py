@@ -21,7 +21,7 @@ from nexusrpc.handler import (
     service_handler,
     sync_operation,
 )
-from nexusrpc.handler._core import collect_operation_handler_factories
+from nexusrpc.handler._core import collect_operation_handler_factories_by_method_name
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._util import is_async_callable
 
@@ -87,7 +87,7 @@ async def test_collected_operation_factories_match_service_definition(
     service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     assert service.name == "Service"
-    operation_factories = collect_operation_handler_factories(
+    operation_factories = collect_operation_handler_factories_by_method_name(
         test_case.Service, service
     )
     assert operation_factories.keys() == test_case.expected_operation_factories.keys()

@@ -107,7 +107,7 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
-from nexusrpc._util import get_operation_definition, get_service_definition
+from nexusrpc._util import get_service_definition
 from nexusrpc.handler._util import is_async_callable
 
 from .. import OperationInfo
@@ -124,7 +124,7 @@ from ._common import (
 )
 from ._operation_handler import (
     OperationHandler,
-    collect_operation_handler_factories,
+    collect_operation_handler_factories_by_method_name,
 )
 
 # TODO(preview): show what it looks like to manually build a service implementation at runtime
@@ -480,21 +480,17 @@ class ServiceHandler:
                 f"a Nexus service implementation."
             )
 
-        factories_by_method_name = {}
-        for factory in collect_operation_handler_factories(
+        # Construct a map of operation handlers keyed by the op name from the service
+        # definition (i.e. by the name by which the operation can be requested)
+        factories_by_method_name = collect_operation_handler_factories_by_method_name(
             user_instance.__class__, service
-        ).values():
-            op_defn = get_operation_definition(factory)
-            if not op_defn:
-                raise ValueError(
-                    f"Operation handler factory {factory} does not have an operation definition."
-                )
-            factories_by_method_name[op_defn.method_name] = factory
-
-        op_handlers = {}
-        for op_name, op in service.operations.items():
-            factory = factories_by_method_name[op.method_name]
-            op_handlers[op_name] = factory(user_instance)
+        )
+        op_handlers = {
+            op_name: factories_by_method_name[op.method_name](user_instance)
+            for op_name, op in service.operations.items()
+            # TODO(preview): op.method_name should be non-nullable
+            if op.method_name
+        }
         return cls(
             service=service,
             operation_handlers=op_handlers,

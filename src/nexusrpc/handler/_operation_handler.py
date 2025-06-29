@@ -199,15 +199,15 @@ class SyncioSyncOperationHandler(OperationHandler[InputT, OutputT]):
         )
 
 
-def collect_operation_handler_factories(
+def collect_operation_handler_factories_by_method_name(
     user_service_cls: Type[ServiceHandlerT],
     service: Optional[nexusrpc.ServiceDefinition],
 ) -> dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]]:
     """
     Collect operation handler methods from a user service handler class.
     """
-    factories = {}
-    op_defn_method_names = (
+    factories: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]] = {}
+    service_method_names = (
         {
             op.method_name
             for op in service.operations.values()
@@ -216,24 +216,29 @@ def collect_operation_handler_factories(
         if service
         else set()
     )
+    seen = set()
     for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
         factory, op_defn = get_operation_factory(method)
-        if isinstance(op_defn, nexusrpc.Operation):
+        if factory and isinstance(op_defn, nexusrpc.Operation):
             # This is a method decorated with one of the *operation_handler decorators
-            if op_defn.name in factories:
+            if op_defn.name in seen:
                 raise RuntimeError(
                     f"Operation '{op_defn.name}' in service '{user_service_cls.__name__}' "
                     f"is defined multiple times."
                 )
-            if service and op_defn.method_name not in op_defn_method_names:
-                _names = ", ".join(f"'{s}'" for s in sorted(op_defn_method_names))
+            if service and op_defn.method_name not in service_method_names:
+                _names = ", ".join(f"'{s}'" for s in sorted(service_method_names))
                 raise TypeError(
                     f"Operation method name '{op_defn.method_name}' in service handler {user_service_cls} "
                     f"does not match an operation method name in the service definition. "
                     f"Available method names in the service definition: {_names}."
                 )
-
-            factories[op_defn.name] = factory
+            # TODO(preview) op_defn.method name should be non-nullable
+            assert op_defn.method_name, (
+                f"Operation '{op_defn}' method name should not be None. This is an SDK bug."
+            )
+            factories[op_defn.method_name] = factory
+            seen.add(op_defn.name)
     return factories
 
 
