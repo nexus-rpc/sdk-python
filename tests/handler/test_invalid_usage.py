@@ -72,8 +72,6 @@ class ServiceHandlerHasExtraOp(_TestCase):
 
 
 class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
-    # TODO(preview): this seems wrong: why is no operation registered in the service definition?
-    # This is not an error currently
     @staticmethod
     def build():
         @nexusrpc.service
@@ -85,10 +83,7 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
             @sync_operation
             async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
 
-    error_message = (
-        r"does not match an operation method name in the service definition. "
-        r"Available method names in the service definition: \[none\]."
-    )
+    error_message = "has 0 type parameters"
 
 
 @pytest.mark.parametrize(

@@ -229,7 +229,7 @@ class ServiceDefinition:
         annotations = {
             k: v
             for k, v in get_annotations(user_class, eval_str=True).items()
-            if typing.get_origin(v) == Operation
+            if v == Operation or typing.get_origin(v) == Operation
         }
         for key in operations.keys() | annotations.keys():
             # If the name has a type annotation, then add the input and output types to
