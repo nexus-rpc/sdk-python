@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import concurrent.futures
 from typing import (
     Any,
     Callable,
     Optional,
+    Sequence,
     Union,
     overload,
 )
+
+from typing_extensions import TypeGuard
 
 import nexusrpc
 from nexusrpc import InputT, OperationInfo, OutputT
@@ -36,13 +40,28 @@ class Handler(BaseServiceCollectionHandler):
     """
     A Nexus handler with non-async `def` methods.
 
+    This class does not support user operation handlers that are `async def` methods.
+    For a Handler class with `async def` methods that supports `async def` and `def`
+    user operation handlers, see :py:class:`nexusrpc.handler.Handler`.
+
     A Nexus handler manages a collection of Nexus service handlers.
 
-    Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
-    name in the operation context.
+    Operation requests are dispatched to a :py:class:`ServiceHandler` based on the
+    service name in the operation context.
 
-    This class uses `def` methods. For `async def` methods, see :py:class:`nexusrpc.handler.Handler`.
     """
+
+    executor: concurrent.futures.Executor  # type: ignore[assignment]
+
+    def __init__(
+        self,
+        user_service_handlers: Sequence[Any],
+        executor: concurrent.futures.Executor,
+    ):
+        super().__init__(user_service_handlers, executor)
+        self._validate_all_operation_handlers_are_sync()
+        if not self.executor:
+            raise RuntimeError("A syncio Handler must be initialized with an executor.")
 
     def start_operation(
         self,
@@ -62,18 +81,8 @@ class Handler(BaseServiceCollectionHandler):
         op_handler = service_handler._get_operation_handler(ctx.operation)
         op = service_handler.service.operations[ctx.operation]
         deserialized_input = input.consume(as_type=op.input_type)
-
-        if is_async_callable(op_handler.start):
-            raise RuntimeError(
-                "Operation start handler method is an `async def` and "
-                "cannot be called from a sync handler. "
-            )
-        # TODO(preview): apply middleware stack as composed functions
-        if not self.executor:
-            raise RuntimeError(
-                "Operation start handler method is not an `async def` but "
-                "no executor was provided to the Handler constructor. "
-            )
+        assert self._assert_not_async_callable(op_handler.start)
+        # TODO(preview): apply middleware stack
         return self.executor.submit(op_handler.start, ctx, deserialized_input).result()
 
     def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
@@ -85,18 +94,13 @@ class Handler(BaseServiceCollectionHandler):
         """
         service_handler = self._get_service_handler(ctx.service)
         op_handler = service_handler._get_operation_handler(ctx.operation)
-        if is_async_callable(op_handler.cancel):
+        assert self._assert_not_async_callable(op_handler.cancel)
+        if not self.executor:
             raise RuntimeError(
-                "Operation cancel handler method is an `async def` and "
-                "cannot be called from a sync handler. "
+                "Operation cancel handler method is not an `async def` method but "
+                "no executor was provided to the Handler constructor."
             )
-        else:
-            if not self.executor:
-                raise RuntimeError(
-                    "Operation cancel handler method is not an `async def` function but "
-                    "no executor was provided to the Handler constructor."
-                )
-            return self.executor.submit(op_handler.cancel, ctx, token).result()
+        return self.executor.submit(op_handler.cancel, ctx, token).result()
 
     def fetch_operation_info(
         self, ctx: FetchOperationInfoContext, token: str
@@ -107,6 +111,25 @@ class Handler(BaseServiceCollectionHandler):
         self, ctx: FetchOperationResultContext, token: str
     ) -> Any:
         raise NotImplementedError
+
+    def _validate_all_operation_handlers_are_sync(self) -> None:
+        for service_handler in self.service_handlers.values():
+            for op_handler in service_handler.operation_handlers.values():
+                self._assert_not_async_callable(op_handler.start)
+                self._assert_not_async_callable(op_handler.cancel)
+                self._assert_not_async_callable(op_handler.fetch_info)
+                self._assert_not_async_callable(op_handler.fetch_result)
+
+    def _assert_not_async_callable(
+        self, method: Callable[..., Any]
+    ) -> TypeGuard[Callable[..., Any]]:
+        if is_async_callable(method):
+            raise RuntimeError(
+                f"Operation handler method {method} is an `async def` method, "
+                "but you are using nexusrpc.syncio.handler.Handler, "
+                "which is for `def` methods. Use nexusrpc.handler.Handler instead."
+            )
+        return True
 
 
 class SyncOperationHandler(OperationHandler[InputT, OutputT]):

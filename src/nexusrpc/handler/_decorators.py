@@ -254,17 +254,18 @@ def sync_operation(
     """
     Decorator marking a method as the start method for a synchronous operation.
     """
-    if not is_async_callable(start):
-        raise TypeError(
-            "sync_operation decorator must be used on an `async def` operation method. "
-            "To use a `def` method see `@nexusrpc.syncio.handler.sync_operation`."
-        )
 
     def decorator(
         start: Callable[
             [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
         ],
     ) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]:
+        if not is_async_callable(start):
+            raise TypeError(
+                "sync_operation decorator must be used on an `async def` operation method. "
+                "To use a `def` method see `@nexusrpc.syncio.handler.sync_operation`."
+            )
+
         def operation_handler_factory(
             self: ServiceHandlerT,
         ) -> OperationHandler[InputT, OutputT]:
