@@ -18,9 +18,14 @@ def get_service_definition(
     # getattr would allow a non-decorated class to act as a service
     # definition if it inherits from a decorated class.
     if isinstance(obj, type):
-        return obj.__dict__.get("__nexus_service__")
+        defn = obj.__dict__.get("__nexus_service__")
     else:
-        return getattr(obj, "__dict__", {}).get("__nexus_service__")
+        defn = getattr(obj, "__dict__", {}).get("__nexus_service__")
+    if defn and not isinstance(defn, nexusrpc.ServiceDefinition):
+        raise ValueError(
+            f"Service definition {obj.__name__} has a __nexus_service__ attribute that is not a ServiceDefinition."
+        )
+    return defn
 
 
 def set_service_definition(

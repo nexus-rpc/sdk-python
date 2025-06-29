@@ -151,10 +151,8 @@ class ServiceDefinition:
         # already-decorated service definition.
 
         # If this class is decorated then return the already-computed ServiceDefinition.
-        # Do not use getattr since it would retrieve a value from a decorated parent class.
         if defn := get_service_definition(user_class):
-            if isinstance(defn, ServiceDefinition):
-                return defn
+            return defn
 
         if user_class is object:
             return ServiceDefinition(name=user_class.__name__, operations={})

@@ -7,7 +7,8 @@ from typing import Any, Optional, Type
 
 import pytest
 
-from nexusrpc import Operation, ServiceDefinition, service
+import nexusrpc
+from nexusrpc import Operation, ServiceDefinition
 from nexusrpc._util import get_service_definition
 
 # See https://docs.python.org/3/howto/annotations.html
@@ -94,7 +95,7 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
     expected_error = "Did you accidentally use '=' instead of ':'"
 
 
-# TODO: test mro is honored: that synonymous operation definition in child class wins
+# TODO(preview): test mro is honored: that synonymous operation definition in child class wins
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -109,10 +110,10 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
 def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
     if test_case.expected_error:
         with pytest.raises(Exception, match=test_case.expected_error):
-            service(test_case.UserService)
+            nexusrpc.service(test_case.UserService)
         return
 
-    service_defn = get_service_definition(service(test_case.UserService))
+    service_defn = get_service_definition(nexusrpc.service(test_case.UserService))
     assert isinstance(service_defn, ServiceDefinition)
     assert set(service_defn.operations) == test_case.expected_operation_names
     for op in service_defn.operations.values():

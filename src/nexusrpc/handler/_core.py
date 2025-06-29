@@ -71,7 +71,7 @@ are keyed by the publicly advertised service and operation name respectively. Th
 at steps (6) and (5) respectively.
 
 
-Case 2: There exists a user service handler class without a corresonding service definition
+Case 2: There exists a user service handler class without a corresponding service definition
 ===========================================================================================
 
 I.e., at least one user service handler class looks like
@@ -367,9 +367,6 @@ class Handler(BaseHandler):
             return result
 
 
-# TODO(prerelease): we have a syncio module now housing the syncio version of
-# SyncOperationHandler. If we're retaining that then this (and an async version of
-# LazyValue) should go in there.
 @dataclass(frozen=True)
 class ServiceHandler:
     """Internal representation of a user's Nexus service implementation instance.
@@ -384,7 +381,7 @@ class ServiceHandler:
     class contains the :py:class:`OperationHandler` instances themselves.
 
     You may create instances of this class manually and pass them to the Handler
-    constructor, for example when programatically creating Nexus service implementations.
+    constructor, for example when programmatically creating Nexus service implementations.
     """
 
     service: nexusrpc.ServiceDefinition
@@ -445,27 +442,14 @@ class ServiceHandler:
         return operation_handler
 
 
-# TODO(prerelease): Do we want to require users to create this wrapper? Two
-# alternatives:
-#
-# 1. Require them to pass in a `concurrent.futures.Executor`. This is what
-#    `run_in_executor` is documented to require. This would mean that nexusrpc would
-#    initially have a hard-coded dependency on the asyncio event loop. But perhaps that
-#    is not a problem: if we ever want to support other event loops, we can add the
-#    ability to pass in an event loop implementation at the level of Handler. And in
-#    fact perhaps that's better than having the user choose their event loop once in
-#    their Executor, and also in other places in nexusrpc.
-#    https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
-#
-# 2. Define an interface (typing.Protocol), containing `def submit(...)` and perhaps
-#    nothing else, and require them to pass in anything that implements the interface.
-#    But this seems dangerous/a non-starter: run_in_executor is documented to require a
-#    `concurrent.futures.Executor`, even if it is currently typed as taking Any.
-#
-# I've switched to alternative (1). The following class is no longer in the public API
-# of nexusrpc.
 class _Executor:
     """An executor for synchronous functions."""
+
+    # Users are require to pass in a `concurrent.futures.Executor` in order to use
+    # non-`async def`s. This is what `run_in_executor` is documented to require.
+    # This means that nexusrpc initially has a hard-coded dependency on the asyncio
+    # event loop; if necessary we can add the ability to pass in an event loop
+    # implementation at the level of Handler.
 
     def __init__(self, executor: concurrent.futures.Executor):
         self._executor = executor
