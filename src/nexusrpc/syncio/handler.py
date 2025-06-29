@@ -9,7 +9,8 @@ from typing import (
 )
 
 import nexusrpc
-from nexusrpc import InputT, LazyValue, OperationInfo, OutputT
+from nexusrpc import InputT, OperationInfo, OutputT
+from nexusrpc._serializer import LazyValueT
 from nexusrpc._types import ServiceHandlerT
 from nexusrpc._util import (
     set_operation_definition,
@@ -30,7 +31,7 @@ from nexusrpc.handler._util import (
     is_async_callable,
 )
 
-from ._operation_handler import OperationHandler
+from ..handler._operation_handler import OperationHandler
 
 
 class Handler(BaseServiceCollectionHandler):
@@ -41,12 +42,14 @@ class Handler(BaseServiceCollectionHandler):
 
     Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
     name in the operation context.
+
+    This class uses `def` methods. For `async def` methods, see :py:class:`nexusrpc.handler.Handler`.
     """
 
     def start_operation(
         self,
         ctx: StartOperationContext,
-        input: LazyValue,
+        input: LazyValueT,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
@@ -60,7 +63,7 @@ class Handler(BaseServiceCollectionHandler):
         service_handler = self._get_service_handler(ctx.service)
         op_handler = service_handler._get_operation_handler(ctx.operation)
         op = service_handler.service.operations[ctx.operation]
-        deserialized_input = input.consume_sync(as_type=op.input_type)
+        deserialized_input = input.consume(as_type=op.input_type)
 
         if is_async_callable(op_handler.start):
             raise RuntimeError(

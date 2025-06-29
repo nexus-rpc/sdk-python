@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from nexusrpc.handler import StartOperationContext, service_handler, syncio
+from nexusrpc.handler import StartOperationContext, service_handler
 from nexusrpc.handler._core import ServiceHandler
+from nexusrpc.syncio import handler as syncio_handler
 
 # TODO(preview): test operation_handler version of this
 
@@ -17,7 +18,7 @@ class MyServiceHandlerWithCallableInstance:
         ) -> int:
             return input
 
-    sync_operation_with_callable_instance = syncio.sync_operation(
+    sync_operation_with_callable_instance = syncio_handler.sync_operation(
         name="sync_operation_with_callable_instance",
     )(
         SyncOperationWithCallableInstance(),

@@ -108,7 +108,8 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
-from nexusrpc import HandlerError, HandlerErrorType, LazyValue, OperationInfo
+from nexusrpc import HandlerError, HandlerErrorType, OperationInfo
+from nexusrpc._serializer import LazyValueT
 from nexusrpc._util import get_service_definition
 from nexusrpc.handler._util import is_async_callable
 
@@ -137,7 +138,7 @@ class AbstractHandler(ABC):
     def start_operation(
         self,
         ctx: StartOperationContext,
-        input: LazyValue,
+        input: LazyValueT,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
@@ -256,12 +257,14 @@ class Handler(BaseServiceCollectionHandler):
 
     Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
     name in the operation context.
+
+    This class uses `async def` methods. For `def` methods, see :py:class:`nexusrpc.syncio.Handler`.
     """
 
     async def start_operation(
         self,
         ctx: StartOperationContext,
-        input: LazyValue,
+        input: LazyValueT,
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
