@@ -99,6 +99,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Mapping,
     Optional,
     Sequence,
     Union,
@@ -154,7 +155,7 @@ class BaseHandler(ABC):
             executor: A concurrent.futures.Executor in which to run non-`async def` operation handlers.
         """
         self.executor = _Executor(executor) if executor else None
-        self.service_handlers: dict[str, ServiceHandler] = {}
+        self.service_handlers: Mapping[str, ServiceHandler] = {}
         for sh in user_service_handlers:
             if isinstance(sh, type):
                 raise TypeError(
