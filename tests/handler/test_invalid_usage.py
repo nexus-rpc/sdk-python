@@ -3,12 +3,22 @@ Tests for invalid ways that users may attempt to write service definition and se
 handler implementations.
 """
 
+import concurrent.futures
 from typing import Any, Callable
 
 import pytest
 
 import nexusrpc
-from nexusrpc.handler import StartOperationContext, service_handler, sync_operation
+from nexusrpc.handler import (
+    Handler,
+    StartOperationContext,
+    service_handler,
+    sync_operation,
+)
+from nexusrpc.syncio.handler import (
+    Handler as SyncioHandler,
+    sync_operation as syncio_sync_operation,
+)
 
 
 class _TestCase:
@@ -20,11 +30,11 @@ class OperationHandlerOverridesNameInconsistentlyWithServiceDefinition(_TestCase
     @staticmethod
     def build():
         @nexusrpc.service
-        class S:
+        class SD:
             my_op: nexusrpc.Operation[None, None]
 
-        @service_handler(service=S)
-        class H:
+        @service_handler(service=SD)
+        class SH:
             @sync_operation(name="foo")
             async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
 
@@ -35,12 +45,12 @@ class ServiceDefinitionHasExtraOp(_TestCase):
     @staticmethod
     def build():
         @nexusrpc.service
-        class S:
+        class SD:
             my_op_1: nexusrpc.Operation[None, None]
             my_op_2: nexusrpc.Operation[None, None]
 
-        @service_handler(service=S)
-        class H:
+        @service_handler(service=SD)
+        class SH:
             @sync_operation
             async def my_op_1(
                 self, ctx: StartOperationContext, input: None
@@ -53,11 +63,11 @@ class ServiceHandlerHasExtraOp(_TestCase):
     @staticmethod
     def build():
         @nexusrpc.service
-        class S:
+        class SD:
             my_op_1: nexusrpc.Operation[None, None]
 
-        @service_handler(service=S)
-        class H:
+        @service_handler(service=SD)
+        class SH:
             @sync_operation
             async def my_op_1(
                 self, ctx: StartOperationContext, input: None
@@ -75,15 +85,76 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
     @staticmethod
     def build():
         @nexusrpc.service
-        class S:
+        class SD:
             my_op: nexusrpc.Operation
 
-        @service_handler(service=S)
-        class H:
+        @service_handler(service=SD)
+        class SH:
             @sync_operation
             async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
 
     error_message = "has 0 type parameters"
+
+
+class AsyncioDecoratorWithSyncioMethod(_TestCase):
+    @staticmethod
+    def build():
+        @nexusrpc.service
+        class SD:
+            my_op: nexusrpc.Operation[None, None]
+
+        @service_handler(service=SD)
+        class SH:
+            # assert-type-error: Argument 1 to "sync_operation" has incompatible type "Callable[[H, StartOperationContext, None], None]"; expected "Callable[[H, StartOperationContext, None], Awaitable[Never]]"
+            @sync_operation  # type: ignore
+            def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+
+    error_message = (
+        "sync_operation decorator must be used on an `async def` operation method"
+    )
+
+
+class SyncioDecoratorWithAsyncioMethod(_TestCase):
+    @staticmethod
+    def build():
+        @nexusrpc.service
+        class SD:
+            my_op: nexusrpc.Operation[None, None]
+
+        @service_handler(service=SD)
+        class SH:
+            @syncio_sync_operation
+            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+
+    error_message = (
+        "syncio sync_operation decorator must be used on a `def` operation method"
+    )
+
+
+class AsyncioHandlerWithSyncioOperation(_TestCase):
+    @staticmethod
+    def build():
+        @service_handler
+        class SH:
+            @syncio_sync_operation
+            def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+
+        Handler([SH()])
+
+    error_message = "Use nexusrpc.syncio.handler.Handler instead"
+
+
+class SyncioHandlerWithAsyncioOperation(_TestCase):
+    @staticmethod
+    def build():
+        @service_handler
+        class SH:
+            @sync_operation
+            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+
+        SyncioHandler([SH()], concurrent.futures.ThreadPoolExecutor())
+
+    error_message = "Use nexusrpc.handler.Handler instead"
 
 
 @pytest.mark.parametrize(
@@ -93,6 +164,10 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
         ServiceDefinitionOperationHasNoTypeParams,
         ServiceDefinitionHasExtraOp,
         ServiceHandlerHasExtraOp,
+        AsyncioDecoratorWithSyncioMethod,
+        SyncioDecoratorWithAsyncioMethod,
+        AsyncioHandlerWithSyncioOperation,
+        SyncioHandlerWithAsyncioOperation,
     ],
 )
 def test_invalid_usage(test_case: _TestCase):

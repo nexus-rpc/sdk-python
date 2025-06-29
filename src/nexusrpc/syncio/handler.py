@@ -190,6 +190,10 @@ def sync_operation(
     """
     Decorator marking a method as the start method for a synchronous operation.
     """
+    if is_async_callable(start):
+        raise TypeError(
+            "syncio sync_operation decorator must be used on a `def` operation method"
+        )
 
     def decorator(
         start: Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],

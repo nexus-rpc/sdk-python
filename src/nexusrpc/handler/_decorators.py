@@ -19,6 +19,7 @@ from nexusrpc._types import ServiceHandlerT
 from nexusrpc._util import (
     get_callable_name,
     get_service_definition,
+    is_async_callable,
     set_operation_definition,
     set_operation_factory,
     set_service_definition,
@@ -253,6 +254,11 @@ def sync_operation(
     """
     Decorator marking a method as the start method for a synchronous operation.
     """
+    if not is_async_callable(start):
+        raise TypeError(
+            "sync_operation decorator must be used on an `async def` operation method. "
+            "To use a `def` method see `@nexusrpc.syncio.handler.sync_operation`."
+        )
 
     def decorator(
         start: Callable[
