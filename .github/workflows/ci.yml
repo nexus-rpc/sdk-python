@@ -1,18 +1,17 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, v0 ]
   pull_request:
+  push:
     branches: [ main ]
 
 jobs:
-  test:
-    # TODO(preview): other platforms
-    runs-on: ubuntu-latest
+  lint-test-docs:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ['3.9', '3.13', '3.14']
+        os: [ubuntu-latest, ubuntu-arm, macos-intel, macos-arm, windows-latest]
 
     steps:
       - name: Checkout repository
@@ -37,7 +36,7 @@ jobs:
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-html-report-${{ matrix.python-version }}
+          name: coverage-html-report-${{ matrix.os }}-${{ matrix.python-version }}
           path: coverage_html_report/
 
       - name: Build API docs
