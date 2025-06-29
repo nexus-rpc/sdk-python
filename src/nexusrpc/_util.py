@@ -88,7 +88,7 @@ except ImportError:
     import types
 
     # This is inspect.get_annotations from Python 3.13.5
-    def get_annotations(obj, *, globals=None, locals=None, eval_str=False):
+    def get_annotations(obj, *, globals=None, locals=None, eval_str=False):  # type: ignore[misc]
         """Compute the annotations dict for an object.
 
         obj may be a callable, class, or module.
@@ -186,11 +186,11 @@ except ImportError:
                     unwrap = unwrap.__wrapped__  # type: ignore
                     continue
                 if isinstance(unwrap, functools.partial):
-                    unwrap = unwrap.func
+                    unwrap = unwrap.func  # type: ignore
                     continue
                 break
             if hasattr(unwrap, "__globals__"):
-                obj_globals = unwrap.__globals__
+                obj_globals = unwrap.__globals__  # type: ignore
 
         if globals is None:
             globals = obj_globals

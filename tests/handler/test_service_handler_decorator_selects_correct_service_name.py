@@ -86,4 +86,5 @@ def test_name_must_not_be_empty():
 
 def test_name_and_interface_are_mutually_exclusive():
     with pytest.raises(ValueError):
-        service_handler(name="my-service-impl-🌈", service=ServiceInterface)  # type: ignore (enforced by overloads)
+        # Type error due to deliberately violating overload
+        service_handler(name="my-service-impl-🌈", service=ServiceInterface)  # type: ignore

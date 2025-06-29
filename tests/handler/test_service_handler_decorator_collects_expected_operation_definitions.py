@@ -157,7 +157,7 @@ if False:
 
         @service_handler(service=Contract)
         class Service:
-            class sync_operation_with_callable_instance:
+            class _sync_operation_with_callable_instance:
                 def __call__(
                     self,
                     _handler: Any,
@@ -169,7 +169,7 @@ if False:
             # callable class itself, because the user must be responsible for instantiating
             # the class to obtain the callable instance.
             sync_operation_with_callable_instance = operation_handler(
-                sync_operation_with_callable_instance()  # type: ignore
+                _sync_operation_with_callable_instance()  # type: ignore
             )
 
         expected_operations = {

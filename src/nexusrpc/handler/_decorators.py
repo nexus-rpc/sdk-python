@@ -277,8 +277,8 @@ def sync_operation(
             _start.__doc__ = start.__doc__
             return SyncOperationHandler(_start)
 
-        input_type, output_type = get_start_method_input_and_output_type_annotations(
-            start
+        input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
+            start  # type: ignore[arg-type]
         )
 
         method_name = get_callable_name(start)

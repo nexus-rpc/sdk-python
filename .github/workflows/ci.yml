@@ -33,10 +33,9 @@ jobs:
           uv run ruff check
 
       - name: Type check
-        # TODO(preview): Get both passing
         run: |
           uv run pyright .
-          uv run mypy --check-untyped-defs . || true
+          uv run mypy --check-untyped-defs .
 
       - name: Run tests
         run: |

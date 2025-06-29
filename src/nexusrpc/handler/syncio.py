@@ -130,7 +130,8 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
             )
         self._start = start
         if start.__doc__:
-            self.start.__func__.__doc__ = start.__doc__
+            if start_func := getattr(self.start, "__func__", None):
+                start_func.__doc__ = start.__doc__
 
     def start(
         self, ctx: StartOperationContext, input: InputT

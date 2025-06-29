@@ -115,7 +115,7 @@ class StartOperationResultSync(Generic[OutputT]):
     A result returned synchronously by the start method of a nexus operation handler.
     """
 
-    value: OutputT
+    value: OutputT  # type: ignore[misc]
     """
     The value returned by the operation.
     """

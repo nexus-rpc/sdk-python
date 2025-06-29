@@ -33,6 +33,9 @@ packages = ["src/nexusrpc"]
 [tool.pyright]
 include = ["src", "tests"]
 
+[tool.mypy]
+disable_error_code = ["empty-body"]
+
 [tool.ruff]
 target-version = "py39"
 

@@ -115,7 +115,8 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
             )
         self._start = start
         if start.__doc__:
-            self.start.__func__.__doc__ = start.__doc__
+            if start_func := getattr(self.start, "__func__", None):
+                start_func.__doc__ = start.__doc__
 
     async def start(
         self, ctx: StartOperationContext, input: InputT
@@ -170,7 +171,7 @@ def collect_operation_handler_factories_by_method_name(
     )
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
-        factory, op_defn = get_operation_factory(method)
+        factory, op_defn = get_operation_factory(method)  # type: ignore[var-annotated]
         if factory and isinstance(op_defn, nexusrpc.Operation):
             # This is a method decorated with one of the *operation_handler decorators
             if op_defn.name in seen:
