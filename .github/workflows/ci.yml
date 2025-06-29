@@ -35,7 +35,7 @@ jobs:
       - name: Type check
         # TODO(preview): Get both passing
         run: |
-          uv run pyright . || true
+          uv run pyright .
           uv run mypy --check-untyped-defs . || true
 
       - name: Run tests

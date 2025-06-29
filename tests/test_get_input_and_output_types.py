@@ -2,6 +2,7 @@ import warnings
 from typing import (
     Any,
     Awaitable,
+    Callable,
     Type,
     Union,
     get_args,
@@ -25,8 +26,7 @@ class Output:
 
 
 class _TestCase:
-    async def start(self, ctx: StartOperationContext, i: Input) -> Output: ...
-
+    start: Callable[..., Any]
     expected_types: tuple[Any, Any]
 
 

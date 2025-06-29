@@ -183,7 +183,7 @@ except ImportError:
         if unwrap is not None:
             while True:
                 if hasattr(unwrap, "__wrapped__"):
-                    unwrap = unwrap.__wrapped__
+                    unwrap = unwrap.__wrapped__  # type: ignore
                     continue
                 if isinstance(unwrap, functools.partial):
                     unwrap = unwrap.func

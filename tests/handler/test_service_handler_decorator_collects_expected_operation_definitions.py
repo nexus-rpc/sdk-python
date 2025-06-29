@@ -32,7 +32,7 @@ class Output:
 class _TestCase:
     Service: Type[Any]
     expected_operations: dict[str, nexusrpc.Operation]
-    Contract: Optional[Type[nexusrpc.ServiceDefinition]] = None
+    Contract: Optional[Type[Any]] = None
     skip: Optional[str] = None
 
 

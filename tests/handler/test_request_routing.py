@@ -1,4 +1,4 @@
-from typing import Any, Type, cast
+from typing import Any, Callable, Type, cast
 
 import pytest
 
@@ -22,7 +22,9 @@ class _TestCase:
     supported_request: tuple[str, str]
 
     class UserServiceHandler:
-        async def op(self, ctx: StartOperationContext, input: None) -> bool:
+        op: Callable[..., Any]
+
+        async def _op_impl(self, ctx: StartOperationContext, input: None) -> bool:
             assert (service_defn := get_service_definition(self.__class__))
             assert ctx.service == service_defn.name
             _, op_handler_op_defn = get_operation_factory(self.op)
@@ -40,7 +42,7 @@ class NoOverrides(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserService", "op")
 
@@ -54,7 +56,7 @@ class OverrideServiceName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserService-renamed", "op")
 
@@ -68,7 +70,7 @@ class OverrideOperationName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserService", "op-renamed")
 
@@ -82,7 +84,7 @@ class OverrideServiceAndOperationName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserService-renamed", "op-renamed")
 
@@ -119,7 +121,7 @@ class NoServiceDefinitionNoOverrides(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserServiceHandler", "op")
 
@@ -129,7 +131,7 @@ class NoServiceDefinitionOverrideServiceName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserServiceHandler-renamed", "op")
 
@@ -139,7 +141,7 @@ class NoServiceDefinitionOverrideOperationName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation(name="op-renamed")
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserServiceHandler", "op-renamed")
 
@@ -149,7 +151,7 @@ class NoServiceDefinitionOverrideServiceAndOperationName(_TestCase):
     class UserServiceHandler(_TestCase.UserServiceHandler):
         @sync_operation(name="op-renamed")
         async def op(self, ctx: StartOperationContext, input: None) -> bool:
-            return await super().op(ctx, input)
+            return await self._op_impl(ctx, input)
 
     supported_request = ("UserServiceHandler-renamed", "op-renamed")
 

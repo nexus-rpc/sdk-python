@@ -202,8 +202,12 @@ class BaseHandler(ABC):
     ) -> Union[
         StartOperationResultSync[Any],
         StartOperationResultAsync,
-        Awaitable[StartOperationResultSync[Any]],
-        Awaitable[StartOperationResultAsync],
+        Awaitable[
+            Union[
+                StartOperationResultSync[Any],
+                StartOperationResultAsync,
+            ]
+        ],
     ]: ...
 
     @abstractmethod
