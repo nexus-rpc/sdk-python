@@ -27,15 +27,8 @@ jobs:
         run: |
           uv sync
 
-      - name: Lint
-        run: |
-          uv run ruff format --check
-          uv run ruff check
-
-      - name: Type check
-        run: |
-          uv run pyright .
-          uv run mypy --check-untyped-defs .
+      - name: Lint and type check
+        run: uv run poe lint
 
       - name: Run tests
         run: |
@@ -48,7 +41,7 @@ jobs:
           path: coverage_html_report/
 
       - name: Build API docs
-        run: uv run pydoctor src/nexusrpc
+        run: uv run poe docs
 
       - name: Deploy prod API docs
         if: ${{ github.ref == 'refs/heads/main' }}
