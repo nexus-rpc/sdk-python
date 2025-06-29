@@ -427,27 +427,20 @@ class ServiceHandler:
     def _get_operation_handler(self, operation: str) -> OperationHandler[Any, Any]:
         """Return an operation handler, given the operation name."""
         if operation not in self.service.operations:
-            msg = (
-                f"Nexus service definition '{self.service.name}' has no operation '{operation}'. "
-                f"There are {len(self.service.operations)} operations in the definition"
+            raise HandlerError(
+                f"Nexus service definition '{self.service.name}' has no operation "
+                f"'{operation}'. There are {len(self.service.operations)} operations "
+                f"in the definition.",
+                type=HandlerErrorType.NOT_FOUND,
             )
-            if self.service.operations:
-                msg += f": {', '.join(sorted(self.service.operations.keys()))}"
-            msg += "."
-            raise HandlerError(msg, type=HandlerErrorType.NOT_FOUND)
         operation_handler = self.operation_handlers.get(operation)
         if operation_handler is None:
-            # This should not be possible. If a service definition was supplied then
-            # this was checked; if not then the definition was generated from the
-            # operation handlers.
-            msg = (
-                f"Nexus service implementation '{self.service.name}' has no handler for operation '{operation}'. "
-                f"There are {len(self.operation_handlers)} available operation handlers"
+            raise HandlerError(
+                f"Nexus service implementation '{self.service.name}' has no handler for "
+                f"operation '{operation}'. There are {len(self.operation_handlers)} "
+                f"available operation handlers.",
+                type=HandlerErrorType.NOT_FOUND,
             )
-            if self.operation_handlers:
-                msg += f": {', '.join(sorted(self.operation_handlers.keys()))}"
-            msg += "."
-            raise HandlerError(msg, type=HandlerErrorType.NOT_FOUND)
         return operation_handler
 
 
