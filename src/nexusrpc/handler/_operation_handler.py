@@ -239,6 +239,13 @@ def validate_operation_handler_methods(
                 f"Did you forget to decorate the operation method with an operation handler decorator such as "
                 f":py:func:`@nexusrpc.handler.operation_handler`?"
             )
+        if method_op_defn.name not in [method_op_defn.method_name, op_defn.name]:
+            raise TypeError(
+                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
+                f"has name '{method_op_defn.name}', but the name in the service definition "
+                f"is '{op_defn.name}'. Operation handlers may not override the name of an operation "
+                f"in the service definition."
+            )
         # Input type is contravariant: op handler input must be superclass of op defn output
         if (
             method_op_defn.input_type is not None
@@ -271,11 +278,7 @@ def validate_operation_handler_methods(
                 f" '{service_definition}'. The output type must be the same as or a "
                 f"subclass of the operation definition output type."
             )
-    if service_definition.operations.keys() > user_methods_by_method_name.keys():
-        raise TypeError(
-            f"Service '{user_service_cls}' does not implement all operations in interface '{service_definition}'. "
-            f"Missing operations: {service_definition.operations.keys() - user_methods_by_method_name.keys()}"
-        )
+
     if user_methods_by_method_name.keys() > service_definition.operations.keys():
         raise TypeError(
             f"Service '{user_service_cls}' implements more operations than the interface '{service_definition}'. "

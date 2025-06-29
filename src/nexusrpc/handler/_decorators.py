@@ -110,27 +110,18 @@ def service_handler(
 
     def decorator(cls: Type[ServiceHandlerT]) -> Type[ServiceHandlerT]:
         # The name by which the service must be addressed in Nexus requests.
-
-        # Note: this is ignored if the service definition was supplied
         _name = (
             _service.name if _service else name if name is not None else cls.__name__
         )
         if not _name:
             raise ValueError("Service name must not be empty.")
-
-        # Note: this is ignored if the service definition was supplied
         factories_by_method_name = collect_operation_handler_factories_by_method_name(
             cls, _service
         )
-
-        # TODO(prerelease): if service defn was supplied then check that no operation
-        # handler has attempted to set a conflicting name override.
-
         service = _service or service_definition_from_operation_handler_methods(
             _name, factories_by_method_name
         )
         validate_operation_handler_methods(cls, factories_by_method_name, service)
-
         set_service_definition(cls, service)
         return cls
 
