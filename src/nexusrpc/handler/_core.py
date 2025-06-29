@@ -107,17 +107,14 @@ from typing import (
 from typing_extensions import Self
 
 import nexusrpc
+from nexusrpc import HandlerError, HandlerErrorType, LazyValue, OperationInfo
 from nexusrpc._util import get_service_definition
 from nexusrpc.handler._util import is_async_callable
 
-from .. import OperationInfo
-from .._serializer import LazyValue
 from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
-    HandlerError,
-    HandlerErrorType,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,

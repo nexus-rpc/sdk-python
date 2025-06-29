@@ -5,14 +5,18 @@ from typing import Any
 
 import pytest
 
-from nexusrpc import LazyValue, OperationInfo, OperationState
+from nexusrpc import (
+    HandlerError,
+    HandlerErrorType,
+    LazyValue,
+    OperationInfo,
+    OperationState,
+)
 from nexusrpc.handler import (
     CancelOperationContext,
     FetchOperationInfoContext,
     FetchOperationResultContext,
     Handler,
-    HandlerError,
-    HandlerErrorType,
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,

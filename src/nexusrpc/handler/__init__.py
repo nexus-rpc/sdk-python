@@ -14,8 +14,6 @@ from ._common import (
     CancelOperationContext as CancelOperationContext,
     FetchOperationInfoContext as FetchOperationInfoContext,
     FetchOperationResultContext as FetchOperationResultContext,
-    HandlerError as HandlerError,
-    HandlerErrorType as HandlerErrorType,
     OperationContext as OperationContext,
     StartOperationContext as StartOperationContext,
     StartOperationResultAsync as StartOperationResultAsync,
