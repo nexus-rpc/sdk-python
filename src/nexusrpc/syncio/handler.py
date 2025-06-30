@@ -47,6 +47,12 @@ from nexusrpc.handler._util import get_start_method_input_and_output_type_annota
 
 from ..handler._operation_handler import OperationHandler
 
+__all__ = [
+    "Handler",
+    "sync_operation",
+    "SyncOperationHandler",
+]
+
 
 class Handler(BaseServiceCollectionHandler):
     """

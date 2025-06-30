@@ -30,3 +30,18 @@ from ._operation_handler import OperationHandler as OperationHandler
 from ._util import (
     get_start_method_input_and_output_type_annotations as get_start_method_input_and_output_type_annotations,
 )
+
+__all__ = [
+    "CancelOperationContext",
+    "FetchOperationInfoContext",
+    "FetchOperationResultContext",
+    "get_start_method_input_and_output_type_annotations",
+    "Handler",
+    "OperationContext",
+    "OperationHandler",
+    "service_handler",
+    "StartOperationContext",
+    "StartOperationResultAsync",
+    "StartOperationResultSync",
+    "sync_operation",
+]
