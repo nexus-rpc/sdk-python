@@ -13,6 +13,8 @@ caller can also specify a callback URL, which the handler uses to deliver the re
 an asynchronous operation when it is ready.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -30,28 +32,76 @@ from ._util import (
 )
 
 
-@dataclass(frozen=True)
-class Link:
+class HandlerError(Exception):
     """
-    A Link contains a URL and a type that can be used to decode the URL.
+    A Nexus handler error.
 
-    The URL may contain arbitrary data (percent-encoded). It can be used to pass
-    information about the caller to the handler, or vice versa.
-    """
-
-    url: str
-    """
-    Link URL.
-
-    Must be percent-encoded.
+    This exception is used to represent errors that occur during the handling of a
+    Nexus operation that should be reported to the caller as a handler error.
     """
 
-    type: str
-    """
-    A data type for decoding the URL.
+    def __init__(
+        self,
+        message: str,
+        *,
+        type: HandlerErrorType,
+        retryable: Optional[bool] = None,
+    ):
+        """
+        Initialize a new HandlerError.
 
-    Valid chars: alphanumeric, '_', '.', '/'
+        :param message: A descriptive message for the error. This will become the
+                        `message` in the resulting Nexus Failure object.
+
+        :param type:
+
+        :param retryable:
+        """
+        super().__init__(message)
+        self._type = type
+        self._retryable = retryable
+
+    @property
+    def retryable(self) -> Optional[bool]:
+        """
+        Whether this error should be retried.
+
+        If None, then the default behavior for the error type should be used.
+        See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+        """
+        return self._retryable
+
+    @property
+    def type(self) -> HandlerErrorType:
+        """
+        The type of handler error.
+
+        See :py:class:`HandlerErrorType` and
+        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
+        """
+        return self._type
+
+
+class OperationError(Exception):
     """
+    An error that represents "failed" and "canceled" operation results.
+
+    :param message: A descriptive message for the error. This will become the
+                    `message` in the resulting Nexus Failure object.
+
+    :param state:
+    """
+
+    def __init__(self, message: str, *, state: OperationErrorState):
+        super().__init__(message)
+        self._state = state
+
+    @property
+    def state(self) -> OperationErrorState:
+        """
+        The state of the operation.
+        """
+        return self._state
 
 
 class OperationState(Enum):
@@ -111,28 +161,6 @@ class OperationInfo:
     """
     The operation's state.
     """
-
-
-class OperationError(Exception):
-    """
-    An error that represents "failed" and "canceled" operation results.
-
-    :param message: A descriptive message for the error. This will become the
-                    `message` in the resulting Nexus Failure object.
-
-    :param state:
-    """
-
-    def __init__(self, message: str, *, state: OperationErrorState):
-        super().__init__(message)
-        self._state = state
-
-    @property
-    def state(self) -> OperationErrorState:
-        """
-        The state of the operation.
-        """
-        return self._state
 
 
 class HandlerErrorType(Enum):
@@ -205,51 +233,25 @@ class HandlerErrorType(Enum):
     """
 
 
-class HandlerError(Exception):
+@dataclass(frozen=True)
+class Link:
     """
-    A Nexus handler error.
+    A Link contains a URL and a type that can be used to decode the URL.
 
-    This exception is used to represent errors that occur during the handling of a
-    Nexus operation that should be reported to the caller as a handler error.
+    The URL may contain arbitrary data (percent-encoded). It can be used to pass
+    information about the caller to the handler, or vice versa.
     """
 
-    def __init__(
-        self,
-        message: str,
-        *,
-        type: HandlerErrorType,
-        retryable: Optional[bool] = None,
-    ):
-        """
-        Initialize a new HandlerError.
+    url: str
+    """
+    Link URL.
 
-        :param message: A descriptive message for the error. This will become the
-                        `message` in the resulting Nexus Failure object.
+    Must be percent-encoded.
+    """
 
-        :param type:
+    type: str
+    """
+    A data type for decoding the URL.
 
-        :param retryable:
-        """
-        super().__init__(message)
-        self._type = type
-        self._retryable = retryable
-
-    @property
-    def retryable(self) -> Optional[bool]:
-        """
-        Whether this error should be retried.
-
-        If None, then the default behavior for the error type should be used.
-        See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
-        """
-        return self._retryable
-
-    @property
-    def type(self) -> HandlerErrorType:
-        """
-        The type of handler error.
-
-        See :py:class:`HandlerErrorType` and
-        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
-        """
-        return self._type
+    Valid chars: alphanumeric, '_', '.', '/'
+    """
