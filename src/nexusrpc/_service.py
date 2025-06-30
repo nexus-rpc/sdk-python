@@ -145,6 +145,12 @@ class ServiceDefinition:
     name: str
     operations: Mapping[str, Operation[Any, Any]]
 
+    def __post_init__(self):
+        if errors := self._validation_errors():
+            raise ValueError(
+                f"Service definition {self.name} has validation errors: {', '.join(errors)}"
+            )
+
     @staticmethod
     def from_class(user_class: Type[ServiceT], name: str) -> ServiceDefinition:
         """Create a ServiceDefinition from a user service definition class.
@@ -190,18 +196,17 @@ class ServiceDefinition:
                     )
                 operations[op.name] = op
 
-        defn = ServiceDefinition(name=name, operations=operations)
-        if errors := defn._validation_errors():
-            raise ValueError(
-                f"Service definition {name} has validation errors: {', '.join(errors)}"
-            )
-        return defn
+        return ServiceDefinition(name=name, operations=operations)
 
     def _validation_errors(self) -> list[str]:
         errors = []
         if not self.name:
             errors.append("Service has no name")
+        seen_method_names = set()
         for op in self.operations.values():
+            if op.method_name in seen_method_names:
+                errors.append(f"Operation method name '{op.method_name}' is not unique")
+            seen_method_names.add(op.method_name)
             errors.extend(op._validation_errors())
         return errors
 

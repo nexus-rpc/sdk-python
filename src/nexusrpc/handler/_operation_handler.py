@@ -214,13 +214,14 @@ def validate_operation_handler_methods(
        is a subtype of the operation defined in the service definition, i.e. respecting
        input type contravariance and output type covariance.
     """
+    user_methods_by_method_name = user_methods_by_method_name.copy()
     for op_defn in service_definition.operations.values():
         if not op_defn.method_name:
             raise ValueError(
                 f"Operation '{op_defn}' in service definition '{service_definition}' "
                 f"does not have a method name. "
             )
-        method = user_methods_by_method_name.get(op_defn.method_name)
+        method = user_methods_by_method_name.pop(op_defn.method_name, None)
         if not method:
             raise TypeError(
                 f"Service '{user_service_cls}' does not implement an operation with "
@@ -275,6 +276,11 @@ def validate_operation_handler_methods(
                 f" '{service_definition}'. The output type must be the same as or a "
                 f"subclass of the operation definition output type."
             )
+    if user_methods_by_method_name:
+        raise ValueError(
+            f"Service '{user_service_cls}' implements more operations than the interface '{service_definition}'. "
+            f"Extra operations: {', '.join(sorted(user_methods_by_method_name.keys()))}."
+        )
 
 
 def service_definition_from_operation_handler_methods(
