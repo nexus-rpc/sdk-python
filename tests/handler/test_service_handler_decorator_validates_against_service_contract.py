@@ -86,13 +86,9 @@ class MissingContextAnnotation(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(
-            self,
-            ctx: StartOperationContext,
-            input: None,
-        ) -> None: ...
+        async def op(self, ctx, input: None) -> None: ...
 
-    error_message = "is not compatible with the input type"
+    error_message = None
 
 
 class WrongOutputType(_InterfaceImplementationTestCase):
