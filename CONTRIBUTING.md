@@ -1,12 +1,19 @@
-### Type-checking and linting
+We will welcome contributions once the SDK has reached a stable release.
+
+### Type-check and lint
 
 ```sh
 uv run poe lint
 ```
 
-### Formatting
+### Format
 ```
 uv run poe format
+```
+
+### Test
+```
+uv run pytest
 ```
 
 ### API docs
