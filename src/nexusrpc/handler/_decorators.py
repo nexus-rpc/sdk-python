@@ -15,7 +15,7 @@ from typing import (
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
-from nexusrpc._types import ServiceHandlerT
+from nexusrpc._common import ServiceHandlerT
 from nexusrpc._util import (
     get_callable_name,
     get_service_definition,

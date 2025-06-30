@@ -15,7 +15,7 @@ from typing_extensions import TypeGuard
 import nexusrpc
 from nexusrpc import InputT, OperationInfo, OutputT
 from nexusrpc._serializer import LazyValueT
-from nexusrpc._types import ServiceHandlerT
+from nexusrpc._common import ServiceHandlerT
 from nexusrpc._util import (
     get_callable_name,
     is_async_callable,

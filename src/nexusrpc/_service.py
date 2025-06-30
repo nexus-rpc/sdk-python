@@ -20,7 +20,7 @@ from typing import (
     overload,
 )
 
-from nexusrpc._types import InputT, OutputT, ServiceT
+from nexusrpc._common import InputT, OutputT, ServiceT
 from nexusrpc._util import (
     get_annotations,
     get_service_definition,

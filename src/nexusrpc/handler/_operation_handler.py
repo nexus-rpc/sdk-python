@@ -15,7 +15,7 @@ from typing import (
 import nexusrpc
 import nexusrpc._service
 from nexusrpc import InputT, OutputT
-from nexusrpc._types import ServiceHandlerT
+from nexusrpc._common import ServiceHandlerT
 from nexusrpc._util import get_operation_factory, is_async_callable, is_subtype
 
 from .. import OperationInfo

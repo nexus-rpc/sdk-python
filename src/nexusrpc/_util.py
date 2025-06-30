@@ -12,7 +12,7 @@ import nexusrpc
 if TYPE_CHECKING:
     import nexusrpc
     from nexusrpc import InputT, OutputT
-    from nexusrpc._types import ServiceT
+    from nexusrpc._common import ServiceT
     from nexusrpc.handler._operation_handler import OperationHandler
 
 
