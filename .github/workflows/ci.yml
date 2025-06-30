@@ -42,7 +42,7 @@ jobs:
   deploy-docs:
     runs-on: ubuntu-latest
     needs: lint-test-docs
-    # TODO: deploy on releases only
+    # TODO(preview): deploy on releases only
     permissions:
       contents: read
       pages: write

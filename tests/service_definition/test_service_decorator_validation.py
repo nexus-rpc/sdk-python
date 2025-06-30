@@ -4,9 +4,6 @@ import pytest
 
 import nexusrpc
 
-# TODO(preview): test error message when incorrectly applying service decorator to handler class
-# TODO(preview): test error message when incorrectly applying service_handler decorator to definition class
-
 
 class Output:
     pass

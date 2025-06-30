@@ -14,8 +14,8 @@ from typing_extensions import TypeGuard
 
 import nexusrpc
 from nexusrpc import InputT, OperationInfo, OutputT
-from nexusrpc._serializer import LazyValueT
 from nexusrpc._common import ServiceHandlerT
+from nexusrpc._serializer import LazyValueT
 from nexusrpc._util import (
     get_callable_name,
     is_async_callable,
@@ -150,7 +150,6 @@ class Handler(BaseServiceCollectionHandler):
         return True
 
 
-# TODO(prerelease): should not be exported
 class SyncOperationHandler(OperationHandler[InputT, OutputT]):
     """
     An :py:class:`nexusrpc.handler.OperationHandler` that is limited to responding synchronously.

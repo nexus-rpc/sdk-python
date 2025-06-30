@@ -124,12 +124,6 @@ from ._operation_handler import (
     collect_operation_handler_factories_by_method_name,
 )
 
-# TODO(preview): show what it looks like to manually build a service implementation at runtime
-# where the operations may be based on some runtime information.
-
-# TODO(preview): pass pyright strict mode "python.analysis.typeCheckingMode": "strict"
-# TODO(preview): pass mypy
-
 
 class AbstractHandler(ABC):
     @abstractmethod

@@ -41,8 +41,6 @@ class Serializer(Protocol):
         """Serialize encodes a value into a Content."""
         ...
 
-    # TODO(prerelease): does None work as the sentinel type here, meaning do not attempt
-    # type conversion, despite the fact that Python treats None as a valid type?
     def deserialize(
         self, content: Content, as_type: Optional[Type[Any]] = None
     ) -> Union[Any, Awaitable[Any]]:

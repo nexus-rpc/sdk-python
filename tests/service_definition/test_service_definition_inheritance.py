@@ -100,7 +100,6 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
     expected_error = "Did you accidentally use '=' instead of ':'"
 
 
-# TODO(preview): test mro is honored: that synonymous operation definition in child class wins
 @pytest.mark.parametrize(
     "test_case",
     [

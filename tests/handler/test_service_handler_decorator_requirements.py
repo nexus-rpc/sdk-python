@@ -13,9 +13,6 @@ from nexusrpc.handler import (
 from nexusrpc.handler._core import ServiceHandler
 from nexusrpc.handler._decorators import operation_handler
 
-# TODO(prerelease): check return type of op methods including fetch_result and fetch_info
-#         temporalio.common._type_hints_from_func(hello_nexus.hello2().fetch_result),
-
 
 class _DecoratorValidationTestCase:
     UserService: Type[Any]

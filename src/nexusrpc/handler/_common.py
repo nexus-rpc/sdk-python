@@ -108,7 +108,6 @@ class FetchOperationResultContext(OperationContext):
     """
 
 
-# TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
 @dataclass(frozen=True)
 class StartOperationResultSync(Generic[OutputT]):
     """
@@ -121,7 +120,6 @@ class StartOperationResultSync(Generic[OutputT]):
     """
 
 
-# TODO(prelease) Make StartOperationResult an ABC with sync and async helpers?
 @dataclass(frozen=True)
 class StartOperationResultAsync:
     """

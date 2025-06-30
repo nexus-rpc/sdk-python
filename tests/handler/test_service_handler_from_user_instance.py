@@ -4,8 +4,6 @@ from nexusrpc.handler import StartOperationContext, service_handler
 from nexusrpc.handler._core import ServiceHandler
 from nexusrpc.syncio import handler as syncio_handler
 
-# TODO(preview): test operation_handler version of this
-
 
 @service_handler
 class MyServiceHandlerWithCallableInstance:

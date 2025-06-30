@@ -39,15 +39,6 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
     instance of :py:class:`OperationHandler` from the start method.
     """
 
-    # TODO(preview): We are using `def` signatures with union return types in this abstract
-    # base class to represent both `def` and `async` def implementations in child classes.
-    # However, this causes VSCode to autocomplete the methods with non-sensical signatures
-    # such as
-    #
-    # async def fetch_result(self, ctx: FetchOperationResultContext, token: str) -> Output | asyncio.Awaitable[Output]
-    #
-    # Can we improve this DX?
-
     @abstractmethod
     def start(
         self, ctx: StartOperationContext, input: InputT
@@ -228,7 +219,6 @@ def validate_operation_handler_methods(
                 f"method name '{op_defn.method_name}'. But this operation is in service "
                 f"definition '{service_definition}'."
             )
-        # TODO(prerelease): it should be guaranteed that `method` is a factory, so this next call should be unnecessary.
         method, method_op_defn = get_operation_factory(method)
         if not isinstance(method_op_defn, Operation):
             raise ValueError(
