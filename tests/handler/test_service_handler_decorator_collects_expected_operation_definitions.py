@@ -14,6 +14,7 @@ from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
     service_handler,
+    sync_operation,
 )
 from nexusrpc.handler._decorators import operation_handler
 
@@ -146,40 +147,35 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
     }
 
 
-if False:
+class SyncOperationWithCallableInstance(_TestCase):
+    skip = "TODO(prerelease): update this test after decorator change"
 
-    class SyncOperationWithCallableInstance(_TestCase):
-        skip = "TODO(prerelease): update this test after decorator change"
+    @nexusrpc.service
+    class Contract:
+        sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
 
-        @nexusrpc.service
-        class Contract:
-            sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
+    @service_handler(service=Contract)
+    class Service:
+        class _sync_operation_with_callable_instance:
+            async def __call__(
+                self,
+                _handler: Any,
+                ctx: StartOperationContext,
+                input: Input,
+            ) -> Output: ...
 
-        @service_handler(service=Contract)
-        class Service:
-            class _sync_operation_with_callable_instance:
-                def __call__(
-                    self,
-                    _handler: Any,
-                    ctx: StartOperationContext,
-                    input: Input,
-                ) -> Output: ...
+        sync_operation_with_callable_instance = sync_operation(
+            _sync_operation_with_callable_instance()
+        )
 
-            # TODO(preview): improve the DX here. The decorator cannot be placed on the
-            # callable class itself, because the user must be responsible for instantiating
-            # the class to obtain the callable instance.
-            sync_operation_with_callable_instance = operation_handler(
-                _sync_operation_with_callable_instance()  # type: ignore
-            )
-
-        expected_operations = {
-            "sync_operation_with_callable_instance": nexusrpc.Operation(
-                name="sync_operation_with_callable_instance",
-                method_name="CallableInstanceStartMethod",
-                input_type=Input,
-                output_type=Output,
-            ),
-        }
+    expected_operations = {
+        "sync_operation_with_callable_instance": nexusrpc.Operation(
+            name="sync_operation_with_callable_instance",
+            method_name="CallableInstanceStartMethod",
+            input_type=Input,
+            output_type=Output,
+        ),
+    }
 
 
 @pytest.mark.parametrize(
@@ -194,7 +190,7 @@ if False:
         # TODO(prerelease): make callable instances work. Input type is not inferred due to
         # signature differing from normal mathod. See also
         # SyncHandlerHappyPathWithNonAsyncCallableInstance in temporal tests.
-        # SyncOperationWithCallableInstance,
+        SyncOperationWithCallableInstance,
     ],
 )
 @pytest.mark.asyncio

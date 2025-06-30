@@ -159,6 +159,9 @@ def collect_operation_handler_factories_by_method_name(
     )
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
+        import pdb
+
+        pdb.set_trace()
         factory, op_defn = get_operation_factory(method)  # type: ignore[var-annotated]
         if factory and isinstance(op_defn, Operation):
             # This is a method decorated with one of the *operation_handler decorators

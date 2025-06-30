@@ -116,12 +116,13 @@ def is_async_callable(obj: Any) -> TypeGuard[Callable[..., Awaitable[Any]]]:
     )
 
 
-def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
-    # Note that issubclass() argument 2 cannot be a parameterized generic
-    # TODO(nexus-preview): review desired type compatibility logic
-    if type1 == type2:
-        return True
-    return issubclass(type1, typing.get_origin(type2) or type2)
+def is_callable(obj: Any) -> TypeGuard[Callable[..., Any]]:
+    """
+    Return True if `obj` is a callable.
+    """
+    while isinstance(obj, functools.partial):
+        obj = obj.func
+    return inspect.isfunction(obj) or (callable(obj) and hasattr(obj, "__call__"))
 
 
 def get_callable_name(fn: Callable[..., Any]) -> str:
@@ -134,6 +135,14 @@ def get_callable_name(fn: Callable[..., Any]) -> str:
             f"expected {fn} to be a function or callable instance."
         )
     return method_name
+
+
+def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
+    # Note that issubclass() argument 2 cannot be a parameterized generic
+    # TODO(nexus-preview): review desired type compatibility logic
+    if type1 == type2:
+        return True
+    return issubclass(type1, typing.get_origin(type2) or type2)
 
 
 # See
