@@ -44,7 +44,7 @@ class LazyValue(LazyValueT):
         """
         if self.stream is None:
             return self.serializer.deserialize(
-                Content(headers=self.headers, data=None), as_type=as_type
+                Content(headers=self.headers, data=b""), as_type=as_type
             )
         elif not isinstance(self.stream, Iterable):
             raise ValueError("When using consume_sync, stream must be an Iterable")

@@ -28,7 +28,7 @@ class Content:
     User provided keys are treated case-insensitively.
     """
 
-    data: Optional[bytes]
+    data: bytes
     """Request or response data."""
 
 
@@ -110,7 +110,7 @@ class LazyValue(LazyValueT):
         """
         if self.stream is None:
             return await self.serializer.deserialize(
-                Content(headers=self.headers, data=None), as_type=as_type
+                Content(headers=self.headers, data=b""), as_type=as_type
             )
         elif not isinstance(self.stream, AsyncIterable):
             raise ValueError("When using consume, stream must be an AsyncIterable")
