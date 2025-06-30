@@ -79,7 +79,7 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
     error_message = None
 
 
-class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
+class MissingContextAnnotation(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[None, None]
@@ -87,10 +87,9 @@ class MissingOptionsAnnotation(_InterfaceImplementationTestCase):
     class Impl:
         @sync_operation
         async def op(
-            # TODO(prerelease) isn't this supposed to be missing the ctx annotation?
             self,
             ctx: StartOperationContext,
-            input: str,
+            input: None,
         ) -> None: ...
 
     error_message = "is not compatible with the input type"
@@ -238,7 +237,7 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
         ValidImplWithoutTypeAnnotations,
         MissingOperation,
         MissingInputAnnotation,
-        MissingOptionsAnnotation,
+        MissingContextAnnotation,
         WrongOutputType,
         WrongOutputTypeWithNone,
         ValidImplWithNone,
@@ -248,9 +247,6 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
         OutputCovarianceImplOutputCannnotBeStrictSuperclass,
         InputContravarianceImplInputCanBeSameType,
         InputContravarianceImplInputCanBeSuperclass,
-        # ValidSubtyping,
-        # InvalidOutputSupertype,
-        # InvalidInputSubtype,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(
