@@ -20,7 +20,7 @@ from typing import (
     overload,
 )
 
-from nexusrpc._types import InputT, OutputT, ServiceDefinitionT
+from nexusrpc._types import InputT, OutputT, ServiceT
 from nexusrpc._util import (
     get_annotations,
     get_service_definition,
@@ -70,22 +70,22 @@ class Operation(Generic[InputT, OutputT]):
 
 
 @overload
-def service(cls: Type[ServiceDefinitionT]) -> Type[ServiceDefinitionT]: ...
+def service(cls: Type[ServiceT]) -> Type[ServiceT]: ...
 
 
 @overload
 def service(
     *, name: Optional[str] = None
-) -> Callable[[Type[ServiceDefinitionT]], Type[ServiceDefinitionT]]: ...
+) -> Callable[[Type[ServiceT]], Type[ServiceT]]: ...
 
 
 def service(
-    cls: Optional[Type[ServiceDefinitionT]] = None,
+    cls: Optional[Type[ServiceT]] = None,
     *,
     name: Optional[str] = None,
 ) -> Union[
-    Type[ServiceDefinitionT],
-    Callable[[Type[ServiceDefinitionT]], Type[ServiceDefinitionT]],
+    Type[ServiceT],
+    Callable[[Type[ServiceT]], Type[ServiceT]],
 ]:
     """
     Decorator marking a class as a Nexus service definition.
@@ -115,7 +115,7 @@ def service(
     # This will require forming a union of operations disovered via __annotations__
     # and __dict__
 
-    def decorator(cls: Type[ServiceDefinitionT]) -> Type[ServiceDefinitionT]:
+    def decorator(cls: Type[ServiceT]) -> Type[ServiceT]:
         if name is not None and not name:
             raise ValueError("Service name must not be empty.")
         defn = ServiceDefinition.from_class(cls, name or cls.__name__)
@@ -146,9 +146,7 @@ class ServiceDefinition:
     operations: Mapping[str, Operation[Any, Any]]
 
     @staticmethod
-    def from_class(
-        user_class: Type[ServiceDefinitionT], name: str
-    ) -> ServiceDefinition:
+    def from_class(user_class: Type[ServiceT], name: str) -> ServiceDefinition:
         """Create a ServiceDefinition from a user service definition class.
 
         The set of service definition operations returned is the union of operations
@@ -209,7 +207,7 @@ class ServiceDefinition:
 
     @staticmethod
     def _collect_operations(
-        user_class: Type[ServiceDefinitionT],
+        user_class: Type[ServiceT],
     ) -> dict[str, Operation[Any, Any]]:
         """Collect operations from a user service definition class.
 

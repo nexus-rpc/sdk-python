@@ -12,7 +12,7 @@ import nexusrpc
 if TYPE_CHECKING:
     import nexusrpc
     from nexusrpc import InputT, OutputT
-    from nexusrpc._types import ServiceDefinitionT
+    from nexusrpc._types import ServiceT
     from nexusrpc.handler._operation_handler import OperationHandler
 
 
@@ -34,7 +34,7 @@ def get_service_definition(
 
 
 def set_service_definition(
-    cls: Type[ServiceDefinitionT], service_definition: nexusrpc.ServiceDefinition
+    cls: Type[ServiceT], service_definition: nexusrpc.ServiceDefinition
 ) -> None:
     """Set the :py:class:`nexusrpc.ServiceDefinition` for this object."""
     if not isinstance(cls, type):

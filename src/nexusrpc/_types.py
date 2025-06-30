@@ -11,5 +11,5 @@ OutputT = TypeVar("OutputT", covariant=True)
 ServiceHandlerT = TypeVar("ServiceHandlerT")
 """A user's service handler class, typically decorated with @service_handler"""
 
-ServiceDefinitionT = TypeVar("ServiceDefinitionT")
+ServiceT = TypeVar("ServiceT")
 """A user's service definition class, typically decorated with @service"""
