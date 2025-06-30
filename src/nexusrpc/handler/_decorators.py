@@ -82,17 +82,20 @@ def service_handler(
     Example:
         .. code-block:: python
 
-            @nexusrpc.handler.service_handler class MyServiceHandler:
+            @nexusrpc.handler.service_handler
+            class MyServiceHandler:
                 ...
 
         .. code-block:: python
 
-            @nexusrpc.handler.service_handler(service=MyService) class MyServiceHandler:
+            @nexusrpc.handler.service_handler(service=MyService)
+            class MyServiceHandler:
                 ...
 
         .. code-block:: python
 
-            @nexusrpc.handler.service_handler(name="my-service") class MyServiceHandler:
+            @nexusrpc.handler.service_handler(name="my-service")
+            class MyServiceHandler:
                 ...
     """
     if service and name:
