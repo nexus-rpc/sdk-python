@@ -12,7 +12,7 @@ Nexus service/operation authors will use this module to obtain a synchronous I/O
 version of the `sync_operation` decorator.
 """
 
-from ._serializer import LazyValue as LazyValue
+from ._serializer import LazyValue
 
 __all__ = [
     "LazyValue",

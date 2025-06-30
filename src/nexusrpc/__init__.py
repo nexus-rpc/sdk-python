@@ -20,16 +20,12 @@ from enum import Enum
 from typing import Optional
 
 from ._serializer import Content as Content, LazyValue as LazyValue
-from ._service import (
-    Operation as Operation,
-    ServiceDefinition as ServiceDefinition,
-    service as service,
-)
+from ._service import Operation, ServiceDefinition, service
 from ._types import InputT as InputT, OutputT as OutputT
 from ._util import (
-    get_operation_definition as get_operation_definition,
-    get_service_definition as get_service_definition,
-    set_operation_definition as set_operation_definition,
+    get_operation_definition,
+    get_service_definition,
+    set_operation_definition,
 )
 
 __all__ = [

@@ -13,23 +13,18 @@ methods within service handler classes.
 from __future__ import annotations
 
 from ._common import (
-    CancelOperationContext as CancelOperationContext,
-    FetchOperationInfoContext as FetchOperationInfoContext,
-    FetchOperationResultContext as FetchOperationResultContext,
-    OperationContext as OperationContext,
-    StartOperationContext as StartOperationContext,
-    StartOperationResultAsync as StartOperationResultAsync,
-    StartOperationResultSync as StartOperationResultSync,
+    CancelOperationContext,
+    FetchOperationInfoContext,
+    FetchOperationResultContext,
+    OperationContext,
+    StartOperationContext,
+    StartOperationResultAsync,
+    StartOperationResultSync,
 )
 from ._core import Handler as Handler
-from ._decorators import (
-    service_handler as service_handler,
-    sync_operation as sync_operation,
-)
+from ._decorators import service_handler, sync_operation
 from ._operation_handler import OperationHandler as OperationHandler
-from ._util import (
-    get_start_method_input_and_output_type_annotations as get_start_method_input_and_output_type_annotations,
-)
+from ._util import get_start_method_input_and_output_type_annotations
 
 __all__ = [
     "CancelOperationContext",
