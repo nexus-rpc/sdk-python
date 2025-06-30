@@ -42,7 +42,6 @@ class LazyValue(LazyValueT):
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
-        # TODO(prerelease): HandlerError(BAD_REQUEST) on error while deserializing?
         if self.stream is None:
             return self.serializer.deserialize(
                 Content(headers=self.headers, data=None), as_type=as_type
