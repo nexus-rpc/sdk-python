@@ -156,6 +156,27 @@ class SyncioHandlerWithAsyncioOperation(_TestCase):
     error_message = "Use nexusrpc.handler.Handler instead"
 
 
+class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
+    @staticmethod
+    def build():
+        @nexusrpc.service
+        class SD:
+            my_op: nexusrpc.Operation[None, None] = nexusrpc.Operation(
+                name="my_op",
+                method_name="my_op",
+                input_type=None,
+                output_type=None,
+            )
+            my_op_2: nexusrpc.Operation[None, None] = nexusrpc.Operation(
+                name="my_op_2",
+                method_name="my_op",
+                input_type=None,
+                output_type=None,
+            )
+
+    error_message = "Operation method name 'my_op' is not unique"
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -167,6 +188,7 @@ class SyncioHandlerWithAsyncioOperation(_TestCase):
         SyncioDecoratorWithAsyncioMethod,
         AsyncioHandlerWithSyncioOperation,
         SyncioHandlerWithAsyncioOperation,
+        ServiceDefinitionHasDuplicateMethodNames,
     ],
 )
 def test_invalid_usage(test_case: _TestCase):
