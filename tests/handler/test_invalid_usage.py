@@ -15,6 +15,8 @@ from nexusrpc.handler import (
     service_handler,
     sync_operation,
 )
+from nexusrpc.handler._decorators import operation_handler
+from nexusrpc.handler._operation_handler import OperationHandler
 from nexusrpc.syncio.handler import (
     Handler as SyncioHandler,
     sync_operation as syncio_sync_operation,
@@ -177,6 +179,17 @@ class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
     error_message = "Operation method name 'my_op' is not unique"
 
 
+class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_TestCase):
+    @staticmethod
+    def build():
+        @service_handler
+        class SubclassingNoInputOutputTypeAnnotationsWithoutServiceDefinition:
+            @operation_handler
+            def op(self) -> OperationHandler: ...
+
+    error_message = r"has no input type.+has no output type"
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -189,6 +202,7 @@ class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
         AsyncioHandlerWithSyncioOperation,
         SyncioHandlerWithAsyncioOperation,
         ServiceDefinitionHasDuplicateMethodNames,
+        OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition,
     ],
 )
 def test_invalid_usage(test_case: _TestCase):
