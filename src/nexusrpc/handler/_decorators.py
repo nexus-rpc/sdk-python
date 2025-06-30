@@ -82,21 +82,15 @@ def service_handler(
     Example:
         .. code-block:: python
 
-            @nexusrpc.handler.service_handler
+            from nexusrpc.handler import service_handler, sync_operation
+
+            @service_handler(service=MyService)
             class MyServiceHandler:
-                ...
-
-        .. code-block:: python
-
-            @nexusrpc.handler.service_handler(service=MyService)
-            class MyServiceHandler:
-                ...
-
-        .. code-block:: python
-
-            @nexusrpc.handler.service_handler(name="my-service")
-            class MyServiceHandler:
-                ...
+                @sync_operation
+                async def my_operation(
+                    self, ctx: StartOperationContext, input: MyInput
+                ) -> MyOutput:
+                    return MyOutput(processed=input.data)
     """
     if service and name:
         raise ValueError(
@@ -169,19 +163,6 @@ def operation_handler(
     Args:
         method: The method to decorate.
         name: Optional name for the operation. If not provided, the method name will be used.
-
-    Examples:
-        .. code-block:: python
-
-            @nexusrpc.handler.operation_handler
-            def my_operation(self) -> Operation[MyInput, MyOutput]:
-                ...
-
-        .. code-block:: python
-
-            @nexusrpc.handler.operation_handler(name="my-operation")
-            def my_operation(self) -> Operation[MyInput, MyOutput]:
-                ...
     """
 
     def decorator(
@@ -256,6 +237,25 @@ def sync_operation(
 ]:
     """
     Decorator marking a method as the start method for a synchronous operation.
+
+    Example:
+        .. code-block:: python
+
+            import httpx
+            from nexusrpc.handler import service_handler, sync_operation
+
+            @service_handler
+            class MyServiceHandler:
+                @sync_operation
+                async def process_data(
+                    self, ctx: StartOperationContext, input: str
+                ) -> str:
+                    # You can use asynchronous I/O libraries
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get("https://api.example.com/data")
+
+                    data = response.json()
+                    return f"Processed: {data}"
     """
 
     def decorator(

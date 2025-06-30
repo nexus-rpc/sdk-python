@@ -255,6 +255,25 @@ class Handler(BaseServiceCollectionHandler):
 
     The methods of this class itself are `async def`. For a handler class with `def`
     methods, see :py:class:`nexusrpc.syncio.Handler`.
+
+    Example:
+        .. code-block:: python
+
+            import concurrent.futures
+            from nexusrpc.handler import Handler
+
+            # Create service handler instances
+            my_service = MyServiceHandler()
+
+            # Create handler with async operations only
+            handler = Handler([my_service])
+
+            # Create handler that supports both async and sync operations
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+            handler = Handler([my_service], executor=executor)
+
+            # Use handler to process requests
+            result = await handler.start_operation(ctx, input_lazy_value)
     """
 
     def __init__(

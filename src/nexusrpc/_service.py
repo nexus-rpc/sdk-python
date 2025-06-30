@@ -94,14 +94,17 @@ def service(
     have the correct type, and that there are no duplicate operation names. The decorator
     also creates instances of the Operation class for each operation definition.
 
-
     Example:
+        .. code-block:: python
 
-    .. code-block:: python
+            @nexusrpc.service
+            class MyNexusService:
+                my_op: nexusrpc.Operation[MyInput, MyOutput]
+                another_op: nexusrpc.Operation[str, dict]
 
-        @nexusrpc.service
-        class MyNexusService:
-            my_operation: nexusrpc.Operation[MyInput, MyOutput]
+            @nexusrpc.service(name="custom-service-name")
+            class AnotherService:
+                process: nexusrpc.Operation[ProcessInput, ProcessOutput]
     """
 
     # TODO(preview): error on attempt foo = Operation[int, str](name="bar")

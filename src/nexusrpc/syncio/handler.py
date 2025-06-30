@@ -50,7 +50,6 @@ from ..handler._operation_handler import OperationHandler
 __all__ = [
     "Handler",
     "sync_operation",
-    "SyncOperationHandler",
 ]
 
 
@@ -66,6 +65,24 @@ class Handler(BaseServiceCollectionHandler):
 
     Operation requests are dispatched to a :py:class:`ServiceHandler` based on the
     service name in the operation context.
+
+    Example:
+        .. code-block:: python
+
+            import concurrent.futures
+            import nexusrpc.syncio.handler
+
+            # Create service handler instances with sync operations
+            my_service = MySyncServiceHandler()
+
+            # Create executor for running sync operations
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+
+            # Create syncio handler (requires executor)
+            handler = nexusrpc.syncio.handler.Handler([my_service], executor=executor)
+
+            # Use handler to process requests (methods are non-async)
+            result = handler.start_operation(ctx, input_lazy_value)
 
     """
 
@@ -150,6 +167,7 @@ class Handler(BaseServiceCollectionHandler):
         return True
 
 
+# TODO(prerelease): should not be exported
 class SyncOperationHandler(OperationHandler[InputT, OutputT]):
     """
     An :py:class:`nexusrpc.handler.OperationHandler` that is limited to responding synchronously.
@@ -230,6 +248,26 @@ def sync_operation(
 ]:
     """
     Decorator marking a method as the start method for a synchronous operation.
+
+    This is the synchronous I/O version using `def` methods.
+
+    Example:
+        .. code-block:: python
+
+            import requests
+            from nexusrpc.handler import service_handler
+            from nexusrpc.syncio.handler import sync_operation
+
+            @service_handler
+            class MySyncServiceHandler:
+                @sync_operation
+                def process_data(
+                    self, ctx: StartOperationContext, input: str
+                ) -> str:
+                    # You can use synchronous I/O libraries
+                    response = requests.get("https://api.example.com/data")
+                    data = response.json()
+                    return f"Processed: {data}"
     """
     if is_async_callable(start):
         raise TypeError(

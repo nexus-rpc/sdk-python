@@ -57,6 +57,24 @@ class HandlerError(Exception):
 
     This exception is used to represent errors that occur during the handling of a
     Nexus operation that should be reported to the caller as a handler error.
+
+    Example:
+        .. code-block:: python
+
+            import nexusrpc
+
+            # Raise a bad request error
+            raise nexusrpc.HandlerError(
+                "Invalid input provided",
+                type=nexusrpc.HandlerErrorType.BAD_REQUEST
+            )
+
+            # Raise a retryable internal error
+            raise nexusrpc.HandlerError(
+                "Database unavailable",
+                type=nexusrpc.HandlerErrorType.INTERNAL,
+                retryable=True
+            )
     """
 
     def __init__(
@@ -109,6 +127,23 @@ class OperationError(Exception):
                     `message` in the resulting Nexus Failure object.
 
     :param state:
+
+    Example:
+        .. code-block:: python
+
+            import nexusrpc
+
+            # Indicate operation failed
+            raise nexusrpc.OperationError(
+                "Processing failed due to invalid data",
+                state=nexusrpc.OperationErrorState.FAILED
+            )
+
+            # Indicate operation was canceled
+            raise nexusrpc.OperationError(
+                "Operation was canceled by user request",
+                state=nexusrpc.OperationErrorState.CANCELED
+            )
     """
 
     def __init__(self, message: str, *, state: OperationErrorState):

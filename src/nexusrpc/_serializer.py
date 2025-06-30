@@ -67,6 +67,23 @@ class LazyValue(LazyValueT):
     A container for a value encoded in an underlying stream.
 
     It is used to stream inputs and outputs in the various client and server APIs.
+
+    Example:
+        .. code-block:: python
+
+            # Creating a LazyValue from raw data
+            lazy_input = LazyValue(
+                serializer=my_serializer,
+                headers={"content-type": "application/json"},
+                stream=async_data_stream
+            )
+
+            # Using LazyValue with Handler.start_operation
+            handler = nexusrpc.handler.Handler([my_service])
+            result = await handler.start_operation(ctx, lazy_input)
+
+            # Consuming a LazyValue directly
+            deserialized_data = await lazy_input.consume(as_type=MyInputType)
     """
 
     def __init__(
