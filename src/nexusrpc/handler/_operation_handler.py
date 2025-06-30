@@ -14,7 +14,12 @@ from typing import (
 
 from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, ServiceDefinition
-from nexusrpc._util import get_operation_factory, is_async_callable, is_subtype
+from nexusrpc._util import (
+    get_operation_factory,
+    is_async_callable,
+    is_callable,
+    is_subtype,
+)
 
 from ._common import (
     CancelOperationContext,
@@ -158,10 +163,7 @@ def collect_operation_handler_factories_by_method_name(
         else set()
     )
     seen = set()
-    for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
-        import pdb
-
-        pdb.set_trace()
+    for _, method in inspect.getmembers(user_service_cls, is_callable):
         factory, op_defn = get_operation_factory(method)  # type: ignore[var-annotated]
         if factory and isinstance(op_defn, Operation):
             # This is a method decorated with one of the *operation_handler decorators

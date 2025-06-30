@@ -148,7 +148,7 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
 
 
 class SyncOperationWithCallableInstance(_TestCase):
-    skip = "TODO(prerelease): update this test after decorator change"
+    skip = "TODO(preview): support callable instance"
 
     @nexusrpc.service
     class Contract:
@@ -156,7 +156,7 @@ class SyncOperationWithCallableInstance(_TestCase):
 
     @service_handler(service=Contract)
     class Service:
-        class _sync_operation_with_callable_instance:
+        class sync_operation_with_callable_instance:
             async def __call__(
                 self,
                 _handler: Any,
@@ -164,8 +164,8 @@ class SyncOperationWithCallableInstance(_TestCase):
                 input: Input,
             ) -> Output: ...
 
-        sync_operation_with_callable_instance = sync_operation(
-            _sync_operation_with_callable_instance()
+        _sync_operation_with_callable_instance = sync_operation(
+            sync_operation_with_callable_instance()
         )
 
     expected_operations = {
@@ -187,9 +187,6 @@ class SyncOperationWithCallableInstance(_TestCase):
         SyncOperationWithOperationHandlerNameOverride,
         ManualOperationWithContract,
         ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride,
-        # TODO(prerelease): make callable instances work. Input type is not inferred due to
-        # signature differing from normal mathod. See also
-        # SyncHandlerHappyPathWithNonAsyncCallableInstance in temporal tests.
         SyncOperationWithCallableInstance,
     ],
 )
