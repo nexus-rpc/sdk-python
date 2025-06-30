@@ -2,8 +2,7 @@ from unittest import mock
 
 import pytest
 
-from nexusrpc import get_operation_factory
-from nexusrpc._util import is_async_callable
+from nexusrpc._util import get_operation_factory, is_async_callable
 from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultSync,

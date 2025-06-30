@@ -27,13 +27,14 @@ from ._service import (
 )
 from ._types import InputT as InputT, OutputT as OutputT
 from ._util import (
-    get_operation_factory as get_operation_factory,
+    get_operation_definition as get_operation_definition,
     get_service_definition as get_service_definition,
+    set_operation_definition as set_operation_definition,
 )
 
 __all__ = [
     "Content",
-    "get_operation_factory",
+    "get_operation_definition",
     "get_service_definition",
     "HandlerError",
     "HandlerErrorType",
@@ -48,6 +49,7 @@ __all__ = [
     "OutputT",
     "service",
     "ServiceDefinition",
+    "set_operation_definition",
 ]
 
 
