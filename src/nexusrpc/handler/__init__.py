@@ -1,6 +1,14 @@
+"""
+Components for implementing Nexus handlers.
+
+Server/worker authors will use this module to create the top-level Nexus handlers
+responsible for dispatching requests to Nexus operations.
+
+Nexus service/operation authors will use this module to implement operation handler
+methods within service handler classes.
+"""
 # TODO(preview): pass pyright strict mode "python.analysis.typeCheckingMode": "strict"
 # TODO(preview): pass mypy
-
 
 from __future__ import annotations
 

@@ -1,3 +1,18 @@
+"""
+nexusrpc is a library for building Nexus handlers.
+
+See https://github.com/nexus-rpc and https://github.com/nexus-rpc/api/blob/main/SPEC.md.
+
+Nexus is a synchronous RPC protocol. Arbitrary duration operations are modeled on top of
+a set of pre-defined synchronous RPCs.
+
+A Nexus caller calls a handler. The handler may respond inline (synchronous response) or
+return a token referencing the ongoing operation (asynchronous response). The caller can
+cancel an asynchronous operation, check for its outcome, or fetch its current state. The
+caller can also specify a callback URL, which the handler uses to deliver the result of
+an asynchronous operation when it is ready.
+"""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -18,19 +33,22 @@ from ._util import (
 @dataclass(frozen=True)
 class Link:
     """
-    Link contains a URL and a Type that can be used to decode the URL.
-    Links can contain any arbitrary information as a percent-encoded URL.
-    It can be used to pass information about the caller to the handler, or vice versa.
+    A Link contains a URL and a type that can be used to decode the URL.
+
+    The URL may contain arbitrary data (percent-encoded). It can be used to pass
+    information about the caller to the handler, or vice versa.
     """
 
     url: str
     """
-    Link URL. Must be percent-encoded.
+    Link URL.
+
+    Must be percent-encoded.
     """
 
     type: str
     """
-    Can describe an data type for decoding the URL.
+    A data type for decoding the URL.
 
     Valid chars: alphanumeric, '_', '.', '/'
     """
@@ -41,10 +59,41 @@ class OperationState(Enum):
     Describes the current state of an operation.
     """
 
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-    CANCELED = "canceled"
     RUNNING = "running"
+    """
+    The operation is running.
+    """
+
+    SUCCEEDED = "succeeded"
+    """
+    The operation succeeded.
+    """
+
+    FAILED = "failed"
+    """
+    The operation failed.
+    """
+
+    CANCELED = "canceled"
+    """
+    The operation was canceled.
+    """
+
+
+class OperationErrorState(Enum):
+    """
+    The state of an operation as described by an :py:class:`OperationError`.
+    """
+
+    FAILED = "failed"
+    """
+    The operation failed.
+    """
+
+    CANCELED = "canceled"
+    """
+    The operation was canceled.
+    """
 
 
 @dataclass(frozen=True)
@@ -64,23 +113,26 @@ class OperationInfo:
     """
 
 
-class OperationErrorState(Enum):
-    """
-    The state of an operation as described by an OperationError.
-    """
-
-    FAILED = "failed"
-    CANCELED = "canceled"
-
-
 class OperationError(Exception):
     """
     An error that represents "failed" and "canceled" operation results.
+
+    :param message: A descriptive message for the error. This will become the
+                    `message` in the resulting Nexus Failure object.
+
+    :param state:
     """
 
     def __init__(self, message: str, *, state: OperationErrorState):
         super().__init__(message)
-        self.state = state
+        self._state = state
+
+    @property
+    def state(self) -> OperationErrorState:
+        """
+        The state of the operation.
+        """
+        return self._state
 
 
 class HandlerErrorType(Enum):
@@ -169,13 +221,14 @@ class HandlerError(Exception):
         retryable: Optional[bool] = None,
     ):
         """
-        Initializes a new HandlerError.
+        Initialize a new HandlerError.
 
-        :param message: A descriptive message for the error. This will become the `message`
-                        in the resulting Nexus Failure object.
-        :param type: The type of handler error.
-        :param retryable: Whether this error should be retried. If not
-                          provided, the default behavior for the error type is used.
+        :param message: A descriptive message for the error. This will become the
+                        `message` in the resulting Nexus Failure object.
+
+        :param type:
+
+        :param retryable:
         """
         super().__init__(message)
         self._type = type
