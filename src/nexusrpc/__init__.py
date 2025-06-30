@@ -15,6 +15,7 @@ an asynchronous operation when it is ready.
 
 from __future__ import annotations
 
+from . import handler
 from ._common import (
     HandlerError,
     HandlerErrorType,
@@ -38,6 +39,7 @@ __all__ = [
     "Content",
     "get_operation_definition",
     "get_service_definition",
+    "handler",
     "HandlerError",
     "HandlerErrorType",
     "InputT",

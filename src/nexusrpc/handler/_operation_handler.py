@@ -12,13 +12,10 @@ from typing import (
     Union,
 )
 
-import nexusrpc
-import nexusrpc._service
-from nexusrpc import InputT, OutputT
-from nexusrpc._common import ServiceHandlerT
+from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
+from nexusrpc._service import Operation, ServiceDefinition
 from nexusrpc._util import get_operation_factory, is_async_callable, is_subtype
 
-from .. import OperationInfo
 from ._common import (
     CancelOperationContext,
     FetchOperationInfoContext,
@@ -154,7 +151,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
 
 def collect_operation_handler_factories_by_method_name(
     user_service_cls: Type[ServiceHandlerT],
-    service: Optional[nexusrpc.ServiceDefinition],
+    service: Optional[ServiceDefinition],
 ) -> dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]]:
     """
     Collect operation handler methods from a user service handler class.
@@ -172,7 +169,7 @@ def collect_operation_handler_factories_by_method_name(
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, inspect.isfunction):
         factory, op_defn = get_operation_factory(method)  # type: ignore[var-annotated]
-        if factory and isinstance(op_defn, nexusrpc.Operation):
+        if factory and isinstance(op_defn, Operation):
             # This is a method decorated with one of the *operation_handler decorators
             if op_defn.name in seen:
                 raise RuntimeError(
@@ -204,7 +201,7 @@ def validate_operation_handler_methods(
     user_methods_by_method_name: dict[
         str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]
     ],
-    service_definition: nexusrpc.ServiceDefinition,
+    service_definition: ServiceDefinition,
 ) -> None:
     """Validate operation handler methods against a service definition.
 
@@ -232,7 +229,7 @@ def validate_operation_handler_methods(
             )
         # TODO(prerelease): it should be guaranteed that `method` is a factory, so this next call should be unnecessary.
         method, method_op_defn = get_operation_factory(method)
-        if not isinstance(method_op_defn, nexusrpc.Operation):
+        if not isinstance(method_op_defn, Operation):
             raise ValueError(
                 f"Method '{method}' in class '{user_service_cls.__name__}' "
                 f"does not have a valid __nexus_operation__ attribute. "
@@ -289,7 +286,7 @@ def validate_operation_handler_methods(
 def service_definition_from_operation_handler_methods(
     service_name: str,
     user_methods: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]],
-) -> nexusrpc.ServiceDefinition:
+) -> ServiceDefinition:
     """
     Create a service definition from operation handler factory methods.
 
@@ -298,10 +295,10 @@ def service_definition_from_operation_handler_methods(
     :py:func:`@nexusrpc.handler.service_handler` decorator. This function is used when
     that is not the case.
     """
-    op_defns: dict[str, nexusrpc.Operation[Any, Any]] = {}
+    op_defns: dict[str, Operation[Any, Any]] = {}
     for name, method in user_methods.items():
         _, op_defn = get_operation_factory(method)
-        if not isinstance(op_defn, nexusrpc.Operation):
+        if not isinstance(op_defn, Operation):
             raise ValueError(
                 f"In service '{service_name}', could not locate operation definition for "
                 f"user operation handler method '{name}'. Did you forget to decorate the operation "
@@ -310,4 +307,4 @@ def service_definition_from_operation_handler_methods(
             )
         op_defns[op_defn.name] = op_defn
 
-    return nexusrpc.ServiceDefinition(name=service_name, operations=op_defns)
+    return ServiceDefinition(name=service_name, operations=op_defns)

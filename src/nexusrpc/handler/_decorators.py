@@ -13,9 +13,8 @@ from typing import (
     overload,
 )
 
-import nexusrpc
-from nexusrpc import InputT, OutputT
-from nexusrpc._common import ServiceHandlerT
+from nexusrpc._common import InputT, OutputT, ServiceHandlerT
+from nexusrpc._service import Operation
 from nexusrpc._util import (
     get_callable_name,
     get_service_definition,
@@ -185,7 +184,7 @@ def operation_handler(
 
         set_operation_definition(
             method,
-            nexusrpc.Operation(
+            Operation(
                 name=name or method.__name__,
                 method_name=method.__name__,
                 input_type=input_type,
@@ -285,7 +284,7 @@ def sync_operation(
         method_name = get_callable_name(start)
         set_operation_definition(
             operation_handler_factory,
-            nexusrpc.Operation(
+            Operation(
                 name=name or method_name,
                 method_name=method_name,
                 input_type=input_type,

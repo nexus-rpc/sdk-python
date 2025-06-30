@@ -106,9 +106,9 @@ from typing import (
 
 from typing_extensions import Self, TypeGuard
 
-import nexusrpc
-from nexusrpc import HandlerError, HandlerErrorType, OperationInfo
+from nexusrpc._common import HandlerError, HandlerErrorType, OperationInfo
 from nexusrpc._serializer import LazyValueT
+from nexusrpc._service import ServiceDefinition
 from nexusrpc._util import get_service_definition, is_async_callable
 
 from ._common import (
@@ -391,7 +391,7 @@ class ServiceHandler:
     constructor, for example when programmatically creating Nexus service implementations.
     """
 
-    service: nexusrpc.ServiceDefinition
+    service: ServiceDefinition
     operation_handlers: dict[str, OperationHandler[Any, Any]]
 
     @classmethod
@@ -399,7 +399,7 @@ class ServiceHandler:
         """Create a :py:class:`ServiceHandler` from a user service instance."""
 
         service = get_service_definition(user_instance.__class__)
-        if not isinstance(service, nexusrpc.ServiceDefinition):
+        if not isinstance(service, ServiceDefinition):
             raise RuntimeError(
                 f"Service '{user_instance}' does not have a service definition. "
                 f"Use the :py:func:`@nexusrpc.handler.service_handler` decorator on your class to define "

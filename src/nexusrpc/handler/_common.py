@@ -9,7 +9,7 @@ from typing import (
     Sequence,
 )
 
-from nexusrpc import Link, OutputT
+from nexusrpc._common import Link, OutputT
 
 
 @dataclass(frozen=True)
