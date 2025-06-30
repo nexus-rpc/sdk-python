@@ -105,8 +105,7 @@ class AsyncioDecoratorWithSyncioMethod(_TestCase):
 
         @service_handler(service=SD)
         class SH:
-            # assert-type-error: Argument 1 to "sync_operation" has incompatible type "Callable[[H, StartOperationContext, None], None]"; expected "Callable[[H, StartOperationContext, None], Awaitable[Never]]"
-            @sync_operation  # type: ignore
+            @sync_operation  # assert-type-error: 'Argument 1 to "sync_operation" has incompatible type'
             def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
 
     error_message = (
