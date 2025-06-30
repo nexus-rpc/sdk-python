@@ -276,12 +276,6 @@ def validate_operation_handler_methods(
                 f"subclass of the operation definition output type."
             )
 
-    if user_methods_by_method_name.keys() > service_definition.operations.keys():
-        raise TypeError(
-            f"Service '{user_service_cls}' implements more operations than the interface '{service_definition}'. "
-            f"Extra operations: {user_methods_by_method_name.keys() - service_definition.operations.keys()}"
-        )
-
 
 def service_definition_from_operation_handler_methods(
     service_name: str,
