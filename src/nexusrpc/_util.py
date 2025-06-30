@@ -45,7 +45,10 @@ def set_service_definition(
 def get_operation_definition(
     obj: Any,
 ) -> Optional[nexusrpc.Operation]:
-    """Return the :py:class:`nexusrpc.Operation` for the object, or None"""
+    """Return the :py:class:`nexusrpc.Operation` for the object, or None
+
+    ``obj`` should be a decorated operation start method.
+    """
     return getattr(obj, "__nexus_operation__", None)
 
 
@@ -53,7 +56,10 @@ def set_operation_definition(
     obj: Any,
     operation_definition: nexusrpc.Operation,
 ) -> None:
-    """Set the :py:class:`nexusrpc.Operation` for this object."""
+    """Set the :py:class:`nexusrpc.Operation` for this object.
+
+    ``obj`` should be an operation start method.
+    """
     setattr(obj, "__nexus_operation__", operation_definition)
 
 
@@ -63,6 +69,10 @@ def get_operation_factory(
     Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
     Optional[nexusrpc.Operation[InputT, OutputT]],
 ]:
+    """Return the :py:class:`Operation` for the object along with the factory function.
+
+    ``obj`` should be a decorated operation start method.
+    """
     op_defn = get_operation_definition(obj)
     if op_defn:
         factory = obj
@@ -78,7 +88,10 @@ def set_operation_factory(
     obj: Any,
     operation_factory: Callable[[Any], OperationHandler[InputT, OutputT]],
 ) -> None:
-    """Set the :py:class:`OperationHandler` factory for this object."""
+    """Set the :py:class:`OperationHandler` factory for this object.
+
+    ``obj`` should be an operation start method.
+    """
     setattr(obj, "__nexus_operation_factory__", operation_factory)
 
 
