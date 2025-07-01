@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import (
@@ -13,7 +14,7 @@ from nexusrpc._common import Link, OutputT
 
 
 @dataclass(frozen=True)
-class OperationContext:
+class OperationContext(ABC):
     """Context for the execution of the requested operation method.
 
     Includes information from the request."""
