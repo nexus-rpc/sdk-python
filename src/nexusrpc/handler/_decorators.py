@@ -57,8 +57,8 @@ def service_handler(
 
 def service_handler(
     cls: Optional[Type[ServiceHandlerT]] = None,
-    service: Optional[Type[Any]] = None,
     *,
+    service: Optional[Type[Any]] = None,
     name: Optional[str] = None,
 ) -> Union[
     Type[ServiceHandlerT], Callable[[Type[ServiceHandlerT]], Type[ServiceHandlerT]]
