@@ -39,7 +39,6 @@ The handler in (2) would form part of a server or worker that processes Nexus re
 from dataclasses import dataclass
 
 import nexusrpc
-from nexusrpc.handler import StartOperationContext, service_handler, sync_operation
 
 
 @dataclass
@@ -57,7 +56,7 @@ class MyNexusService:
     my_sync_operation: nexusrpc.Operation[MyInput, MyOutput]
 
 
-@service_handler(service=MyNexusService)
+@nexusrpc.handler.service_handler(service=MyNexusService)
 class MyNexusServiceHandler:
     # You can create an __init__ method accepting what is needed by your operation
     # handlers to handle requests. You will typically instantiate your service handler class
@@ -67,9 +66,9 @@ class MyNexusServiceHandler:
     # that the `start` method returns the final operation result.
     #
     # Sync operations are free to make arbitrary network calls.
-    @sync_operation
+    @nexusrpc.handler.sync_operation
     async def my_sync_operation(
-        self, ctx: StartOperationContext, input: MyInput
+        self, ctx: nexusrpc.handler.StartOperationContext, input: MyInput
     ) -> MyOutput:
         return MyOutput(message=f"Hello {input.name}!")
 ```
