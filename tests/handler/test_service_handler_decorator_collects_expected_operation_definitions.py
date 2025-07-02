@@ -34,7 +34,6 @@ class _TestCase:
     Service: Type[Any]
     expected_operations: dict[str, nexusrpc.Operation]
     Contract: Optional[Type[Any]] = None
-    skip: Optional[str] = None
 
 
 class ManualOperationHandler(_TestCase):
@@ -147,35 +146,35 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
     }
 
 
-class SyncOperationWithCallableInstance(_TestCase):
-    skip = "TODO(preview): support callable instance"
+if False:
+    # TODO(preview): support callable instances
+    class SyncOperationWithCallableInstance(_TestCase):
+        @nexusrpc.service
+        class Contract:
+            sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
 
-    @nexusrpc.service
-    class Contract:
-        sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
+        @service_handler(service=Contract)
+        class Service:
+            class sync_operation_with_callable_instance:
+                async def __call__(
+                    self,
+                    _handler: Any,
+                    ctx: StartOperationContext,
+                    input: Input,
+                ) -> Output: ...
 
-    @service_handler(service=Contract)
-    class Service:
-        class sync_operation_with_callable_instance:
-            async def __call__(
-                self,
-                _handler: Any,
-                ctx: StartOperationContext,
-                input: Input,
-            ) -> Output: ...
+            _sync_operation_with_callable_instance = sync_operation(
+                sync_operation_with_callable_instance()
+            )
 
-        _sync_operation_with_callable_instance = sync_operation(
-            sync_operation_with_callable_instance()
-        )
-
-    expected_operations = {
-        "sync_operation_with_callable_instance": nexusrpc.Operation(
-            name="sync_operation_with_callable_instance",
-            method_name="CallableInstanceStartMethod",
-            input_type=Input,
-            output_type=Output,
-        ),
-    }
+        expected_operations = {
+            "sync_operation_with_callable_instance": nexusrpc.Operation(
+                name="sync_operation_with_callable_instance",
+                method_name="CallableInstanceStartMethod",
+                input_type=Input,
+                output_type=Output,
+            ),
+        }
 
 
 @pytest.mark.parametrize(
@@ -187,16 +186,12 @@ class SyncOperationWithCallableInstance(_TestCase):
         SyncOperationWithOperationHandlerNameOverride,
         ManualOperationWithContract,
         ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride,
-        SyncOperationWithCallableInstance,
     ],
 )
 @pytest.mark.asyncio
 async def test_collected_operation_definitions(
     test_case: Type[_TestCase],
 ):
-    if test_case.skip:
-        pytest.skip(test_case.skip)
-
     service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     if test_case.Contract:

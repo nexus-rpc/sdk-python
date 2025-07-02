@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Optional, Type
 
 import pytest
@@ -49,9 +50,17 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
     class Interface:
         op: nexusrpc.Operation[int, str]
 
-    class Impl:
-        @sync_operation
-        async def op(self, ctx, input): ...
+    with warnings.catch_warnings(record=True) as _warnings:
+        warnings.simplefilter("always")
+
+        class Impl:
+            @sync_operation
+            async def op(self, ctx, input): ...
+
+    captured_warnings = _warnings
+    expected_warning = (
+        "to have exactly 2 type-annotated parameters (ctx and input), but it has 0"
+    )
 
     error_message = None
 
@@ -72,9 +81,17 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
     class Interface:
         op: nexusrpc.Operation[None, None]
 
-    class Impl:
-        @sync_operation
-        async def op(self, ctx: StartOperationContext, input) -> None: ...
+    with warnings.catch_warnings(record=True) as _warnings:
+        warnings.simplefilter("always")
+
+        class Impl:
+            @sync_operation
+            async def op(self, ctx: StartOperationContext, input) -> None: ...
+
+    captured_warnings = _warnings
+    expected_warning = (
+        "to have exactly 2 type-annotated parameters (ctx and input), but it has 1"
+    )
 
     error_message = None
 
@@ -84,9 +101,17 @@ class MissingContextAnnotation(_InterfaceImplementationTestCase):
     class Interface:
         op: nexusrpc.Operation[None, None]
 
-    class Impl:
-        @sync_operation
-        async def op(self, ctx, input: None) -> None: ...
+    with warnings.catch_warnings(record=True) as _warnings:
+        warnings.simplefilter("always")
+
+        class Impl:
+            @sync_operation
+            async def op(self, ctx, input: None) -> None: ...
+
+    captured_warnings = _warnings
+    expected_warning = (
+        "to have exactly 2 type-annotated parameters (ctx and input), but it has 1"
+    )
 
     error_message = None
 
@@ -254,6 +279,11 @@ def test_service_decorator_enforces_interface_implementation(
         err = ei.value
         assert test_case.error_message in str(err)
     else:
+        if expected_warning := getattr(test_case, "expected_warning", None):
+            [warning] = test_case.captured_warnings
+            assert expected_warning in str(warning.message)
+            assert issubclass(warning.category, UserWarning)
+
         service_handler(service=test_case.Interface)(test_case.Impl)
 
 
