@@ -1,6 +1,11 @@
 [project]
 name = "nexus-rpc"
-version = "0.1.0"
+# The nexus-rpc name in PyPi was originally held by an unrelated project that reached
+# 1.0.1 and was abandoned in 2018. The name was inherited by the Python Nexus SDK in
+# 2025 and version numbering started from 1.1.0. Despite the version number, this is an
+# experimental release and backwards-incompatible changes are anticipated until a GA
+# release is announced.
+version = "1.1.0"
 description = "Nexus Python SDK"
 readme = "README.md"
 authors = [
