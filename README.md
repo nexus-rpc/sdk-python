@@ -1,5 +1,7 @@
 # Nexus Python SDK
 
+⚠️  **This SDK is currently at an experimental release stage. Backwards-incompatible changes are anticipated until a stable release is announced.** ⚠️
+
 ## What is Nexus?
 
 [Nexus](https://github.com/nexus-rpc/) is a synchronous RPC protocol. Arbitrary duration operations are modeled on top of
@@ -72,3 +74,7 @@ class MyNexusServiceHandler:
         return MyOutput(message=f"Hello {input.name}!")
 ```
 
+
+## Note regarding version number
+The nexus-rpc name in PyPi was originally held by an unrelated project. Despite the
+version being at `v1.x` it is currently at an experimental release stage.
