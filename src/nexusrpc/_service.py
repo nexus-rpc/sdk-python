@@ -142,6 +142,15 @@ def service(
 
 @dataclass(frozen=True)
 class ServiceDefinition:
+    """
+    Internal representation of a user's service definition class.
+
+    A named collection of named operation definitions.
+
+    A service definition class is a class decorated with :py:func:`nexusrpc.service`
+    containing class attribute type annotations of type :py:class:`nexusrpc.Operation`.
+    """
+
     name: str
     operations: Mapping[str, Operation[Any, Any]]
 

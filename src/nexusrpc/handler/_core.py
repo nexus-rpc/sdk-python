@@ -370,19 +370,21 @@ class Handler(BaseServiceCollectionHandler):
 
 @dataclass(frozen=True)
 class ServiceHandler:
-    """Internal representation of a user's Nexus service implementation instance.
+    """Internal representation of an instance of a user's service handler class.
 
-    A user's service implementation is a class decorated with
+    A service handler is a class decorated with
     :py:func:`@nexusrpc.handler.service_handler` that defines operation handler methods
     using decorators such as :py:func:`@nexusrpc.handler.operation_handler`.
 
-    Instances of this class are created automatically from user service implementation instances
-    on creation of a Handler instance, at Nexus handler start time. While the user's class
-    defines operation handlers as factory methods to be called at handler start time, this
-    class contains the :py:class:`OperationHandler` instances themselves.
+    Instances of this class are created automatically from user service implementation
+    instances on creation of a Handler instance, at Nexus handler start time. While the
+    user's class defines operation handlers as factory methods to be called at handler
+    start time, this class contains the :py:class:`OperationHandler` instances
+    themselves.
 
     You may create instances of this class manually and pass them to the Handler
-    constructor, for example when programmatically creating Nexus service implementations.
+    constructor, for example when programmatically creating Nexus service
+    implementations.
     """
 
     service: ServiceDefinition
