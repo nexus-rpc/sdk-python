@@ -280,7 +280,7 @@ def test_service_decorator_enforces_interface_implementation(
         assert test_case.error_message in str(err)
     else:
         if expected_warning := getattr(test_case, "expected_warning", None):
-            [warning] = test_case.captured_warnings
+            [warning] = getattr(test_case, "captured_warnings", [])
             assert expected_warning in str(warning.message)
             assert issubclass(warning.category, UserWarning)
 
