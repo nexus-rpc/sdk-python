@@ -61,8 +61,14 @@ class HandlerError(Exception):
         :param retryable:
         """
         super().__init__(message)
+        self._message = message
         self._type = type
         self._retryable = retryable
+
+    @property
+    def message(self) -> str:
+        """The error message."""
+        return self._message
 
     @property
     def retryable(self) -> Optional[bool]:
