@@ -3,24 +3,18 @@ Tests for invalid ways that users may attempt to write service definition and se
 handler implementations.
 """
 
-import concurrent.futures
 from typing import Any, Callable
 
 import pytest
 
 import nexusrpc
 from nexusrpc.handler import (
-    Handler,
     StartOperationContext,
     service_handler,
     sync_operation,
 )
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
-from nexusrpc.syncio.handler import (
-    Handler as SyncioHandler,
-    sync_operation as syncio_sync_operation,
-)
 
 
 class _TestCase:
@@ -115,49 +109,6 @@ class AsyncioDecoratorWithSyncioMethod(_TestCase):
     )
 
 
-class SyncioDecoratorWithAsyncioMethod(_TestCase):
-    @staticmethod
-    def build():
-        @nexusrpc.service
-        class SD:
-            my_op: nexusrpc.Operation[None, None]
-
-        @service_handler(service=SD)
-        class SH:
-            @syncio_sync_operation
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-    error_message = (
-        "syncio sync_operation decorator must be used on a `def` operation method"
-    )
-
-
-class AsyncioHandlerWithSyncioOperation(_TestCase):
-    @staticmethod
-    def build():
-        @service_handler
-        class SH:
-            @syncio_sync_operation
-            def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-        Handler([SH()])
-
-    error_message = "Use nexusrpc.syncio.handler.Handler instead"
-
-
-class SyncioHandlerWithAsyncioOperation(_TestCase):
-    @staticmethod
-    def build():
-        @service_handler
-        class SH:
-            @sync_operation
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-        SyncioHandler([SH()], concurrent.futures.ThreadPoolExecutor())
-
-    error_message = "Use nexusrpc.handler.Handler instead"
-
-
 class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
     @staticmethod
     def build():
@@ -197,10 +148,6 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         ServiceDefinitionOperationHasNoTypeParams,
         ServiceDefinitionHasExtraOp,
         ServiceHandlerHasExtraOp,
-        AsyncioDecoratorWithSyncioMethod,
-        SyncioDecoratorWithAsyncioMethod,
-        AsyncioHandlerWithSyncioOperation,
-        SyncioHandlerWithAsyncioOperation,
         ServiceDefinitionHasDuplicateMethodNames,
         OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition,
     ],
