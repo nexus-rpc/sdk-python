@@ -362,8 +362,7 @@ class Handler(BaseServiceCollectionHandler):
         if not is_async_callable(method):
             raise RuntimeError(
                 f"Operation handler method {method} is not an `async def` method, "
-                f"but you are using nexusrpc.handler.Handler, which is for "
-                "`async def` methods. Use nexusrpc.syncio.handler.Handler instead."
+                f"but you have not supplied an executor to nexusrpc.handler.Handler. "
             )
         return True
 

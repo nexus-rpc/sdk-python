@@ -9,6 +9,9 @@ from typing import Any, Callable
 import pytest
 
 import nexusrpc
+from nexusrpc._syncio.handler import (
+    Handler as SyncioHandler,
+)
 from nexusrpc.handler import (
     Handler,
     StartOperationContext,
@@ -17,9 +20,6 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
-from nexusrpc._syncio.handler import (
-    Handler as SyncioHandler,
-)
 
 
 class _TestCase:
@@ -107,7 +107,7 @@ class AsyncioHandlerWithSyncioOperation(_TestCase):
 
         Handler([SH()])
 
-    error_message = "Use nexusrpc.syncio.handler.Handler instead"
+    error_message = "you have not supplied an executor"
 
 
 class SyncioHandlerWithAsyncioOperation(_TestCase):
