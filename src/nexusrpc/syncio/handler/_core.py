@@ -4,23 +4,16 @@ import concurrent.futures
 from typing import (
     Any,
     Callable,
-    Optional,
     Sequence,
     Union,
-    overload,
 )
 
 from typing_extensions import TypeGuard
 
-import nexusrpc
-from nexusrpc import InputT, OperationInfo, OutputT
-from nexusrpc._common import ServiceHandlerT
+from nexusrpc._common import InputT, OperationInfo, OutputT
 from nexusrpc._serializer import LazyValueT
 from nexusrpc._util import (
-    get_callable_name,
     is_async_callable,
-    set_operation_definition,
-    set_operation_factory,
 )
 from nexusrpc.handler._common import (
     CancelOperationContext,
@@ -31,7 +24,6 @@ from nexusrpc.handler._common import (
     StartOperationResultSync,
 )
 from nexusrpc.handler._core import BaseServiceCollectionHandler
-from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations
 
 from ...handler._operation_handler import OperationHandler
 
@@ -197,96 +189,3 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         raise NotImplementedError(
             "An operation that responded synchronously cannot be cancelled."
         )
-
-
-@overload
-def sync_operation(
-    start: Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]: ...
-
-
-@overload
-def sync_operation(
-    *,
-    name: Optional[str] = None,
-) -> Callable[
-    [Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]],
-    Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-]: ...
-
-
-def sync_operation(
-    start: Optional[
-        Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]
-    ] = None,
-    *,
-    name: Optional[str] = None,
-) -> Union[
-    Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-    Callable[
-        [Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]],
-        Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-    ],
-]:
-    """
-    Decorator marking a method as the start method for a synchronous operation.
-
-    This is the synchronous I/O version using `def` methods.
-
-    Example:
-        .. code-block:: python
-
-            import requests
-            from nexusrpc.handler import service_handler
-            from nexusrpc.syncio.handler import sync_operation
-
-            @service_handler
-            class MySyncServiceHandler:
-                @sync_operation
-                def process_data(
-                    self, ctx: StartOperationContext, input: str
-                ) -> str:
-                    # You can use synchronous I/O libraries
-                    response = requests.get("https://api.example.com/data")
-                    data = response.json()
-                    return f"Processed: {data}"
-    """
-    if is_async_callable(start):
-        raise TypeError(
-            "syncio sync_operation decorator must be used on a `def` operation method"
-        )
-
-    def decorator(
-        start: Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-    ) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]:
-        def operation_handler_factory(
-            self: ServiceHandlerT,
-        ) -> OperationHandler[InputT, OutputT]:
-            def _start(ctx: StartOperationContext, input: InputT) -> OutputT:
-                return start(self, ctx, input)
-
-            _start.__doc__ = start.__doc__
-            return SyncOperationHandler(_start)
-
-        input_type, output_type = get_start_method_input_and_output_type_annotations(
-            start
-        )
-
-        method_name = get_callable_name(start)
-        set_operation_definition(
-            operation_handler_factory,
-            nexusrpc.Operation(
-                name=name or method_name,
-                method_name=method_name,
-                input_type=input_type,
-                output_type=output_type,
-            ),
-        )
-
-        set_operation_factory(start, operation_handler_factory)
-        return start
-
-    if start is None:
-        return decorator
-
-    return decorator(start)

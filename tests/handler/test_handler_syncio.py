@@ -9,9 +9,10 @@ from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultSync,
     service_handler,
+    sync_operation,
 )
 from nexusrpc.syncio import LazyValue
-from nexusrpc.syncio.handler import Handler, sync_operation
+from nexusrpc.syncio.handler import Handler
 
 
 class _TestCase:

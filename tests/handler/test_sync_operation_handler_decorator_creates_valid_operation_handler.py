@@ -9,7 +9,6 @@ from nexusrpc.handler import (
     service_handler,
     sync_operation,
 )
-from nexusrpc.syncio import handler as syncio_handler
 
 
 @service_handler
@@ -17,7 +16,7 @@ class MyServiceHandler:
     def __init__(self):
         self.mutable_container = []
 
-    @syncio_handler.sync_operation
+    @sync_operation
     def my_def_op(self, ctx: StartOperationContext, input: int) -> int:
         """
         This is the docstring for the `my_def_op` sync operation.

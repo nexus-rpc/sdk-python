@@ -10,6 +10,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
     overload,
 )
 
@@ -26,6 +27,9 @@ from nexusrpc._util import (
 from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_start_method_input_and_output_type_annotations,
+)
+from nexusrpc.syncio.handler._core import (
+    SyncOperationHandler as SyncioSyncOperationHandler,
 )
 
 from ._operation_handler import (
@@ -209,22 +213,52 @@ def sync_operation(
 
 @overload
 def sync_operation(
+    start: Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
+) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]: ...
+
+
+@overload
+def sync_operation(
     *,
     name: Optional[str] = None,
 ) -> Callable[
-    [Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]],
-    Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+    [
+        Callable[
+            [ServiceHandlerT, StartOperationContext, InputT],
+            Awaitable[OutputT],
+        ]
+    ],
+    Callable[
+        [ServiceHandlerT, StartOperationContext, InputT],
+        Awaitable[OutputT],
+    ],
+]: ...
+
+
+@overload
+def sync_operation(
+    *,
+    name: Optional[str] = None,
+) -> Callable[
+    [Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]],
+    Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
 ]: ...
 
 
 def sync_operation(
     start: Optional[
-        Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]
+        Callable[
+            [ServiceHandlerT, StartOperationContext, InputT],
+            Union[Awaitable[OutputT], OutputT],
+        ]
     ] = None,
     *,
     name: Optional[str] = None,
 ) -> Union[
-    Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+    Callable[
+        [ServiceHandlerT, StartOperationContext, InputT],
+        Union[Awaitable[OutputT], OutputT],
+    ],
     Callable[
         [
             Callable[
@@ -232,6 +266,12 @@ def sync_operation(
             ]
         ],
         Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
+    ],
+    Callable[
+        [
+            Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
+        ],
+        Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
     ],
 ]:
     """
@@ -259,23 +299,46 @@ def sync_operation(
 
     def decorator(
         start: Callable[
-            [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
+            [ServiceHandlerT, StartOperationContext, InputT],
+            Union[Awaitable[OutputT], OutputT],
         ],
-    ) -> Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]]:
-        if not is_async_callable(start):
-            raise TypeError(
-                "sync_operation decorator must be used on an `async def` operation method. "
-                "To use a `def` method see `@nexusrpc.syncio.handler.sync_operation`."
-            )
-
+    ) -> Callable[
+        [ServiceHandlerT, StartOperationContext, InputT],
+        Union[Awaitable[OutputT], OutputT],
+    ]:
         def operation_handler_factory(
             self: ServiceHandlerT,
         ) -> OperationHandler[InputT, OutputT]:
-            async def _start(ctx: StartOperationContext, input: InputT) -> OutputT:
-                return await start(self, ctx, input)
+            if is_async_callable(start):
+                start_async = cast(
+                    Callable[
+                        [ServiceHandlerT, StartOperationContext, InputT],
+                        Awaitable[OutputT],
+                    ],
+                    start,
+                )
 
-            _start.__doc__ = start.__doc__
-            return SyncOperationHandler(_start)
+                async def asyncio_start(
+                    ctx: StartOperationContext, input: InputT
+                ) -> OutputT:
+                    return await start_async(self, ctx, input)
+
+                asyncio_start.__doc__ = start.__doc__
+                return SyncOperationHandler(asyncio_start)
+            else:
+                start_sync = cast(
+                    Callable[
+                        [ServiceHandlerT, StartOperationContext, InputT],
+                        OutputT,
+                    ],
+                    start,
+                )
+
+                def _start(ctx: StartOperationContext, input: InputT) -> OutputT:
+                    return start_sync(self, ctx, input)
+
+                _start.__doc__ = start.__doc__
+                return SyncioSyncOperationHandler(_start)
 
         input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
             start  # type: ignore[arg-type]
