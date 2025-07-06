@@ -58,23 +58,27 @@ class HandlerError(Exception):
 
         :param type: The :py:class:`HandlerErrorType` of the error.
 
-        :param retry_behavior: The retry behavior for the error. The
-                               :py:meth:`retryable` property will return the boolean
-                               value based on this value. If None, then the default
-                               behavior for the error type is used. See
-                               https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+        :param retry_behavior: Optional retry behavior for the error.
         """
         super().__init__(message)
         self._type = type
         self._retry_behavior = retry_behavior
 
     @property
+    def retry_behavior(self) -> Optional[HandlerErrorRetryBehavior]:
+        """
+        The retry behavior set for this error.
+        """
+        return self._retry_behavior
+
+    @property
     def retryable(self) -> bool:
         """
         Whether this error should be retried.
 
-        If None, then the default behavior for the error type is used.
-        See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+        If :py:attr:`retry_behavior` is None, then the default behavior for the error
+        type is used. See
+        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
         if self._retry_behavior == HandlerErrorRetryBehavior.RETRYABLE:
             return True
