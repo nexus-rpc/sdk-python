@@ -10,8 +10,9 @@ Nexus service/operation authors will use this module to implement operation hand
 methods within service handler classes.
 """
 
-from ._core import Handler
+from ._core import Handler, SyncOperationHandler
 
 __all__ = [
     "Handler",
+    "SyncOperationHandler",
 ]
