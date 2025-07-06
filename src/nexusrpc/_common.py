@@ -48,7 +48,7 @@ class HandlerError(Exception):
         message: str,
         *,
         type: HandlerErrorType,
-        retryable: Optional[bool] = None,
+        retry_behavior: Optional[HandlerErrorRetryBehavior] = None,
     ):
         """
         Initialize a new HandlerError.
@@ -56,29 +56,54 @@ class HandlerError(Exception):
         :param message: A descriptive message for the error. This will become the
                         `message` in the resulting Nexus Failure object.
 
-        :param type:
+        :param type: The :py:class:`HandlerErrorType` of the error.
 
-        :param retryable:
+        :param retry_behavior: Optional retry behavior for the error.
         """
         super().__init__(message)
-        self._message = message
         self._type = type
-        self._retryable = retryable
+        self._retry_behavior = retry_behavior
 
     @property
-    def message(self) -> str:
-        """The error message."""
-        return self._message
+    def retry_behavior(self) -> Optional[HandlerErrorRetryBehavior]:
+        """
+        The retry behavior set for this error.
+        """
+        return self._retry_behavior
 
     @property
-    def retryable(self) -> Optional[bool]:
+    def retryable(self) -> bool:
         """
         Whether this error should be retried.
 
-        If None, then the default behavior for the error type should be used.
-        See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+        If :py:attr:`retry_behavior` is None, then the default behavior for the error
+        type is used. See
+        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        return self._retryable
+        if self.retry_behavior == HandlerErrorRetryBehavior.RETRYABLE:
+            return True
+        elif self.retry_behavior == HandlerErrorRetryBehavior.NON_RETRYABLE:
+            return False
+
+        non_retryable_types = {
+            HandlerErrorType.BAD_REQUEST,
+            HandlerErrorType.UNAUTHENTICATED,
+            HandlerErrorType.UNAUTHORIZED,
+            HandlerErrorType.NOT_FOUND,
+            HandlerErrorType.NOT_IMPLEMENTED,
+        }
+        retryable_types = {
+            HandlerErrorType.RESOURCE_EXHAUSTED,
+            HandlerErrorType.INTERNAL,
+            HandlerErrorType.UNAVAILABLE,
+            HandlerErrorType.UPSTREAM_TIMEOUT,
+        }
+        if self._type in non_retryable_types:
+            return False
+        elif self._type in retryable_types:
+            return True
+        else:
+            return True
 
     @property
     def type(self) -> HandlerErrorType:
@@ -89,6 +114,22 @@ class HandlerError(Exception):
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
         """
         return self._type
+
+
+class HandlerErrorRetryBehavior(Enum):
+    """
+    Retry behavior for a handler error.
+    """
+
+    RETRYABLE = "RETRYABLE"
+    """
+    The error should be retried.
+    """
+
+    NON_RETRYABLE = "NON_RETRYABLE"
+    """
+    The error should not be retried.
+    """
 
 
 class OperationError(Exception):
