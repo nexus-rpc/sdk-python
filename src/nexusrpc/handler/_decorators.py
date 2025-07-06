@@ -28,7 +28,7 @@ from nexusrpc.handler._common import StartOperationContext
 from nexusrpc.handler._util import (
     get_start_method_input_and_output_type_annotations,
 )
-from nexusrpc.syncio.handler._core import (
+from nexusrpc._syncio.handler._core import (
     SyncOperationHandler as SyncioSyncOperationHandler,
 )
 

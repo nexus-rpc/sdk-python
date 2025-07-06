@@ -11,8 +11,8 @@ from nexusrpc.handler import (
     service_handler,
     sync_operation,
 )
-from nexusrpc.syncio import LazyValue
-from nexusrpc.syncio.handler import Handler
+from nexusrpc._syncio import LazyValue
+from nexusrpc._syncio.handler import Handler
 
 
 class _TestCase:

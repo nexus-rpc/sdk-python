@@ -17,7 +17,7 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
-from nexusrpc.syncio.handler import (
+from nexusrpc._syncio.handler import (
     Handler as SyncioHandler,
 )
 
