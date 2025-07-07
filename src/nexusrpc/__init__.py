@@ -18,6 +18,7 @@ from __future__ import annotations
 from . import handler
 from ._common import (
     HandlerError,
+    HandlerErrorRetryBehavior,
     HandlerErrorType,
     InputT,
     Link,
@@ -42,6 +43,7 @@ __all__ = [
     "handler",
     "HandlerError",
     "HandlerErrorType",
+    "HandlerErrorRetryBehavior",
     "InputT",
     "LazyValue",
     "Link",

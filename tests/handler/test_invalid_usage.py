@@ -9,6 +9,9 @@ from typing import Any, Callable
 import pytest
 
 import nexusrpc
+from nexusrpc._syncio.handler import (
+    Handler as SyncioHandler,
+)
 from nexusrpc.handler import (
     Handler,
     StartOperationContext,
@@ -17,10 +20,6 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
-from nexusrpc.syncio.handler import (
-    Handler as SyncioHandler,
-    sync_operation as syncio_sync_operation,
-)
 
 
 class _TestCase:
@@ -98,51 +97,17 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
     error_message = "has 0 type parameters"
 
 
-class AsyncioDecoratorWithSyncioMethod(_TestCase):
-    @staticmethod
-    def build():
-        @nexusrpc.service
-        class SD:
-            my_op: nexusrpc.Operation[None, None]
-
-        @service_handler(service=SD)
-        class SH:
-            @sync_operation  # assert-type-error: 'Argument 1 to "sync_operation" has incompatible type'
-            def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-    error_message = (
-        "sync_operation decorator must be used on an `async def` operation method"
-    )
-
-
-class SyncioDecoratorWithAsyncioMethod(_TestCase):
-    @staticmethod
-    def build():
-        @nexusrpc.service
-        class SD:
-            my_op: nexusrpc.Operation[None, None]
-
-        @service_handler(service=SD)
-        class SH:
-            @syncio_sync_operation
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-    error_message = (
-        "syncio sync_operation decorator must be used on a `def` operation method"
-    )
-
-
 class AsyncioHandlerWithSyncioOperation(_TestCase):
     @staticmethod
     def build():
         @service_handler
         class SH:
-            @syncio_sync_operation
+            @sync_operation
             def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
 
         Handler([SH()])
 
-    error_message = "Use nexusrpc.syncio.handler.Handler instead"
+    error_message = "you have not supplied an executor"
 
 
 class SyncioHandlerWithAsyncioOperation(_TestCase):
@@ -197,8 +162,6 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         ServiceDefinitionOperationHasNoTypeParams,
         ServiceDefinitionHasExtraOp,
         ServiceHandlerHasExtraOp,
-        AsyncioDecoratorWithSyncioMethod,
-        SyncioDecoratorWithAsyncioMethod,
         AsyncioHandlerWithSyncioOperation,
         SyncioHandlerWithAsyncioOperation,
         ServiceDefinitionHasDuplicateMethodNames,

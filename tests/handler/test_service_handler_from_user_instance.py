@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from nexusrpc._syncio import handler as syncio_handler
 from nexusrpc.handler import StartOperationContext, service_handler
-from nexusrpc.syncio import handler as syncio_handler
 
 if False:
 

@@ -5,13 +5,14 @@ from typing import Any, Optional, Type
 import pytest
 
 from nexusrpc import Content
+from nexusrpc._syncio import LazyValue
+from nexusrpc._syncio.handler import Handler
 from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultSync,
     service_handler,
+    sync_operation,
 )
-from nexusrpc.syncio import LazyValue
-from nexusrpc.syncio.handler import Handler, sync_operation
 
 
 class _TestCase:
