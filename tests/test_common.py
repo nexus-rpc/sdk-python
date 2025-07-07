@@ -1,4 +1,4 @@
-from nexusrpc._common import HandlerError, HandlerErrorRetryBehavior, HandlerErrorType
+from nexusrpc._common import HandlerError, HandlerErrorType
 
 
 def test_handler_error_retryable_type():
@@ -6,19 +6,19 @@ def test_handler_error_retryable_type():
     assert HandlerError(
         "test",
         type=retryable_error_type,
-        retry_behavior=HandlerErrorRetryBehavior.RETRYABLE,
-    ).retryable
+        retryable=True,
+    ).should_be_retried
 
     assert not HandlerError(
         "test",
         type=retryable_error_type,
-        retry_behavior=HandlerErrorRetryBehavior.NON_RETRYABLE,
-    ).retryable
+        retryable=False,
+    ).should_be_retried
 
     assert HandlerError(
         "test",
         type=retryable_error_type,
-    ).retryable
+    ).should_be_retried
 
 
 def test_handler_error_non_retryable_type():
@@ -26,16 +26,16 @@ def test_handler_error_non_retryable_type():
     assert HandlerError(
         "test",
         type=non_retryable_error_type,
-        retry_behavior=HandlerErrorRetryBehavior.RETRYABLE,
-    ).retryable
+        retryable=True,
+    ).should_be_retried
 
     assert not HandlerError(
         "test",
         type=non_retryable_error_type,
-        retry_behavior=HandlerErrorRetryBehavior.NON_RETRYABLE,
-    ).retryable
+        retryable=False,
+    ).should_be_retried
 
     assert not HandlerError(
         "test",
         type=non_retryable_error_type,
-    ).retryable
+    ).should_be_retried

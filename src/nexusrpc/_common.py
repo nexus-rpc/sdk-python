@@ -48,7 +48,7 @@ class HandlerError(Exception):
         message: str,
         *,
         type: HandlerErrorType,
-        retry_behavior: Optional[HandlerErrorRetryBehavior] = None,
+        retryable: Optional[bool] = None,
     ):
         """
         Initialize a new HandlerError.
@@ -58,32 +58,31 @@ class HandlerError(Exception):
 
         :param type: The :py:class:`HandlerErrorType` of the error.
 
-        :param retry_behavior: Optional retry behavior for the error.
+        :param retryable: Optionally set whether the error should be retried. By default,
+                          the error type is used to determine if the error should be retried.
         """
         super().__init__(message)
         self._type = type
-        self._retry_behavior = retry_behavior
+        self._retryable = retryable
 
     @property
-    def retry_behavior(self) -> Optional[HandlerErrorRetryBehavior]:
+    def retryable(self) -> Optional[bool]:
         """
         The retry behavior set for this error.
         """
-        return self._retry_behavior
+        return self._retryable
 
     @property
-    def retryable(self) -> bool:
+    def should_be_retried(self) -> bool:
         """
         Whether this error should be retried.
 
-        If :py:attr:`retry_behavior` is None, then the default behavior for the error
+        If :py:attr:`retryable` is None, then the default behavior for the error
         type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        if self.retry_behavior == HandlerErrorRetryBehavior.RETRYABLE:
-            return True
-        elif self.retry_behavior == HandlerErrorRetryBehavior.NON_RETRYABLE:
-            return False
+        if self.retryable is not None:
+            return self.retryable
 
         non_retryable_types = {
             HandlerErrorType.BAD_REQUEST,
@@ -114,22 +113,6 @@ class HandlerError(Exception):
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
         """
         return self._type
-
-
-class HandlerErrorRetryBehavior(Enum):
-    """
-    Retry behavior for a handler error.
-    """
-
-    RETRYABLE = "RETRYABLE"
-    """
-    The error should be retried.
-    """
-
-    NON_RETRYABLE = "NON_RETRYABLE"
-    """
-    The error should not be retried.
-    """
 
 
 class HandlerErrorType(Enum):
