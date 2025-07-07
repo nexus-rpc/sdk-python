@@ -60,7 +60,7 @@ class HandlerError(Exception):
 
         :param retryable_override: Optionally set whether the error should be
                                    retried. By default, the error type is used
-                                   to determine if the error should be retried.
+                                   to determine this.
         """
         super().__init__(message)
         self._type = type
@@ -78,8 +78,8 @@ class HandlerError(Exception):
         """
         Whether this error should be retried.
 
-        If :py:attr:`retryable` is None, then the default behavior for the error
-        type is used. See
+        If :py:attr:`retryable_override` is None, then the default behavior for the
+        error type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
         if self._retryable_override is not None:
