@@ -200,7 +200,7 @@ def operation_handler(
     return decorator(method)
 
 
-F = TypeVar("F", bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[[Any, StartOperationContext, Any], Any])
 
 
 @overload
@@ -221,7 +221,10 @@ def sync_operation(
 def sync_operation(
     *,
     name: Optional[str] = None,
-) -> Callable[[F], F]: ...
+) -> Callable[
+    [Callable[[ServiceHandlerT, StartOperationContext, InputT], Any]],
+    Callable[[ServiceHandlerT, StartOperationContext, InputT], Any],
+]: ...
 
 
 def sync_operation(
