@@ -247,8 +247,8 @@ class Handler(BaseServiceCollectionHandler):
     This class supports user operation handlers that are either `async def` or `def`. If
     `def` user operation handlers are to be supported, an executor must be provided.
 
-    The methods of this class itself are `async def`. For a handler class with `def`
-    methods, see :py:class:`nexusrpc.syncio.Handler`.
+    The methods of this class itself are `async def`. There is currently no alternative
+    Handler class with `def` methods.
 
     Example:
         .. code-block:: python

@@ -13,7 +13,7 @@ from typing import (
     overload,
 )
 
-import nexusrpc._syncio
+import nexusrpc.handler._syncio
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation
 from nexusrpc._util import (
@@ -272,7 +272,7 @@ def sync_operation(
                     return start(self, ctx, input)
 
                 _start.__doc__ = start.__doc__
-                return nexusrpc._syncio.handler.SyncOperationHandler(_start)
+                return nexusrpc.handler._syncio.SyncOperationHandler(_start)
 
         input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
             start  # type: ignore[arg-type]

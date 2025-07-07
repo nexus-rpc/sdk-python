@@ -94,7 +94,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
     An :py:class:`OperationHandler` that is limited to responding synchronously.
 
     This version of the class uses `async def` methods. For the syncio version, see
-    :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
+    :py:class:`nexusrpc.handler._syncio.SyncOperationHandler`.
     """
 
     def __init__(
@@ -104,7 +104,6 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
             raise RuntimeError(
                 f"{start} is not an `async def` method. "
                 "SyncOperationHandler must be initialized with an `async def` method. "
-                "To use `def` methods, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`."
             )
         self._start = start
         if start.__doc__:
