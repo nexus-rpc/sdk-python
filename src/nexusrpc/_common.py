@@ -48,29 +48,30 @@ class HandlerError(Exception):
         message: str,
         *,
         type: HandlerErrorType,
-        retryable: Optional[bool] = None,
+        retryable_override: Optional[bool] = None,
     ):
         """
         Initialize a new HandlerError.
 
-        :param message: A descriptive message for the error. This will become the
-                        `message` in the resulting Nexus Failure object.
+        :param message: A descriptive message for the error. This will become
+                        the `message` in the resulting Nexus Failure object.
 
         :param type: The :py:class:`HandlerErrorType` of the error.
 
-        :param retryable: Optionally set whether the error should be retried. By default,
-                          the error type is used to determine if the error should be retried.
+        :param retryable_override: Optionally set whether the error should be
+                                   retried. By default, the error type is used
+                                   to determine if the error should be retried.
         """
         super().__init__(message)
         self._type = type
-        self._retryable = retryable
+        self._retryable_override = retryable_override
 
     @property
-    def retryable(self) -> Optional[bool]:
+    def retryable_override(self) -> Optional[bool]:
         """
-        The optional retryability set when this error was created.
+        The optional retryability override set when this error was created.
         """
-        return self._retryable
+        return self._retryable_override
 
     def should_be_retried(self) -> bool:
         """
@@ -80,8 +81,8 @@ class HandlerError(Exception):
         type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        if self._retryable is not None:
-            return self._retryable
+        if self._retryable_override is not None:
+            return self._retryable_override
 
         non_retryable_types = {
             HandlerErrorType.BAD_REQUEST,

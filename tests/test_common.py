@@ -6,13 +6,13 @@ def test_handler_error_retryable_type():
     assert HandlerError(
         "test",
         type=retryable_error_type,
-        retryable=True,
+        retryable_override=True,
     ).should_be_retried()
 
     assert not HandlerError(
         "test",
         type=retryable_error_type,
-        retryable=False,
+        retryable_override=False,
     ).should_be_retried()
 
     assert HandlerError(
@@ -26,13 +26,13 @@ def test_handler_error_non_retryable_type():
     assert HandlerError(
         "test",
         type=non_retryable_error_type,
-        retryable=True,
+        retryable_override=True,
     ).should_be_retried()
 
     assert not HandlerError(
         "test",
         type=non_retryable_error_type,
-        retryable=False,
+        retryable_override=False,
     ).should_be_retried()
 
     assert not HandlerError(
