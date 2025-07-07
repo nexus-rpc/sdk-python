@@ -10,7 +10,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
     overload,
 )
 
@@ -201,6 +200,9 @@ def operation_handler(
     return decorator(method)
 
 
+F = TypeVar("F", bound=Callable[..., Any])
+
+
 @overload
 def sync_operation(
     start: Callable[
@@ -219,59 +221,14 @@ def sync_operation(
 def sync_operation(
     *,
     name: Optional[str] = None,
-) -> Callable[
-    [
-        Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Awaitable[OutputT],
-        ]
-    ],
-    Callable[
-        [ServiceHandlerT, StartOperationContext, InputT],
-        Awaitable[OutputT],
-    ],
-]: ...
-
-
-@overload
-def sync_operation(
-    *,
-    name: Optional[str] = None,
-) -> Callable[
-    [Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT]],
-    Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-]: ...
+) -> Callable[[F], F]: ...
 
 
 def sync_operation(
-    start: Optional[
-        Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Union[Awaitable[OutputT], OutputT],
-        ]
-    ] = None,
+    start: Optional[F] = None,
     *,
     name: Optional[str] = None,
-) -> Union[
-    Callable[
-        [ServiceHandlerT, StartOperationContext, InputT],
-        Union[Awaitable[OutputT], OutputT],
-    ],
-    Callable[
-        [
-            Callable[
-                [ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]
-            ]
-        ],
-        Callable[[ServiceHandlerT, StartOperationContext, InputT], Awaitable[OutputT]],
-    ],
-    Callable[
-        [
-            Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-        ],
-        Callable[[ServiceHandlerT, StartOperationContext, InputT], OutputT],
-    ],
-]:
+) -> Union[F, Callable[[F], F]]:
     """
     Decorator marking a method as the start method for a synchronous operation.
 
@@ -295,45 +252,21 @@ def sync_operation(
                     return f"Processed: {data}"
     """
 
-    def decorator(
-        start: Callable[
-            [ServiceHandlerT, StartOperationContext, InputT],
-            Union[Awaitable[OutputT], OutputT],
-        ],
-    ) -> Callable[
-        [ServiceHandlerT, StartOperationContext, InputT],
-        Union[Awaitable[OutputT], OutputT],
-    ]:
+    def decorator(start: F) -> F:
         def operation_handler_factory(
-            self: ServiceHandlerT,
-        ) -> OperationHandler[InputT, OutputT]:
+            self: Any,
+        ) -> OperationHandler[Any, Any]:
             if is_async_callable(start):
-                start_async = cast(
-                    Callable[
-                        [ServiceHandlerT, StartOperationContext, InputT],
-                        Awaitable[OutputT],
-                    ],
-                    start,
-                )
 
-                async def asyncio_start(
-                    ctx: StartOperationContext, input: InputT
-                ) -> OutputT:
-                    return await start_async(self, ctx, input)
+                async def asyncio_start(ctx: StartOperationContext, input: Any) -> Any:
+                    return await start(self, ctx, input)
 
                 asyncio_start.__doc__ = start.__doc__
                 return SyncOperationHandler(asyncio_start)
             else:
-                start_sync = cast(
-                    Callable[
-                        [ServiceHandlerT, StartOperationContext, InputT],
-                        OutputT,
-                    ],
-                    start,
-                )
 
-                def _start(ctx: StartOperationContext, input: InputT) -> OutputT:
-                    return start_sync(self, ctx, input)
+                def _start(ctx: StartOperationContext, input: Any) -> Any:
+                    return start(self, ctx, input)
 
                 _start.__doc__ = start.__doc__
                 return nexusrpc._syncio.handler.SyncOperationHandler(_start)
