@@ -68,7 +68,7 @@ class HandlerError(Exception):
     @property
     def retryable(self) -> Optional[bool]:
         """
-        The retry behavior set for this error.
+        The optional retryability set when this error was created.
         """
         return self._retryable
 
@@ -80,8 +80,8 @@ class HandlerError(Exception):
         type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        if self.retryable is not None:
-            return self.retryable
+        if self._retryable is not None:
+            return self._retryable
 
         non_retryable_types = {
             HandlerErrorType.BAD_REQUEST,
