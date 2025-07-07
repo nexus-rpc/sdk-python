@@ -16,7 +16,7 @@ from nexusrpc.handler._common import (
     StartOperationResultSync,
 )
 
-from ...handler._operation_handler import OperationHandler
+from ._operation_handler import OperationHandler
 
 
 class SyncOperationHandler(OperationHandler[InputT, OutputT]):

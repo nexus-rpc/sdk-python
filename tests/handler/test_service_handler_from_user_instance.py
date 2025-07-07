@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from nexusrpc._syncio import handler as syncio_handler
-from nexusrpc.handler import StartOperationContext, service_handler
+import nexusrpc.handler._syncio
+from nexusrpc.handler import (
+    StartOperationContext,
+    service_handler,
+)
 
 if False:
 
@@ -18,7 +21,7 @@ if False:
             ) -> int:
                 return input
 
-        sync_operation_with_callable_instance = syncio_handler.sync_operation(
+        sync_operation_with_callable_instance = nexusrpc.handler._syncio.sync_operation(
             name="sync_operation_with_callable_instance",
         )(
             SyncOperationWithCallableInstance(),
