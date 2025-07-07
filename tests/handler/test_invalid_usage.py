@@ -3,15 +3,11 @@ Tests for invalid ways that users may attempt to write service definition and se
 handler implementations.
 """
 
-import concurrent.futures
 from typing import Any, Callable
 
 import pytest
 
 import nexusrpc
-from nexusrpc._syncio.handler import (
-    Handler as SyncioHandler,
-)
 from nexusrpc.handler import (
     Handler,
     StartOperationContext,
@@ -110,19 +106,6 @@ class AsyncioHandlerWithSyncioOperation(_TestCase):
     error_message = "you have not supplied an executor"
 
 
-class SyncioHandlerWithAsyncioOperation(_TestCase):
-    @staticmethod
-    def build():
-        @service_handler
-        class SH:
-            @sync_operation
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
-
-        SyncioHandler([SH()], concurrent.futures.ThreadPoolExecutor())
-
-    error_message = "Use nexusrpc.handler.Handler instead"
-
-
 class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
     @staticmethod
     def build():
@@ -163,7 +146,6 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         ServiceDefinitionHasExtraOp,
         ServiceHandlerHasExtraOp,
         AsyncioHandlerWithSyncioOperation,
-        SyncioHandlerWithAsyncioOperation,
         ServiceDefinitionHasDuplicateMethodNames,
         OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition,
     ],

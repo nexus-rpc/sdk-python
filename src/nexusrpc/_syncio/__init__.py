@@ -13,7 +13,6 @@ version of the `sync_operation` decorator.
 """
 
 from . import handler
-from ._serializer import LazyValue
 
 __all__ = [
     "handler",
