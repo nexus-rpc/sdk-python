@@ -73,7 +73,8 @@ class HandlerError(Exception):
         """
         return self._retryable_override
 
-    def should_be_retried(self) -> bool:
+    @property
+    def retryable(self) -> bool:
         """
         Whether this error should be retried.
 
