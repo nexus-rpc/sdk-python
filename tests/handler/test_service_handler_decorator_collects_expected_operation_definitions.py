@@ -12,9 +12,7 @@ import nexusrpc
 from nexusrpc._util import get_operation_definition, get_service_definition
 from nexusrpc.handler import (
     OperationHandler,
-    StartOperationContext,
     service_handler,
-    sync_operation,
 )
 from nexusrpc.handler._decorators import operation_handler
 
@@ -144,37 +142,6 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
             output_type=Output,
         ),
     }
-
-
-if False:
-    # TODO(preview): support callable instances
-    class SyncOperationWithCallableInstance(_TestCase):
-        @nexusrpc.service
-        class Contract:
-            sync_operation_with_callable_instance: nexusrpc.Operation[Input, Output]
-
-        @service_handler(service=Contract)
-        class Service:
-            class sync_operation_with_callable_instance:
-                async def __call__(
-                    self,
-                    _handler: Any,
-                    ctx: StartOperationContext,
-                    input: Input,
-                ) -> Output: ...
-
-            _sync_operation_with_callable_instance = sync_operation(
-                sync_operation_with_callable_instance()
-            )
-
-        expected_operations = {
-            "sync_operation_with_callable_instance": nexusrpc.Operation(
-                name="sync_operation_with_callable_instance",
-                method_name="CallableInstanceStartMethod",
-                input_type=Input,
-                output_type=Output,
-            ),
-        }
 
 
 @pytest.mark.parametrize(
