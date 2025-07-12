@@ -16,20 +16,25 @@ if TYPE_CHECKING:
     from nexusrpc._common import ServiceT
     from nexusrpc.handler._operation_handler import OperationHandler
 
+_NEXUS_SERVICE_DEFINITION_ATTR_NAME = "__nexus_service_definition__"
+_NEXUS_OPERATION_ATTR_NAME = "__nexus_operation__"
+_NEXUS_OPERATION_FACTORY_ATTR_NAME = "__nexus_operation_factory__"
+
 
 def get_service_definition(
     obj: Any,
 ) -> Optional[nexusrpc.ServiceDefinition]:
     """Return the :py:class:`nexusrpc.ServiceDefinition` for the object, or None"""
-    # getattr would allow a non-decorated class to act as a service
+    # Do not use getattr since it would allow a non-decorated class to act as a service
     # definition if it inherits from a decorated class.
     if isinstance(obj, type):
-        defn = obj.__dict__.get("__nexus_service__")
+        defn = obj.__dict__.get(_NEXUS_SERVICE_DEFINITION_ATTR_NAME)
     else:
-        defn = getattr(obj, "__dict__", {}).get("__nexus_service__")
+        defn = getattr(obj, "__dict__", {}).get(_NEXUS_SERVICE_DEFINITION_ATTR_NAME)
     if defn and not isinstance(defn, nexusrpc.ServiceDefinition):
         raise ValueError(
-            f"Service definition {obj.__name__} has a __nexus_service__ attribute that is not a ServiceDefinition."
+            f"{obj.__name__} has a {_NEXUS_SERVICE_DEFINITION_ATTR_NAME} attribute "
+            f"that is not a nexusrpc.ServiceDefinition."
         )
     return defn
 
@@ -38,28 +43,33 @@ def set_service_definition(
     cls: type[ServiceT], service_definition: nexusrpc.ServiceDefinition
 ) -> None:
     """Set the :py:class:`nexusrpc.ServiceDefinition` for this class."""
-    setattr(cls, "__nexus_service__", service_definition)
+    setattr(cls, _NEXUS_SERVICE_DEFINITION_ATTR_NAME, service_definition)
 
 
-def get_operation_definition(
+def get_operation(
     obj: Any,
 ) -> Optional[nexusrpc.Operation[Any, Any]]:
     """Return the :py:class:`nexusrpc.Operation` for the object, or None
 
     ``obj`` should be a decorated operation start method.
     """
-    return getattr(obj, "__nexus_operation__", None)
+    op = getattr(obj, _NEXUS_OPERATION_ATTR_NAME, None)
+    if op and not isinstance(op, nexusrpc.Operation):
+        raise ValueError(f"{op} is not a nexusrpc.Operation")
+    return op
 
 
-def set_operation_definition(
+def set_operation(
     obj: Any,
-    operation_definition: nexusrpc.Operation[Any, Any],
+    operation: nexusrpc.Operation[Any, Any],
 ) -> None:
     """Set the :py:class:`nexusrpc.Operation` for this object.
 
     ``obj`` should be an operation start method.
     """
-    setattr(obj, "__nexus_operation__", operation_definition)
+    if not isinstance(operation, nexusrpc.Operation):  # type: ignore
+        raise ValueError(f"{operation} is not a nexusrpc.Operation")  # type: ignore
+    setattr(obj, _NEXUS_OPERATION_ATTR_NAME, operation)
 
 
 def get_operation_factory(
@@ -72,15 +82,15 @@ def get_operation_factory(
 
     ``obj`` should be a decorated operation start method.
     """
-    op_defn = get_operation_definition(obj)
-    if op_defn:
+    op = get_operation(obj)
+    if op:
         factory = obj
     else:
-        if factory := getattr(obj, "__nexus_operation_factory__", None):
-            op_defn = get_operation_definition(factory)
-    if not isinstance(op_defn, nexusrpc.Operation):
+        if factory := getattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None):
+            op = get_operation(factory)
+    if not isinstance(op, nexusrpc.Operation):
         return None, None
-    return factory, op_defn
+    return factory, op
 
 
 def set_operation_factory(
@@ -91,7 +101,7 @@ def set_operation_factory(
 
     ``obj`` should be an operation start method.
     """
-    setattr(obj, "__nexus_operation_factory__", operation_factory)
+    setattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, operation_factory)
 
 
 # Copied from https://github.com/modelcontextprotocol/python-sdk

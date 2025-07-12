@@ -128,7 +128,10 @@ def test_service_implementation_inheritance(
     service_handler = ServiceHandler.from_user_instance(test_case.UserServiceHandler())
 
     assert set(service_handler.operation_handlers) == test_case.expected_operations
-    assert set(service_handler.service.operations) == test_case.expected_operations
+    assert (
+        set(service_handler.service.operation_definitions)
+        == test_case.expected_operations
+    )
 
 
 class _ServiceDefinitionInheritanceTestCase(_TestCase):
@@ -169,7 +172,7 @@ def test_service_definition_inheritance_behavior(
         "__nexus_service__ is not a nexusrpc.ServiceDefinition instance."
     )
 
-    assert set(service_defn.operations) == test_case.expected_ops
+    assert set(service_defn.operation_definitions) == test_case.expected_ops
 
     with pytest.raises(
         TypeError,

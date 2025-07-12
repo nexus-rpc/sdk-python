@@ -6,7 +6,7 @@ from collections.abc import Awaitable
 from typing import Any, Callable, Generic, Optional, Union
 
 from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
-from nexusrpc._service import Operation, ServiceDefinition
+from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
 from nexusrpc._util import (
     get_operation_factory,
     is_async_callable,
@@ -144,13 +144,10 @@ def collect_operation_handler_factories_by_method_name(
     """
     Collect operation handler methods from a user service handler class.
     """
+    # TODO(preview): rename op/op_defn variables in this function
     factories: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]] = {}
     service_method_names = (
-        {
-            op.method_name
-            for op in service.operations.values()
-            if op.method_name is not None
-        }
+        {op.method_name for op in service.operation_definitions.values()}
         if service
         else set()
     )
@@ -185,8 +182,8 @@ def collect_operation_handler_factories_by_method_name(
 
 
 def validate_operation_handler_methods(
-    user_service_cls: type[ServiceHandlerT],
-    user_methods_by_method_name: dict[
+    service_cls: type[ServiceHandlerT],
+    methods_by_method_name: dict[
         str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]
     ],
     service_definition: ServiceDefinition,
@@ -202,48 +199,42 @@ def validate_operation_handler_methods(
        is a subtype of the operation defined in the service definition, i.e. respecting
        input type contravariance and output type covariance.
     """
-    user_methods_by_method_name = user_methods_by_method_name.copy()
-    for op_defn in service_definition.operations.values():
-        if not op_defn.method_name:
-            raise ValueError(
-                f"Operation '{op_defn}' in service definition '{service_definition}' "
-                f"does not have a method name. "
-            )
-        method = user_methods_by_method_name.pop(op_defn.method_name, None)
+    methods_by_method_name = methods_by_method_name.copy()
+    for op_defn in service_definition.operation_definitions.values():
+        method = methods_by_method_name.pop(op_defn.method_name, None)
         if not method:
             raise TypeError(
-                f"Service '{user_service_cls}' does not implement an operation with "
+                f"Service '{service_cls}' does not implement an operation with "
                 f"method name '{op_defn.method_name}'. But this operation is in service "
                 f"definition '{service_definition}'."
             )
-        method, method_op_defn = get_operation_factory(method)
-        if not isinstance(method_op_defn, Operation):
+        method, op = get_operation_factory(method)
+        if not isinstance(op, Operation):
             raise ValueError(
-                f"Method '{method}' in class '{user_service_cls.__name__}' "
+                f"Method '{method}' in class '{service_cls.__name__}' "
                 f"does not have a valid __nexus_operation__ attribute. "
                 f"Did you forget to decorate the operation method with an operation handler decorator such as "
                 f":py:func:`@nexusrpc.handler.operation_handler`?"
             )
-        if method_op_defn.name not in [method_op_defn.method_name, op_defn.name]:
+        if op.name not in [op.method_name, op_defn.name]:
             raise TypeError(
-                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
-                f"has name '{method_op_defn.name}', but the name in the service definition "
+                f"Operation '{op_defn.method_name}' in service '{service_cls}' "
+                f"has name '{op.name}', but the name in the service definition "
                 f"is '{op_defn.name}'. Operation handlers may not override the name of an operation "
                 f"in the service definition."
             )
         # Input type is contravariant: op handler input must be superclass of op defn output
         if (
-            method_op_defn.input_type is not None
-            and op_defn.input_type is not None
-            and Any not in (method_op_defn.input_type, op_defn.input_type)
+            op.input_type is not None
+            and Any not in (op.input_type, op_defn.input_type)
             and not (
-                op_defn.input_type == method_op_defn.input_type
-                or is_subtype(op_defn.input_type, method_op_defn.input_type)
+                op_defn.input_type == op.input_type
+                or is_subtype(op_defn.input_type, op.input_type)
             )
         ):
             raise TypeError(
-                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
-                f"has input type '{method_op_defn.input_type}', which is not "
+                f"Operation '{op_defn.method_name}' in service '{service_cls}' "
+                f"has input type '{op.input_type}', which is not "
                 f"compatible with the input type '{op_defn.input_type}' in interface "
                 f"'{service_definition.name}'. The input type must be the same as or a "
                 f"superclass of the operation definition input type."
@@ -251,22 +242,21 @@ def validate_operation_handler_methods(
 
         # Output type is covariant: op handler output must be subclass of op defn output
         if (
-            method_op_defn.output_type is not None
-            and op_defn.output_type is not None
-            and Any not in (method_op_defn.output_type, op_defn.output_type)
-            and not is_subtype(method_op_defn.output_type, op_defn.output_type)
+            op.output_type is not None
+            and Any not in (op.output_type, op_defn.output_type)
+            and not is_subtype(op.output_type, op_defn.output_type)
         ):
             raise TypeError(
-                f"Operation '{op_defn.method_name}' in service '{user_service_cls}' "
-                f"has output type '{method_op_defn.output_type}', which is not "
+                f"Operation '{op_defn.method_name}' in service '{service_cls}' "
+                f"has output type '{op.output_type}', which is not "
                 f"compatible with the output type '{op_defn.output_type}' in interface "
                 f" '{service_definition}'. The output type must be the same as or a "
                 f"subclass of the operation definition output type."
             )
-    if user_methods_by_method_name:
+    if methods_by_method_name:
         raise ValueError(
-            f"Service '{user_service_cls}' implements more operations than the interface '{service_definition}'. "
-            f"Extra operations: {', '.join(sorted(user_methods_by_method_name.keys()))}."
+            f"Service '{service_cls}' implements more operations than the interface '{service_definition}'. "
+            f"Extra operations: {', '.join(sorted(methods_by_method_name.keys()))}."
         )
 
 
@@ -282,16 +272,16 @@ def service_definition_from_operation_handler_methods(
     :py:func:`@nexusrpc.handler.service_handler` decorator. This function is used when
     that is not the case.
     """
-    op_defns: dict[str, Operation[Any, Any]] = {}
+    op_defns: dict[str, OperationDefinition[Any, Any]] = {}
     for name, method in user_methods.items():
-        _, op_defn = get_operation_factory(method)
-        if not isinstance(op_defn, Operation):
+        _, op = get_operation_factory(method)
+        if not isinstance(op, Operation):
             raise ValueError(
                 f"In service '{service_name}', could not locate operation definition for "
                 f"user operation handler method '{name}'. Did you forget to decorate the operation "
                 f"method with an operation handler decorator such as "
-                f":py:func:`@nexusrpc.handler.operation_handler`?"
+                f"@nexusrpc.handler.sync_operation?"
             )
-        op_defns[op_defn.name] = op_defn
+        op_defns[op.name] = OperationDefinition.from_operation(op)
 
-    return ServiceDefinition(name=service_name, operations=op_defns)
+    return ServiceDefinition(name=service_name, operation_definitions=op_defns)

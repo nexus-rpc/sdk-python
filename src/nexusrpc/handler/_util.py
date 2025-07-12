@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 ServiceHandlerT = TypeVar("ServiceHandlerT")
 
 
+# TODO(preview): is it ever valid for this to return None (as opposed to NoneType)?
 def get_start_method_input_and_output_type_annotations(
     start: Callable[
         [ServiceHandlerT, StartOperationContext, InputT],

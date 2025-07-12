@@ -51,23 +51,38 @@ class Operation(Generic[InputT, OutputT]):
     input_type: Optional[type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[type[OutputT]] = dataclasses.field(default=None)
 
-    def __post_init__(self):
-        if not self.name:
-            raise ValueError("Operation name cannot be empty")
 
-    def _validation_errors(self) -> list[str]:
-        errors = []
-        if not self.name:
-            errors.append(
-                f"Operation has no name (method_name is '{self.method_name}')"
+@dataclass
+class OperationDefinition(Generic[InputT, OutputT]):
+    """
+    Internal representation of a user's :py:class:`Operation` definition.
+    """
+
+    name: str
+    method_name: str
+    input_type: type[InputT]
+    output_type: type[OutputT]
+
+    @classmethod
+    def from_operation(
+        cls, operation: Operation[InputT, OutputT]
+    ) -> OperationDefinition[InputT, OutputT]:
+        if not operation.name:
+            raise ValueError(
+                f"Operation has no name (method_name is '{operation.method_name}')"
             )
-        if not self.method_name:
-            errors.append(f"Operation '{self.name}' has no method name")
-        if not self.input_type:
-            errors.append(f"Operation '{self.name}' has no input type")
-        if not self.output_type:
-            errors.append(f"Operation '{self.name}' has no output type")
-        return errors
+        if not operation.method_name:
+            raise ValueError(f"Operation '{operation.name}' has no method name")
+        if not operation.input_type:
+            raise ValueError(f"Operation '{operation.name}' has no input type")
+        if not operation.output_type:
+            raise ValueError(f"Operation '{operation.name}' has no output type")
+        return cls(
+            name=operation.name,
+            method_name=operation.method_name,
+            input_type=operation.input_type,
+            output_type=operation.output_type,
+        )
 
 
 @overload
@@ -124,7 +139,7 @@ def service(
         defn = ServiceDefinition.from_class(cls, name or cls.__name__)
         set_service_definition(cls, defn)
 
-        # In order for callers to refer to operations at run-time, a decorated user
+        # In order for callers to refer to operation definitions at run-time, a decorated user
         # service class must itself have a class attribute for every operation, even if
         # declared only via a type annotation, and whether inherited from a parent class
         # or not.
@@ -132,8 +147,15 @@ def service(
         # TODO(preview): it is sufficient to do this setattr only for the subset of
         # operations that were declared on *this* class. Currently however we are
         # setting all inherited operations.
-        for op_name, op in defn.operations.items():
-            setattr(cls, op_name, op)
+        for op_name, op in defn.operation_definitions.items():
+            if not hasattr(cls, op_name):
+                op = Operation(
+                    name=op.name,
+                    method_name=op.method_name,
+                    input_type=op.input_type,
+                    output_type=op.output_type,
+                )
+                setattr(cls, op_name, op)
 
         return cls
 
@@ -155,7 +177,7 @@ class ServiceDefinition:
     """
 
     name: str
-    operations: Mapping[str, Operation[Any, Any]]
+    operation_definitions: Mapping[str, OperationDefinition[Any, Any]]
 
     def __post_init__(self):
         if errors := self._validation_errors():
@@ -173,7 +195,7 @@ class ServiceDefinition:
         If multiple service definitions define an operation with the same name, then the
         usual mro() precedence rules apply.
         """
-        operations = ServiceDefinition._collect_operations(user_class)
+        operation_definitions = ServiceDefinition._collect_operations(user_class)
 
         # Obtain the set of operations to be inherited from ancestral service
         # definitions. Operations are only inherited from classes that are also
@@ -191,42 +213,41 @@ class ServiceDefinition:
             for defn in (get_service_definition(cls) for cls in user_class.mro()[1:])
             if defn
         )
-        method_names = {op.method_name for op in operations.values() if op.method_name}
+        method_names = {op.method_name for op in operation_definitions.values()}
         if parent_defn := next(parent_defns, None):
-            for op in parent_defn.operations.values():
+            for op in parent_defn.operation_definitions.values():
                 if op.method_name in method_names:
                     raise ValueError(
                         f"Operation method name '{op.method_name}' in class '{user_class}' "
                         f"also occurs in a service definition inherited from a parent class: "
                         f"'{parent_defn.name}'. This is not allowed."
                     )
-                if op.name in operations:
+                if op.name in operation_definitions:
                     raise ValueError(
                         f"Operation name '{op.name}' in class '{user_class}' "
                         f"also occurs in a service definition inherited from a parent class: "
                         f"'{parent_defn.name}'. This is not allowed."
                     )
-                operations[op.name] = op
+                operation_definitions[op.name] = op
 
-        return ServiceDefinition(name=name, operations=operations)
+        return ServiceDefinition(name=name, operation_definitions=operation_definitions)
 
     def _validation_errors(self) -> list[str]:
         errors = []
         if not self.name:
             errors.append("Service has no name")
         seen_method_names = set()
-        for op in self.operations.values():
+        for op in self.operation_definitions.values():
             if op.method_name in seen_method_names:
                 errors.append(f"Operation method name '{op.method_name}' is not unique")
             seen_method_names.add(op.method_name)
-            errors.extend(op._validation_errors())  # pyright: ignore[reportPrivateUsage]
         return errors
 
     @staticmethod
     def _collect_operations(
         user_class: type[ServiceT],
-    ) -> dict[str, Operation[Any, Any]]:
-        """Collect operations from a user service definition class.
+    ) -> dict[str, OperationDefinition[Any, Any]]:
+        """Collect operation definitions from a user service definition class.
 
         Does not visit parent classes.
         """
@@ -301,11 +322,11 @@ class ServiceDefinition:
             if op.method_name is None:
                 op.method_name = key
 
-        operations_by_name = {}
+        op_defns = {}
         for op in operations.values():
-            if op.name in operations_by_name:
-                raise ValueError(
-                    f"Operation '{op.name}' in class '{user_class}' is defined multiple times"
+            if op.name in op_defns:
+                raise RuntimeError(
+                    f"Operation '{op.name}' in service '{user_class}' is defined multiple times"
                 )
-            operations_by_name[op.name] = op
-        return operations_by_name
+            op_defns[op.name] = OperationDefinition.from_operation(op)
+        return op_defns

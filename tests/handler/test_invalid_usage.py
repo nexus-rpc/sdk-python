@@ -141,7 +141,7 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
             @operation_handler
             def op(self) -> OperationHandler: ...  # type: ignore
 
-    error_message = r"has no input type.+has no output type"
+    error_message = r"has no input type"
 
 
 @pytest.mark.parametrize(

@@ -84,9 +84,7 @@ class InstanceWithoutTypeAnnotationIsAnError(_TestCase):
         a = Operation[int, str](name="a-name")
 
     UserService = A1
-    expected_error = (
-        "Operation 'a-name' has no input type, Operation 'a-name' has no output type"
-    )
+    expected_error = "Operation 'a-name' has no input type"
 
 
 class InvalidUseOfTypeAsValue(_TestCase):
@@ -127,7 +125,7 @@ def test_user_service_definition_inheritance(test_case: type[_TestCase]):
 
     service_defn = get_service_definition(nexusrpc.service(test_case.UserService))
     assert isinstance(service_defn, ServiceDefinition)
-    assert set(service_defn.operations) == test_case.expected_operation_names
-    for op in service_defn.operations.values():
+    assert set(service_defn.operation_definitions) == test_case.expected_operation_names
+    for op in service_defn.operation_definitions.values():
         assert op.input_type is int
         assert op.output_type is str

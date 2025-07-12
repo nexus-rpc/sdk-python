@@ -12,7 +12,7 @@ from nexusrpc._util import (
     get_callable_name,
     get_service_definition,
     is_async_callable,
-    set_operation_definition,
+    set_operation,
     set_operation_factory,
     set_service_definition,
 )
@@ -175,7 +175,7 @@ def operation_handler(
                     f"but operation {method.__name__} has {len(type_args)} type parameters: {type_args}"
                 )
 
-        set_operation_definition(
+        set_operation(
             method,
             Operation(
                 name=name or method.__name__,
@@ -271,7 +271,7 @@ def sync_operation(
         )
 
         method_name = get_callable_name(start)
-        set_operation_definition(
+        set_operation(
             operation_handler_factory,
             Operation(
                 name=name or method_name,
