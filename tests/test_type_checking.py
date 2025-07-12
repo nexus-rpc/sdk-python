@@ -1,6 +1,7 @@
 import itertools
 import json
 import os
+import platform
 import re
 import subprocess
 import tempfile
@@ -28,6 +29,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Skip on Windows")
 def test_type_checking_pyright(test_file: Path):
     """
     Validate type error assertions in a single test file using pyright.
