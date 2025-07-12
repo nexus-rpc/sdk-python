@@ -147,13 +147,13 @@ def service(
         # TODO(preview): it is sufficient to do this setattr only for the subset of
         # operations that were declared on *this* class. Currently however we are
         # setting all inherited operations.
-        for op_name, op in defn.operation_definitions.items():
+        for op_name, op_defn in defn.operation_definitions.items():
             if not hasattr(cls, op_name):
                 op = Operation(
-                    name=op.name,
-                    method_name=op.method_name,
-                    input_type=op.input_type,
-                    output_type=op.output_type,
+                    name=op_defn.name,
+                    method_name=op_defn.method_name,
+                    input_type=op_defn.input_type,
+                    output_type=op_defn.output_type,
                 )
                 setattr(cls, op_name, op)
 
@@ -208,27 +208,32 @@ class ServiceDefinition:
         # 2. No inherited operation has the same method name as that of an operation
         #    defined here. If this were violated, there would be ambiguity in which
         #    operation handler is dispatched to.
-        parent_defns = (
-            defn
-            for defn in (get_service_definition(cls) for cls in user_class.mro()[1:])
-            if defn
+        parent_service_defn = next(
+            (
+                defn
+                for defn in (
+                    get_service_definition(cls) for cls in user_class.mro()[1:]
+                )
+                if defn
+            ),
+            None,
         )
-        method_names = {op.method_name for op in operation_definitions.values()}
-        if parent_defn := next(parent_defns, None):
-            for op in parent_defn.operation_definitions.values():
-                if op.method_name in method_names:
+        if parent_service_defn:
+            method_names = {op.method_name for op in operation_definitions.values()}
+            for op_defn in parent_service_defn.operation_definitions.values():
+                if op_defn.method_name in method_names:
                     raise ValueError(
-                        f"Operation method name '{op.method_name}' in class '{user_class}' "
+                        f"Operation method name '{op_defn.method_name}' in class '{user_class}' "
                         f"also occurs in a service definition inherited from a parent class: "
-                        f"'{parent_defn.name}'. This is not allowed."
+                        f"'{parent_service_defn.name}'. This is not allowed."
                     )
-                if op.name in operation_definitions:
+                if op_defn.name in operation_definitions:
                     raise ValueError(
-                        f"Operation name '{op.name}' in class '{user_class}' "
+                        f"Operation name '{op_defn.name}' in class '{user_class}' "
                         f"also occurs in a service definition inherited from a parent class: "
-                        f"'{parent_defn.name}'. This is not allowed."
+                        f"'{parent_service_defn.name}'. This is not allowed."
                     )
-                operation_definitions[op.name] = op
+                operation_definitions[op_defn.name] = op_defn
 
         return ServiceDefinition(name=name, operation_definitions=operation_definitions)
 
@@ -237,10 +242,12 @@ class ServiceDefinition:
         if not self.name:
             errors.append("Service has no name")
         seen_method_names = set()
-        for op in self.operation_definitions.values():
-            if op.method_name in seen_method_names:
-                errors.append(f"Operation method name '{op.method_name}' is not unique")
-            seen_method_names.add(op.method_name)
+        for op_defn in self.operation_definitions.values():
+            if op_defn.method_name in seen_method_names:
+                errors.append(
+                    f"Operation method name '{op_defn.method_name}' is not unique"
+                )
+            seen_method_names.add(op_defn.method_name)
         return errors
 
     @staticmethod

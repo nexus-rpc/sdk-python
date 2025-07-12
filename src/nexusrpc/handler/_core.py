@@ -295,8 +295,8 @@ class Handler(BaseServiceCollectionHandler):
         """
         service_handler = self._get_service_handler(ctx.service)
         op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
-        op = service_handler.service.operation_definitions[ctx.operation]
-        deserialized_input = await input.consume(as_type=op.input_type)
+        op_defn = service_handler.service.operation_definitions[ctx.operation]
+        deserialized_input = await input.consume(as_type=op_defn.input_type)
         # TODO(preview): apply middleware stack
         if is_async_callable(op_handler.start):
             return await op_handler.start(ctx, deserialized_input)
@@ -407,28 +407,28 @@ class ServiceHandler:
             user_instance.__class__, service
         )
         op_handlers = {
-            op_name: factories_by_method_name[op.method_name](user_instance)
-            for op_name, op in service.operation_definitions.items()
+            name: factories_by_method_name[defn.method_name](user_instance)
+            for name, defn in service.operation_definitions.items()
         }
         return cls(
             service=service,
             operation_handlers=op_handlers,
         )
 
-    def _get_operation_handler(self, operation: str) -> OperationHandler[Any, Any]:
+    def _get_operation_handler(self, operation_name: str) -> OperationHandler[Any, Any]:
         """Return an operation handler, given the operation name."""
-        if operation not in self.service.operation_definitions:
+        if operation_name not in self.service.operation_definitions:
             raise HandlerError(
                 f"Nexus service definition '{self.service.name}' has no operation "
-                f"'{operation}'. There are {len(self.service.operation_definitions)} operations "
+                f"'{operation_name}'. There are {len(self.service.operation_definitions)} operations "
                 f"in the definition.",
                 type=HandlerErrorType.NOT_FOUND,
             )
-        operation_handler = self.operation_handlers.get(operation)
+        operation_handler = self.operation_handlers.get(operation_name)
         if operation_handler is None:
             raise HandlerError(
                 f"Nexus service implementation '{self.service.name}' has no handler for "
-                f"operation '{operation}'. There are {len(self.operation_handlers)} "
+                f"operation '{operation_name}'. There are {len(self.operation_handlers)} "
                 f"available operation handlers.",
                 type=HandlerErrorType.NOT_FOUND,
             )

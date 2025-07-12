@@ -147,24 +147,24 @@ def collect_operation_handler_factories_by_method_name(
     # TODO(preview): rename op/op_defn variables in this function
     factories: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]] = {}
     service_method_names = (
-        {op.method_name for op in service.operation_definitions.values()}
+        {op_defn.method_name for op_defn in service.operation_definitions.values()}
         if service
         else set()
     )
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, is_callable):
-        factory, op_defn = get_operation_factory(method)  # type: ignore[var-annotated]
-        if factory and isinstance(op_defn, Operation):
+        factory, op = get_operation_factory(method)  # type: ignore[var-annotated]
+        if factory and isinstance(op, Operation):
             # This is a method decorated with one of the *operation_handler decorators
-            if op_defn.name in seen:
+            if op.name in seen:
                 raise RuntimeError(
-                    f"Operation '{op_defn.name}' in service '{user_service_cls.__name__}' "
+                    f"Operation '{op.name}' in service '{user_service_cls.__name__}' "
                     f"is defined multiple times."
                 )
-            if service and op_defn.method_name not in service_method_names:
+            if service and op.method_name not in service_method_names:
                 _names = ", ".join(f"'{s}'" for s in sorted(service_method_names))
                 msg = (
-                    f"Operation method name '{op_defn.method_name}' in service handler {user_service_cls} "
+                    f"Operation method name '{op.method_name}' in service handler {user_service_cls} "
                     f"does not match an operation method name in the service definition. "
                     f"Available method names in the service definition: "
                 )
@@ -173,17 +173,17 @@ def collect_operation_handler_factories_by_method_name(
                 raise TypeError(msg)
 
             # TODO(preview) op_defn.method name should be non-nullable
-            assert op_defn.method_name, (
-                f"Operation '{op_defn}' method name should not be None. This is an SDK bug."
+            assert op.method_name, (
+                f"Operation '{op}' method name should not be None. This is an SDK bug."
             )
-            factories[op_defn.method_name] = factory
-            seen.add(op_defn.name)
+            factories[op.method_name] = factory
+            seen.add(op.name)
     return factories
 
 
 def validate_operation_handler_methods(
     service_cls: type[ServiceHandlerT],
-    methods_by_method_name: dict[
+    operation_handler_factories_by_method_name: dict[
         str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]
     ],
     service_definition: ServiceDefinition,
@@ -199,19 +199,23 @@ def validate_operation_handler_methods(
        is a subtype of the operation defined in the service definition, i.e. respecting
        input type contravariance and output type covariance.
     """
-    methods_by_method_name = methods_by_method_name.copy()
+    operation_handler_factories_by_method_name = (
+        operation_handler_factories_by_method_name.copy()
+    )
     for op_defn in service_definition.operation_definitions.values():
-        method = methods_by_method_name.pop(op_defn.method_name, None)
-        if not method:
+        factory = operation_handler_factories_by_method_name.pop(
+            op_defn.method_name, None
+        )
+        if not factory:
             raise TypeError(
                 f"Service '{service_cls}' does not implement an operation with "
                 f"method name '{op_defn.method_name}'. But this operation is in service "
                 f"definition '{service_definition}'."
             )
-        method, op = get_operation_factory(method)
+        _, op = get_operation_factory(factory)
         if not isinstance(op, Operation):
             raise ValueError(
-                f"Method '{method}' in class '{service_cls.__name__}' "
+                f"Method '{factory}' in class '{service_cls.__name__}' "
                 f"does not have a valid __nexus_operation__ attribute. "
                 f"Did you forget to decorate the operation method with an operation handler decorator such as "
                 f":py:func:`@nexusrpc.handler.operation_handler`?"
@@ -253,10 +257,10 @@ def validate_operation_handler_methods(
                 f" '{service_definition}'. The output type must be the same as or a "
                 f"subclass of the operation definition output type."
             )
-    if methods_by_method_name:
+    if operation_handler_factories_by_method_name:
         raise ValueError(
             f"Service '{service_cls}' implements more operations than the interface '{service_definition}'. "
-            f"Extra operations: {', '.join(sorted(methods_by_method_name.keys()))}."
+            f"Extra operations: {', '.join(sorted(operation_handler_factories_by_method_name.keys()))}."
         )
 
 
