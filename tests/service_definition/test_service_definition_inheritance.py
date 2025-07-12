@@ -29,7 +29,7 @@ class _TestCase(_BaseTestCase):
 class TypeAnnotationsOnly(_TestCase):
     @nexusrpc.service
     class A1:
-        a: Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        a: Operation[int, str]
 
     # TODO(preview) why is the decorator omitted here?
     class A2(A1):
@@ -100,7 +100,7 @@ class InvalidUseOfTypeAsValue(_TestCase):
 class ChildClassSynthesizedWithTypeValues(_TestCase):
     @nexusrpc.service
     class A1:
-        a: Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        a: Operation[int, str]
 
     A2 = type("A2", (A1,), {name: Operation[int, str] for name in ["b"]})
 

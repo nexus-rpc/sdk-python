@@ -19,6 +19,8 @@ from typing import (
     overload,
 )
 
+from typing_extensions import dataclass_transform
+
 from nexusrpc._common import InputT, OutputT, ServiceT
 from nexusrpc._util import (
     get_annotations,
@@ -69,10 +71,12 @@ class Operation(Generic[InputT, OutputT]):
 
 
 @overload
+@dataclass_transform(field_specifiers=(Operation,))
 def service(cls: type[ServiceT]) -> type[ServiceT]: ...
 
 
 @overload
+@dataclass_transform(field_specifiers=(Operation,))
 def service(
     *, name: Optional[str] = None
 ) -> Callable[[type[ServiceT]], type[ServiceT]]: ...
