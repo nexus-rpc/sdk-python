@@ -1,13 +1,20 @@
+import itertools
+import json
+import os
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
 
 
-def pytest_generate_tests(metafunc):  # type: ignore[reportMissingParameterType]
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Dynamically generate test cases for files with type error assertions."""
-    if metafunc.function.__name__ == "test_type_checking":
+    if metafunc.function.__name__ in [
+        "test_type_checking_pyright",
+        "test_type_checking_mypy",
+    ]:
         tests_dir = Path(__file__).parent
         files_with_assertions = []
 
@@ -18,21 +25,46 @@ def pytest_generate_tests(metafunc):  # type: ignore[reportMissingParameterType]
             if _has_type_error_assertions(test_file):
                 files_with_assertions.append(test_file)
 
-        metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)  # type: ignore
+        metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)
 
 
-def test_type_checking(test_file: Path):
+def test_type_checking_pyright(test_file: Path):
     """
-    Validate type error assertions in a single test file.
+    Validate type error assertions in a single test file using pyright.
 
-    For each line with a comment of the form `# assert-type-error: "pattern"`,
-    verify that mypy reports an error on that line matching the pattern.
+    For each line with a comment of the form `# assert-type-error-pyright: "regex"`,
+    verify that pyright reports an error on the next non-comment line matching the regex.
     Also verify that there are no unexpected type errors.
     """
-    expected_errors = _get_expected_errors(test_file)
-    actual_errors = _get_actual_errors(test_file)
+    _test_type_checking(
+        test_file,
+        _get_expected_errors(test_file, "pyright"),
+        _get_pyright_errors(test_file),
+    )
 
-    # Check that all expected errors are present and match
+
+# This test is disabled since we currently have no way to be able to
+# assert-type-error-mypy on a line with a `type: ignore`.
+def _test_type_checking_mypy(test_file: Path):  # pyright: ignore
+    """
+    Validate type error assertions in a single test file using mypy.
+
+    For each line with a comment of the form `# assert-type-error-mypy: "regex"`,
+    verify that mypy reports an error on the next non-comment line matching the regex.
+    Also verify that there are no unexpected type errors.
+    """
+    _test_type_checking(
+        test_file,
+        _get_expected_errors(test_file, "mypy"),
+        _get_mypy_errors(test_file),
+    )
+
+
+def _test_type_checking(
+    test_file: Path,
+    expected_errors: dict[int, str],
+    actual_errors: dict[int, str],
+) -> None:
     for line_num, expected_pattern in expected_errors.items():
         if line_num not in actual_errors:
             pytest.fail(
@@ -45,7 +77,6 @@ def test_type_checking(test_file: Path):
                 f"{test_file}:{line_num}: Expected error matching '{expected_pattern}' but got '{actual_msg}'"
             )
 
-    # Check that there are no unexpected errors
     for line_num, actual_msg in actual_errors.items():
         if line_num not in expected_errors:
             pytest.fail(f"{test_file}:{line_num}: Unexpected type error: {actual_msg}")
@@ -54,39 +85,89 @@ def test_type_checking(test_file: Path):
 def _has_type_error_assertions(test_file: Path) -> bool:
     """Check if a file contains any type error assertions."""
     with open(test_file) as f:
-        for line in f:
-            if re.search(r'# assert-type-error:\s*["\'](.+)["\']', line):
-                return True
-    return False
+        return any(
+            re.search(r"# assert-type-error-\w+:", line) for line in f.readlines()
+        )
 
 
-def _get_expected_errors(test_file: Path) -> dict[int, str]:
-    """Parse expected type errors from comments in a file."""
+def _get_expected_errors(test_file: Path, type_checker: str) -> dict[int, str]:
+    """Parse expected type errors from comments in a file for the specified type checker."""
     expected_errors = {}
+
     with open(test_file) as f:
-        for line_num, line in enumerate(f, 1):
-            match = re.search(r'# assert-type-error:\s*["\'](.+)["\']', line)
-            if match:
-                expected_errors[line_num] = match.group(1)
+        lines = zip(itertools.count(1), f)
+        for line_num, line in lines:
+            if match := re.search(
+                rf'# assert-type-error-{re.escape(type_checker)}:\s*["\'](.+)["\']',
+                line,
+            ):
+                pattern = match.group(1)
+                for line_num, line in lines:
+                    if line.strip() and not line.strip().startswith("#"):
+                        expected_errors[line_num] = pattern
+                        break
+
     return expected_errors
 
 
-def _get_actual_errors(test_file: Path) -> dict[int, str]:
-    """Run mypy on a file and parse the actual type errors."""
+def _get_pyright_errors(test_file: Path) -> dict[int, str]:
+    """Run pyright on a file and parse the actual type errors."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        # Create a temporary config file to disable type ignore comments
+        config_data = {"enableTypeIgnoreComments": False}
+        json.dump(config_data, f)
+        config_path = f.name
+
+    try:
+        result = subprocess.run(
+            ["uv", "run", "pyright", "--project", config_path, str(test_file)],
+            capture_output=True,
+            text=True,
+        )
+
+        actual_errors = {}
+        abs_path = test_file.resolve()
+
+        for line in result.stdout.splitlines():
+            # pyright output format: /full/path/to/file.py:line:column - error: message (error_code)
+            if match := re.match(
+                rf"\s*{re.escape(str(abs_path))}:(\d+):\d+\s*-\s*error:\s*(.+)", line
+            ):
+                line_num = int(match.group(1))
+                error_msg = match.group(2).strip()
+                # Remove error code in parentheses if present
+                error_msg = re.sub(r"\s*\([^)]+\)$", "", error_msg)
+                actual_errors[line_num] = error_msg
+
+        return actual_errors
+    finally:
+        if os.path.exists(config_path):
+            os.unlink(config_path)
+
+
+def _get_mypy_errors(test_file: Path) -> dict[int, str]:
+    """Run mypy on a file and parse the actual type errors.
+
+    Note: mypy does not have a direct equivalent to pyright's enableTypeIgnoreComments=false,
+    so type ignore comments will still be respected by mypy. Users should avoid placing
+    # type: ignore comments on lines they want to test, or manually remove them for testing.
+    """
     result = subprocess.run(
-        ["uv", "run", "mypy", "--check-untyped-defs", str(test_file)],
+        ["uv", "run", "mypy", str(test_file)],
         capture_output=True,
         text=True,
     )
 
     actual_errors = {}
+    abs_path = test_file.resolve()
+
     for line in result.stdout.splitlines():
-        # mypy output format: filename:line: error: message (uses relative path from cwd)
-        rel_path = test_file.relative_to(Path.cwd())
-        match = re.match(rf"{re.escape(str(rel_path))}:(\d+):\s*error:\s*(.+)", line)
-        if match:
+        # mypy output format: file.py:line: error: message
+        if match := re.match(
+            rf"{re.escape(str(abs_path))}:(\d+):\s*error:\s*(.+)", line
+        ):
             line_num = int(match.group(1))
-            error_msg = match.group(2)
+            error_msg = match.group(2).strip()
             actual_errors[line_num] = error_msg
 
     return actual_errors

@@ -35,26 +35,38 @@ def _():
         ) -> int:
             return await self.good_asyncio_with_name(ctx, input)
 
-        @sync_operation  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation  # type: ignore
         def syncio_bad_signature_1(self, x: int) -> str:
             return str(x)
 
-        @sync_operation  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation  # type: ignore
         def syncio_bad_signature_2(self, x: int, y: str, z: float) -> str:
             return str(x)
 
-        @sync_operation  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation  # type: ignore
         def syncio_bad_signature_3(self) -> str:
             return "test"
 
-        @sync_operation  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation  # type: ignore
         async def asyncio_bad_signature_1(self, x: int) -> str:
             return str(x)
 
-        @sync_operation(name="bad")  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation(name="bad")  # type: ignore
         def syncio_bad_signature_with_name(self, x: int) -> str:
             return str(x)
 
-        @sync_operation(name="bad")  # assert-type-error: "has incompatible type"
+        # assert-type-error-pyright: 'Argument of type .+ cannot be assigned to parameter'
+        # assert-type-error-mypy: "has incompatible type"
+        @sync_operation(name="bad")  # type: ignore
         async def asyncio_bad_signature_with_name(self, x: int) -> str:
             return str(x)
