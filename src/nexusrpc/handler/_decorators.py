@@ -2,16 +2,8 @@ from __future__ import annotations
 
 import typing
 import warnings
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from collections.abc import Awaitable
+from typing import Any, Callable, Optional, TypeVar, Union, overload
 
 import nexusrpc.handler._syncio
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
@@ -39,30 +31,30 @@ from ._operation_handler import (
 
 
 @overload
-def service_handler(cls: Type[ServiceHandlerT]) -> Type[ServiceHandlerT]: ...
+def service_handler(cls: type[ServiceHandlerT]) -> type[ServiceHandlerT]: ...
 
 
 # TODO(preview): allow service to be provided as positional argument?
 @overload
 def service_handler(
     *,
-    service: Optional[Type[Any]] = None,
-) -> Callable[[Type[ServiceHandlerT]], Type[ServiceHandlerT]]: ...
+    service: Optional[type[Any]] = None,
+) -> Callable[[type[ServiceHandlerT]], type[ServiceHandlerT]]: ...
 
 
 @overload
 def service_handler(
     *, name: str
-) -> Callable[[Type[ServiceHandlerT]], Type[ServiceHandlerT]]: ...
+) -> Callable[[type[ServiceHandlerT]], type[ServiceHandlerT]]: ...
 
 
 def service_handler(
-    cls: Optional[Type[ServiceHandlerT]] = None,
+    cls: Optional[type[ServiceHandlerT]] = None,
     *,
-    service: Optional[Type[Any]] = None,
+    service: Optional[type[Any]] = None,
     name: Optional[str] = None,
 ) -> Union[
-    Type[ServiceHandlerT], Callable[[Type[ServiceHandlerT]], Type[ServiceHandlerT]]
+    type[ServiceHandlerT], Callable[[type[ServiceHandlerT]], type[ServiceHandlerT]]
 ]:
     """Decorator that marks a class as a Nexus service handler.
 
@@ -106,7 +98,7 @@ def service_handler(
                 f"Use the @nexusrpc.service decorator on a class to define a Nexus service definition."
             )
 
-    def decorator(cls: Type[ServiceHandlerT]) -> Type[ServiceHandlerT]:
+    def decorator(cls: type[ServiceHandlerT]) -> type[ServiceHandlerT]:
         # The name by which the service must be addressed in Nexus requests.
         _name = (
             _service.name if _service else name if name is not None else cls.__name__

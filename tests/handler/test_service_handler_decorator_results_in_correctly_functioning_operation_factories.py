@@ -2,10 +2,10 @@
 Test that operation decorators result in operation factories that return the correct result.
 """
 
-from dataclasses import dataclass
-from typing import Any, Type, Union, cast
+from typing import Any, Union, cast
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
@@ -21,13 +21,19 @@ from nexusrpc.handler import (
     service_handler,
     sync_operation,
 )
-from nexusrpc.handler._core import collect_operation_handler_factories_by_method_name
 from nexusrpc.handler._decorators import operation_handler
+from nexusrpc.handler._operation_handler import (
+    collect_operation_handler_factories_by_method_name,
+)
 
 
-@dataclass
-class _TestCase:
-    Service: Type[Any]
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
+    Service: type[Any]
     expected_operation_factories: dict[str, Any]
 
 
@@ -81,7 +87,7 @@ class SyncOperation(_TestCase):
 )
 @pytest.mark.asyncio
 async def test_collected_operation_factories_match_service_definition(
-    test_case: Type[_TestCase],
+    test_case: type[_TestCase],
 ):
     service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)

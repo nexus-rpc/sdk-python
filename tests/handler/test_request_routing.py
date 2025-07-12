@@ -1,6 +1,7 @@
-from typing import Any, Callable, Type, cast
+from typing import Any, Callable, cast
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import LazyValue
@@ -16,13 +17,18 @@ from nexusrpc.handler._common import StartOperationResultSync
 from ..helpers import DummySerializer
 
 
-class _TestCase:
-    UserService: Type[Any]
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
+    UserService: type[Any]
     # (service_name, op_name)
     supported_request: tuple[str, str]
 
     class UserServiceHandler:
-        op: Callable[..., Any]
+        op: Callable[..., Any] = lambda: None
 
         async def _op_impl(self, ctx: StartOperationContext, input: None) -> bool:
             assert (service_defn := get_service_definition(self.__class__))

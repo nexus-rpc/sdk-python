@@ -1,6 +1,5 @@
-from typing import Type
-
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 
@@ -9,8 +8,13 @@ class Output:
     pass
 
 
-class _TestCase:
-    Contract: Type
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
+    Contract: type
     expected_error: Exception
 
 
@@ -29,7 +33,7 @@ class DuplicateOperationNameOverride(_TestCase):
     ],
 )
 def test_operation_validation(
-    test_case: Type[_TestCase],
+    test_case: type[_TestCase],
 ):
     with pytest.raises(
         type(test_case.expected_error),

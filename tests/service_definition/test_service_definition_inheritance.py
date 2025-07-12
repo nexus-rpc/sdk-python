@@ -3,9 +3,10 @@
 # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 from __future__ import annotations
 
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import Operation, ServiceDefinition
@@ -14,8 +15,13 @@ from nexusrpc._util import get_service_definition
 # See https://docs.python.org/3/howto/annotations.html
 
 
-class _TestCase:
-    UserService: Type[Any]
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
+    UserService: type[Any]
     expected_operation_names: set[str]
     expected_error: Optional[str] = None
 
@@ -37,6 +43,7 @@ class TypeAnnotationsWithValues(_TestCase):
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
 
+    # TODO(preview) why is the decorator omitted here?
     class A2(A1):
         b: Operation[int, str] = Operation[int, str](name="b-name")
 
@@ -111,7 +118,7 @@ class ChildClassSynthesizedWithTypeValues(_TestCase):
         ChildClassSynthesizedWithTypeValues,
     ],
 )
-def test_user_service_definition_inheritance(test_case: Type[_TestCase]):
+def test_user_service_definition_inheritance(test_case: type[_TestCase]):
     if test_case.expected_error:
         with pytest.raises(Exception, match=test_case.expected_error):
             nexusrpc.service(test_case.UserService)

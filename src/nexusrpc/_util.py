@@ -3,7 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 import typing
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from typing_extensions import TypeGuard
 
@@ -34,17 +35,15 @@ def get_service_definition(
 
 
 def set_service_definition(
-    cls: Type[ServiceT], service_definition: nexusrpc.ServiceDefinition
+    cls: type[ServiceT], service_definition: nexusrpc.ServiceDefinition
 ) -> None:
-    """Set the :py:class:`nexusrpc.ServiceDefinition` for this object."""
-    if not isinstance(cls, type):
-        raise TypeError(f"Expected {cls} to be a class, but is {type(cls)}.")
+    """Set the :py:class:`nexusrpc.ServiceDefinition` for this class."""
     setattr(cls, "__nexus_service__", service_definition)
 
 
 def get_operation_definition(
     obj: Any,
-) -> Optional[nexusrpc.Operation]:
+) -> Optional[nexusrpc.Operation[Any, Any]]:
     """Return the :py:class:`nexusrpc.Operation` for the object, or None
 
     ``obj`` should be a decorated operation start method.
@@ -54,7 +53,7 @@ def get_operation_definition(
 
 def set_operation_definition(
     obj: Any,
-    operation_definition: nexusrpc.Operation,
+    operation_definition: nexusrpc.Operation[Any, Any],
 ) -> None:
     """Set the :py:class:`nexusrpc.Operation` for this object.
 
@@ -137,7 +136,7 @@ def get_callable_name(fn: Callable[..., Any]) -> str:
     return method_name
 
 
-def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
+def is_subtype(type1: type[Any], type2: type[Any]) -> bool:
     # Note that issubclass() argument 2 cannot be a parameterized generic
     # TODO(nexus-preview): review desired type compatibility logic
     if type1 == type2:
@@ -149,7 +148,9 @@ def is_subtype(type1: Type[Any], type2: Type[Any]) -> bool:
 # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 
 try:
-    from inspect import get_annotations  # type: ignore
+    from inspect import (  # type: ignore
+        get_annotations as get_annotations,  # type: ignore[reportAttributeAccessIssue]
+    )
 except ImportError:
     import functools
     import sys
@@ -251,10 +252,10 @@ except ImportError:
         if unwrap is not None:
             while True:
                 if hasattr(unwrap, "__wrapped__"):
-                    unwrap = unwrap.__wrapped__  # type: ignore
+                    unwrap = unwrap.__wrapped__  # type: ignore[reportFunctionMemberAccess,union-attr]
                     continue
                 if isinstance(unwrap, functools.partial):
-                    unwrap = unwrap.func  # type: ignore
+                    unwrap = unwrap.func  # type: ignore[reportGeneralTypeIssues,assignment]
                     continue
                 break
             if hasattr(unwrap, "__globals__"):

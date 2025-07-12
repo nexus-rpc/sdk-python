@@ -1,6 +1,7 @@
-from typing import Any, Type
+from typing import Any
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -10,9 +11,14 @@ class Output:
     pass
 
 
-class OperationDeclarationTestCase:
-    Interface: Type
-    expected_ops: dict[str, tuple[Type[Any], Type[Any]]]
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class OperationDeclarationTestCase(_BaseTestCase):
+    Interface: type
+    expected_ops: dict[str, tuple[type[Any], type[Any]]]
 
 
 class OperationDeclarations(OperationDeclarationTestCase):
@@ -34,7 +40,7 @@ class OperationDeclarations(OperationDeclarationTestCase):
     ],
 )
 def test_interface_operation_declarations(
-    test_case: Type[OperationDeclarationTestCase],
+    test_case: type[OperationDeclarationTestCase],
 ):
     defn = get_service_definition(test_case.Interface)
     assert isinstance(defn, nexusrpc.ServiceDefinition)

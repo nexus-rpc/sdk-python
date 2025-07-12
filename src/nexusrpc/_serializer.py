@@ -1,14 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterable, Awaitable, Mapping
 from dataclasses import dataclass
 from typing import (
     Any,
-    AsyncIterable,
-    Awaitable,
-    Mapping,
     Optional,
     Protocol,
-    Type,
     Union,
 )
 
@@ -42,7 +39,7 @@ class Serializer(Protocol):
         ...
 
     def deserialize(
-        self, content: Content, as_type: Optional[Type[Any]] = None
+        self, content: Content, as_type: Optional[type[Any]] = None
     ) -> Union[Any, Awaitable[Any]]:
         """Deserialize decodes a Content into a value.
 
@@ -56,7 +53,7 @@ class Serializer(Protocol):
 
 class LazyValueT(Protocol):
     def consume(
-        self, as_type: Optional[Type[Any]] = None
+        self, as_type: Optional[type[Any]] = None
     ) -> Union[Any, Awaitable[Any]]: ...
 
 
@@ -102,7 +99,7 @@ class LazyValue(LazyValueT):
         self.headers = headers
         self.stream = stream
 
-    async def consume(self, as_type: Optional[Type[Any]] = None) -> Any:
+    async def consume(self, as_type: Optional[type[Any]] = None) -> Any:
         """
         Consume the underlying reader stream, deserializing via the embedded serializer.
         """
@@ -110,8 +107,6 @@ class LazyValue(LazyValueT):
             return await self.serializer.deserialize(
                 Content(headers=self.headers, data=b""), as_type=as_type
             )
-        elif not isinstance(self.stream, AsyncIterable):
-            raise ValueError("When using consume, stream must be an AsyncIterable")
 
         return await self.serializer.deserialize(
             Content(

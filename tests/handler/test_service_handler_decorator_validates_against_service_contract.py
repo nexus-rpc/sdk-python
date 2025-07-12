@@ -1,7 +1,8 @@
 import warnings
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc.handler import (
@@ -11,9 +12,14 @@ from nexusrpc.handler import (
 )
 
 
-class _InterfaceImplementationTestCase:
-    Interface: Type
-    Impl: Type
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _InterfaceImplementationTestCase(_BaseTestCase):
+    Interface: type
+    Impl: type
     error_message: Optional[str]
 
 
@@ -55,7 +61,7 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
 
         class Impl:
             @sync_operation
-            async def op(self, ctx, input): ...
+            async def op(self, ctx, input): ...  # type: ignore[reportMissingParameterType]
 
     captured_warnings = _warnings
     expected_warning = (
@@ -86,7 +92,7 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
 
         class Impl:
             @sync_operation
-            async def op(self, ctx: StartOperationContext, input) -> None: ...
+            async def op(self, ctx: StartOperationContext, input) -> None: ...  # type: ignore[reportMissingParameterType]
 
     captured_warnings = _warnings
     expected_warning = (
@@ -106,7 +112,7 @@ class MissingContextAnnotation(_InterfaceImplementationTestCase):
 
         class Impl:
             @sync_operation
-            async def op(self, ctx, input: None) -> None: ...
+            async def op(self, ctx, input: None) -> None: ...  # type: ignore[reportMissingParameterType]
 
     captured_warnings = _warnings
     expected_warning = (
@@ -271,7 +277,7 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
     ],
 )
 def test_service_decorator_enforces_interface_implementation(
-    test_case: Type[_InterfaceImplementationTestCase],
+    test_case: type[_InterfaceImplementationTestCase],
 ):
     if test_case.error_message:
         with pytest.raises(Exception) as ei:

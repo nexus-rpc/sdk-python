@@ -93,16 +93,9 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Mapping,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Callable, Optional, Union
 
 from typing_extensions import Self, TypeGuard
 
@@ -179,7 +172,7 @@ class AbstractHandler(ABC):
         ...
 
 
-class BaseServiceCollectionHandler(AbstractHandler):
+class BaseServiceCollectionHandler(AbstractHandler, ABC):
     """
     A Nexus handler, managing a collection of Nexus service handlers.
 
@@ -294,7 +287,7 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
+        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
         op = service_handler.service.operations[ctx.operation]
         deserialized_input = await input.consume(as_type=op.input_type)
         # TODO(preview): apply middleware stack
@@ -314,7 +307,7 @@ class Handler(BaseServiceCollectionHandler):
             token: The operation token.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
+        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
         if is_async_callable(op_handler.cancel):
             return await op_handler.cancel(ctx, token)
         else:
@@ -325,7 +318,7 @@ class Handler(BaseServiceCollectionHandler):
         self, ctx: FetchOperationInfoContext, token: str
     ) -> OperationInfo:
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
+        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
         if is_async_callable(op_handler.fetch_info):
             return await op_handler.fetch_info(ctx, token)
         else:
@@ -341,7 +334,7 @@ class Handler(BaseServiceCollectionHandler):
                 "wait parameter or request-timeout header."
             )
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)
+        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
         if is_async_callable(op_handler.fetch_result):
             return await op_handler.fetch_result(ctx, token)
         else:
@@ -351,10 +344,10 @@ class Handler(BaseServiceCollectionHandler):
     def _validate_all_operation_handlers_are_async(self) -> None:
         for service_handler in self.service_handlers.values():
             for op_handler in service_handler.operation_handlers.values():
-                self._assert_async_callable(op_handler.start)
-                self._assert_async_callable(op_handler.cancel)
-                self._assert_async_callable(op_handler.fetch_info)
-                self._assert_async_callable(op_handler.fetch_result)
+                _ = self._assert_async_callable(op_handler.start)
+                _ = self._assert_async_callable(op_handler.cancel)
+                _ = self._assert_async_callable(op_handler.fetch_info)
+                _ = self._assert_async_callable(op_handler.fetch_result)
 
     def _assert_async_callable(
         self, method: Callable[..., Any]

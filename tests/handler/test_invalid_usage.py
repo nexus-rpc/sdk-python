@@ -6,6 +6,7 @@ handler implementations.
 from typing import Any, Callable
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc.handler import (
@@ -18,7 +19,12 @@ from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
 
 
-class _TestCase:
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
     build: Callable[..., Any]
     error_message: str
 
@@ -83,7 +89,7 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
     def build():
         @nexusrpc.service
         class SD:
-            my_op: nexusrpc.Operation
+            my_op: nexusrpc.Operation  # type: ignore
 
         @service_handler(service=SD)
         class SH:
@@ -133,7 +139,7 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         @service_handler
         class SubclassingNoInputOutputTypeAnnotationsWithoutServiceDefinition:
             @operation_handler
-            def op(self) -> OperationHandler: ...
+            def op(self) -> OperationHandler: ...  # type: ignore
 
     error_message = r"has no input type.+has no output type"
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc):  # type: ignore[reportMissingParameterType]
     """Dynamically generate test cases for files with type error assertions."""
     if metafunc.function.__name__ == "test_type_checking":
         tests_dir = Path(__file__).parent
@@ -18,7 +18,7 @@ def pytest_generate_tests(metafunc):
             if _has_type_error_assertions(test_file):
                 files_with_assertions.append(test_file)
 
-        metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)
+        metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)  # type: ignore
 
 
 def test_type_checking(test_file: Path):

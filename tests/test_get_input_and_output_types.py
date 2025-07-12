@@ -1,15 +1,15 @@
 import warnings
+from collections.abc import Awaitable
 from typing import (
     Any,
-    Awaitable,
     Callable,
-    Type,
     Union,
     get_args,
     get_origin,
 )
 
 import pytest
+from typing_extensions import dataclass_transform
 
 from nexusrpc.handler import StartOperationContext
 from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations
@@ -23,7 +23,12 @@ class Output:
     pass
 
 
-class _TestCase:
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
     start: Callable[..., Any]
     expected_types: tuple[Any, Any]
 
@@ -50,7 +55,9 @@ class UnionMethod(_TestCase):
 
 class MissingInputAnnotationInUnionMethod(_TestCase):
     async def start(
-        self, ctx: StartOperationContext, i
+        self,
+        ctx: StartOperationContext,
+        i,  # type: ignore[reportMissingParameterType]
     ) -> Union[Output, Awaitable[Output]]: ...
 
     expected_types = (None, Union[Output, Awaitable[Output]])
@@ -83,19 +90,19 @@ class NoReturnHint(_TestCase):
 
 
 class NoInputAnnotation(_TestCase):
-    async def start(self, ctx: StartOperationContext, i) -> Output: ...
+    async def start(self, ctx: StartOperationContext, i) -> Output: ...  # type: ignore[reportMissingParameterType]
 
     expected_types = (None, Output)
 
 
 class NoOptionsAnnotation(_TestCase):
-    async def start(self, ctx, i: Input) -> Output: ...
+    async def start(self, ctx, i: Input) -> Output: ...  # type: ignore[reportMissingParameterType]
 
     expected_types = (None, Output)
 
 
 class AllAnnotationsMissing(_TestCase):
-    async def start(self, ctx: StartOperationContext, i): ...
+    async def start(self, ctx: StartOperationContext, i): ...  # type: ignore[reportMissingParameterType]
 
     expected_types = (None, None)
 
@@ -123,7 +130,7 @@ class ExplicitNoneTypes(_TestCase):
         ExplicitNoneTypes,
     ],
 )
-def test_get_input_and_output_types(test_case: Type[_TestCase]):
+def test_get_input_and_output_types(test_case: type[_TestCase]):
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
         input_type, output_type = get_start_method_input_and_output_type_annotations(
