@@ -24,8 +24,8 @@ class OperationDeclarationTestCase(_BaseTestCase):
 class OperationDeclarations(OperationDeclarationTestCase):
     @nexusrpc.service
     class Interface:
-        a: nexusrpc.Operation[None, Output]
-        b: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="b-name")
+        a: nexusrpc.Operation[None, Output]  # type: ignore[reportUninitializedInstanceVariable]
+        b: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="b-name")  # type: ignore[reportUninitializedInstanceVariable]
 
     expected_ops = {
         "a": (type(None), Output),

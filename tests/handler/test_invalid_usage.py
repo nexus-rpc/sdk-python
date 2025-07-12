@@ -34,7 +34,7 @@ class OperationHandlerOverridesNameInconsistentlyWithServiceDefinition(_TestCase
     def build():
         @nexusrpc.service
         class SD:
-            my_op: nexusrpc.Operation[None, None]
+            my_op: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
 
         @service_handler(service=SD)
         class SH:
@@ -49,8 +49,8 @@ class ServiceDefinitionHasExtraOp(_TestCase):
     def build():
         @nexusrpc.service
         class SD:
-            my_op_1: nexusrpc.Operation[None, None]
-            my_op_2: nexusrpc.Operation[None, None]
+            my_op_1: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+            my_op_2: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
 
         @service_handler(service=SD)
         class SH:
@@ -67,7 +67,7 @@ class ServiceHandlerHasExtraOp(_TestCase):
     def build():
         @nexusrpc.service
         class SD:
-            my_op_1: nexusrpc.Operation[None, None]
+            my_op_1: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
 
         @service_handler(service=SD)
         class SH:

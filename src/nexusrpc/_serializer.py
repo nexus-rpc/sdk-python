@@ -93,7 +93,8 @@ class LazyValue(LazyValueT):
             headers: Headers that include information on how to process the stream's content.
                      Headers constructed by the framework always have lower case keys.
                      User provided keys are treated case-insensitively.
-            stream:  Iterable that contains request or response data. None means empty data.
+            stream:  AsyncIterable of bytes that contains request or response data.
+                     None means empty data.
         """
         self.serializer = serializer
         self.headers = headers

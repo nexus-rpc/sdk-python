@@ -29,8 +29,8 @@ class _DecoratorValidationTestCase(_TestCase):
 class MissingOperationFromDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
     class UserService:
-        op_A: nexusrpc.Operation[int, str]
-        op_B: nexusrpc.Operation[bool, float]
+        op_A: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        op_B: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     class UserServiceHandler:
         @operation_handler
@@ -44,7 +44,7 @@ class MissingOperationFromDefinition(_DecoratorValidationTestCase):
 class MethodNameDoesNotMatchDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
     class UserService:
-        op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")
+        op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")  # type: ignore[reportUninitializedInstanceVariable]
 
     class UserServiceHandler:
         @operation_handler
@@ -81,12 +81,12 @@ class ServiceHandlerInheritanceWithServiceDefinition(
 ):
     @nexusrpc.service
     class BaseUserService:
-        base_op: nexusrpc.Operation[int, str]
+        base_op: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
 
     @nexusrpc.service
     class UserService:
-        base_op: nexusrpc.Operation[int, str]
-        child_op: nexusrpc.Operation[bool, float]
+        base_op: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        child_op: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     @service_handler(service=BaseUserService)
     class BaseUserServiceHandler:
@@ -139,11 +139,11 @@ class _ServiceDefinitionInheritanceTestCase(_TestCase):
 class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
     @nexusrpc.service
     class BaseUserService:
-        op_from_base_definition: nexusrpc.Operation[int, str]
+        op_from_base_definition: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
 
     @nexusrpc.service
     class UserService(BaseUserService):
-        op_from_child_definition: nexusrpc.Operation[bool, float]
+        op_from_child_definition: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     expected_ops = {
         "op_from_base_definition",
