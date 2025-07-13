@@ -1,3 +1,16 @@
+"""
+This file contains a test allowing assertions to be made that an expected type error is in
+fact produced by the type-checker. I.e. that the type checker is not delivering a false
+negative.
+
+To use the test, add a comment of the following form to your test code:
+
+    # assert-type-error-pyright: 'No overloads for "execute_operation" match' await
+    nexus_client.execute_operation(  # type: ignore
+
+The `type: ignore` is only necessary if your test code is being type-checked.
+"""
+
 import itertools
 import json
 import os
@@ -13,14 +26,14 @@ import pytest
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Dynamically generate test cases for files with type error assertions."""
     if metafunc.function.__name__ in [
-        "test_type_checking_pyright",
-        "test_type_checking_mypy",
+        "test_type_errors_pyright",
+        "test_type_errors_mypy",
     ]:
         tests_dir = Path(__file__).parent
         files_with_assertions = []
 
         for test_file in tests_dir.rglob("test_*.py"):
-            if test_file.name == "test_type_checking.py":
+            if test_file.name == "test_type_errors.py":
                 continue
 
             if _has_type_error_assertions(test_file):
@@ -29,8 +42,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("test_file", files_with_assertions, ids=lambda f: f.name)
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="Skip on Windows")
-def test_type_checking_pyright(test_file: Path):
+@pytest.mark.skipif(platform.system() == "Windows", reason="TODO: broken on Windows")
+def test_type_errors_pyright(test_file: Path):
     """
     Validate type error assertions in a single test file using pyright.
 
@@ -38,7 +51,7 @@ def test_type_checking_pyright(test_file: Path):
     verify that pyright reports an error on the next non-comment line matching the regex.
     Also verify that there are no unexpected type errors.
     """
-    _test_type_checking(
+    _test_type_errors(
         test_file,
         _get_expected_errors(test_file, "pyright"),
         _get_pyright_errors(test_file),
@@ -46,23 +59,7 @@ def test_type_checking_pyright(test_file: Path):
 
 
 # This test is disabled since we currently have no way to be able to
-# assert-type-error-mypy on a line with a `type: ignore`.
-def _test_type_checking_mypy(test_file: Path):  # pyright: ignore
-    """
-    Validate type error assertions in a single test file using mypy.
-
-    For each line with a comment of the form `# assert-type-error-mypy: "regex"`,
-    verify that mypy reports an error on the next non-comment line matching the regex.
-    Also verify that there are no unexpected type errors.
-    """
-    _test_type_checking(
-        test_file,
-        _get_expected_errors(test_file, "mypy"),
-        _get_mypy_errors(test_file),
-    )
-
-
-def _test_type_checking(
+def _test_type_errors(
     test_file: Path,
     expected_errors: dict[int, str],
     actual_errors: dict[int, str],
