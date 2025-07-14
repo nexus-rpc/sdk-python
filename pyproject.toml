@@ -39,8 +39,8 @@ packages = ["src/nexusrpc"]
 
 [tool.poe.tasks]
 lint = [
-  {cmd = "uv run basedpyright src"},
-  {cmd = "uv run pyright src"},
+  {cmd = "uv run basedpyright"},
+  {cmd = "uv run pyright"},
   {cmd = "uv run mypy --check-untyped-defs src"},
   {cmd = "uv run ruff check --select I"},
   {cmd = "uv run ruff format --check"},
@@ -54,6 +54,7 @@ docs = [
 ]
 
 [tool.pyright]
+# https://microsoft.github.io/pyright/#/configuration?id=type-check-rule-overrides
 # https://docs.basedpyright.com/v1.30.0/configuration/config-files/#diagnostic-settings-defaults
 reportAny = "none"
 reportDeprecated = "none"
