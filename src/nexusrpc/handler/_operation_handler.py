@@ -8,6 +8,7 @@ from typing import Any, Callable, Generic, Optional, Union
 from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
 from nexusrpc._util import (
+    get_operation,
     get_operation_factory,
     is_async_callable,
     is_callable,
@@ -153,31 +154,28 @@ def collect_operation_handler_factories_by_method_name(
     )
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, is_callable):
-        factory, op = get_operation_factory(method)  # type: ignore[var-annotated]
-        if factory and isinstance(op, Operation):
-            # This is a method decorated with one of the *operation_handler decorators
-            if op.name in seen:
-                raise RuntimeError(
-                    f"Operation '{op.name}' in service '{user_service_cls.__name__}' "
-                    f"is defined multiple times."
-                )
-            if service and op.method_name not in service_method_names:
-                _names = ", ".join(f"'{s}'" for s in sorted(service_method_names))
-                msg = (
-                    f"Operation method name '{op.method_name}' in service handler {user_service_cls} "
-                    f"does not match an operation method name in the service definition. "
-                    f"Available method names in the service definition: "
-                )
-                msg += _names if _names else "[none]"
-                msg += "."
-                raise TypeError(msg)
+        if factory := get_operation_factory(method):
+            if op := get_operation(factory):
+                if op.name in seen:
+                    raise RuntimeError(
+                        f"Operation '{op.name}' in service '{user_service_cls.__name__}' "
+                        f"is defined multiple times."
+                    )
+                if service and op.method_name not in service_method_names:
+                    _names = ", ".join(f"'{s}'" for s in sorted(service_method_names))
+                    msg = (
+                        f"Operation method name '{op.method_name}' in service handler {user_service_cls} "
+                        f"does not match an operation method name in the service definition. "
+                        f"Available method names in the service definition: "
+                    )
+                    msg += _names if _names else "[none]"
+                    raise TypeError(msg)
 
-            # TODO(preview) op_defn.method name should be non-nullable
-            assert op.method_name, (
-                f"Operation '{op}' method name should not be None. This is an SDK bug."
-            )
-            factories[op.method_name] = factory
-            seen.add(op.name)
+                assert op.method_name, (
+                    f"Operation '{op}' method name should not be empty. Please report this as a bug."
+                )
+                factories[op.method_name] = factory
+                seen.add(op.name)
     return factories
 
 
@@ -212,7 +210,7 @@ def validate_operation_handler_methods(
                 f"method name '{op_defn.method_name}'. But this operation is in service "
                 f"definition '{service_definition}'."
             )
-        _, op = get_operation_factory(factory)
+        op = get_operation(factory)
         if not isinstance(op, Operation):
             raise ValueError(
                 f"Method '{factory}' in class '{service_cls.__name__}' "
@@ -278,7 +276,7 @@ def service_definition_from_operation_handler_methods(
     """
     op_defns: dict[str, OperationDefinition[Any, Any]] = {}
     for name, method in user_methods.items():
-        _, op = get_operation_factory(method)
+        op = get_operation(method)
         if not isinstance(op, Operation):
             raise ValueError(
                 f"In service '{service_name}', could not locate operation definition for "

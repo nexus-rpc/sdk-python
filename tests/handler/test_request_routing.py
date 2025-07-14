@@ -5,7 +5,7 @@ from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import LazyValue
-from nexusrpc._util import get_operation_factory, get_service_definition
+from nexusrpc._util import get_operation, get_service_definition
 from nexusrpc.handler import (
     Handler,
     StartOperationContext,
@@ -33,7 +33,7 @@ class _TestCase(_BaseTestCase):
         async def _op_impl(self, ctx: StartOperationContext, input: None) -> bool:
             assert (service_defn := get_service_definition(self.__class__))
             assert ctx.service == service_defn.name
-            _, op_handler_op_defn = get_operation_factory(self.op)
+            op_handler_op_defn = get_operation(self.op)
             assert op_handler_op_defn
             assert service_defn.operation_definitions.get(ctx.operation)
             return True

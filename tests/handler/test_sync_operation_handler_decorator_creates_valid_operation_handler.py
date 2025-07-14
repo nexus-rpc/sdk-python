@@ -35,7 +35,7 @@ class MyServiceHandler:
 
 def test_def_sync_handler():
     user_instance = MyServiceHandler()
-    op_handler_factory, _ = get_operation_factory(user_instance.my_def_op)
+    op_handler_factory = get_operation_factory(user_instance.my_def_op)
     assert op_handler_factory
     op_handler = op_handler_factory(user_instance)
     assert not is_async_callable(op_handler.start)
@@ -54,7 +54,7 @@ def test_def_sync_handler():
 @pytest.mark.asyncio
 async def test_async_def_sync_handler():
     user_instance = MyServiceHandler()
-    op_handler_factory, _ = get_operation_factory(user_instance.my_async_def_op)
+    op_handler_factory = get_operation_factory(user_instance.my_async_def_op)
     assert op_handler_factory
     op_handler = op_handler_factory(user_instance)
     assert is_async_callable(op_handler.start)
