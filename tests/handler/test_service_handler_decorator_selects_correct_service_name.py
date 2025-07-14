@@ -1,6 +1,7 @@
-from typing import Optional, Type
+from typing import Optional
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -17,10 +18,15 @@ class ServiceInterfaceWithNameOverride:
     pass
 
 
-class _NameOverrideTestCase:
-    ServiceImpl: Type
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _NameOverrideTestCase(_BaseTestCase):
+    ServiceImpl: type
     expected_name: str
-    expected_error: Optional[Type[Exception]] = None
+    expected_error: Optional[type[Exception]] = None
 
 
 class NotCalled(_NameOverrideTestCase):
@@ -73,7 +79,7 @@ class CalledWithInterfaceWithNameOverride(_NameOverrideTestCase):
         CalledWithInterfaceWithNameOverride,
     ],
 )
-def test_service_decorator_name_overrides(test_case: Type[_NameOverrideTestCase]):
+def test_service_decorator_name_overrides(test_case: type[_NameOverrideTestCase]):
     service = get_service_definition(test_case.ServiceImpl)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     assert service.name == test_case.expected_name

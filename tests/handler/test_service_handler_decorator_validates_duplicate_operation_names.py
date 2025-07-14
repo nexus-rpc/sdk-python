@@ -1,6 +1,7 @@
-from typing import Any, Type
+from typing import Any
 
 import pytest
+from typing_extensions import dataclass_transform
 
 from nexusrpc.handler import (
     OperationHandler,
@@ -9,8 +10,13 @@ from nexusrpc.handler import (
 from nexusrpc.handler._decorators import operation_handler
 
 
-class _TestCase:
-    UserServiceHandler: Type[Any]
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class _TestCase(_BaseTestCase):
+    UserServiceHandler: type[Any]
     expected_error_message: str
 
 

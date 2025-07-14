@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import dataclasses
 import typing
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
     Generic,
-    Mapping,
     Optional,
-    Type,
     Union,
     overload,
 )
@@ -47,8 +46,8 @@ class Operation(Generic[InputT, OutputT]):
     name: str
     # TODO(preview): they should not be able to set method_name in constructor
     method_name: Optional[str] = dataclasses.field(default=None)
-    input_type: Optional[Type[InputT]] = dataclasses.field(default=None)
-    output_type: Optional[Type[OutputT]] = dataclasses.field(default=None)
+    input_type: Optional[type[InputT]] = dataclasses.field(default=None)
+    output_type: Optional[type[OutputT]] = dataclasses.field(default=None)
 
     def __post_init__(self):
         if not self.name:
@@ -70,22 +69,22 @@ class Operation(Generic[InputT, OutputT]):
 
 
 @overload
-def service(cls: Type[ServiceT]) -> Type[ServiceT]: ...
+def service(cls: type[ServiceT]) -> type[ServiceT]: ...
 
 
 @overload
 def service(
     *, name: Optional[str] = None
-) -> Callable[[Type[ServiceT]], Type[ServiceT]]: ...
+) -> Callable[[type[ServiceT]], type[ServiceT]]: ...
 
 
 def service(
-    cls: Optional[Type[ServiceT]] = None,
+    cls: Optional[type[ServiceT]] = None,
     *,
     name: Optional[str] = None,
 ) -> Union[
-    Type[ServiceT],
-    Callable[[Type[ServiceT]], Type[ServiceT]],
+    type[ServiceT],
+    Callable[[type[ServiceT]], type[ServiceT]],
 ]:
     """
     Decorator marking a class as a Nexus service definition.
@@ -115,7 +114,7 @@ def service(
     # This will require forming a union of operations disovered via __annotations__
     # and __dict__
 
-    def decorator(cls: Type[ServiceT]) -> Type[ServiceT]:
+    def decorator(cls: type[ServiceT]) -> type[ServiceT]:
         if name is not None and not name:
             raise ValueError("Service name must not be empty.")
         defn = ServiceDefinition.from_class(cls, name or cls.__name__)
@@ -161,7 +160,7 @@ class ServiceDefinition:
             )
 
     @staticmethod
-    def from_class(user_class: Type[ServiceT], name: str) -> ServiceDefinition:
+    def from_class(user_class: type[ServiceT], name: str) -> ServiceDefinition:
         """Create a ServiceDefinition from a user service definition class.
 
         The set of service definition operations returned is the union of operations
@@ -216,12 +215,12 @@ class ServiceDefinition:
             if op.method_name in seen_method_names:
                 errors.append(f"Operation method name '{op.method_name}' is not unique")
             seen_method_names.add(op.method_name)
-            errors.extend(op._validation_errors())
+            errors.extend(op._validation_errors())  # pyright: ignore[reportPrivateUsage]
         return errors
 
     @staticmethod
     def _collect_operations(
-        user_class: Type[ServiceT],
+        user_class: type[ServiceT],
     ) -> dict[str, Operation[Any, Any]]:
         """Collect operations from a user service definition class.
 

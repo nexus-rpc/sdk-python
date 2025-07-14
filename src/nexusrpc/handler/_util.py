@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import typing
 import warnings
+from collections.abc import Awaitable
 from typing import (
     TYPE_CHECKING,
-    Awaitable,
     Callable,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -27,8 +26,8 @@ def get_start_method_input_and_output_type_annotations(
         Union[OutputT, Awaitable[OutputT]],
     ],
 ) -> tuple[
-    Optional[Type[InputT]],
-    Optional[Type[OutputT]],
+    Optional[type[InputT]],
+    Optional[type[OutputT]],
 ]:
     """Return operation input and output types.
 

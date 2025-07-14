@@ -1,13 +1,17 @@
-from typing import Type
-
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
 
 
-class NameOverrideTestCase:
-    Interface: Type
+@dataclass_transform()
+class _BaseTestCase:
+    pass
+
+
+class NameOverrideTestCase(_BaseTestCase):
+    Interface: type
     expected_name: str
 
 
@@ -43,7 +47,7 @@ class CalledWithNameArg(NameOverrideTestCase):
         CalledWithNameArg,
     ],
 )
-def test_interface_name_overrides(test_case: Type[NameOverrideTestCase]):
+def test_interface_name_overrides(test_case: type[NameOverrideTestCase]):
     defn = get_service_definition(test_case.Interface)
     assert defn
     assert defn.name == test_case.expected_name

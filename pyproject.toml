@@ -18,10 +18,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "basedpyright>=1.30.1",
     "mypy>=1.15.0",
     "poethepoet>=0.35.0",
     "pydoctor>=25.4.0",
-    "pyright>=1.1.402",
+    "pyright>=1.1",
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=6.1.1",
@@ -38,6 +39,7 @@ packages = ["src/nexusrpc"]
 
 [tool.poe.tasks]
 lint = [
+  {cmd = "uv run basedpyright src"},
   {cmd = "uv run pyright src"},
   {cmd = "uv run mypy --check-untyped-defs src"},
   {cmd = "uv run ruff check --select I"},
@@ -52,6 +54,21 @@ docs = [
 ]
 
 [tool.pyright]
+# https://docs.basedpyright.com/v1.30.0/configuration/config-files/#diagnostic-settings-defaults
+reportAny = "none"
+reportDeprecated = "none"
+reportExplicitAny = "none"
+reportIgnoreCommentWithoutRule = "none"
+reportImplicitOverride = "none"
+reportImplicitStringConcatenation = "none"
+reportImportCycles = "none"
+reportUnannotatedClassAttribute = "none"
+reportUnknownArgumentType = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnnecessaryTypeIgnoreComment = "none"
+enableTypeIgnoreComments = true
+failOnWarnings = false  # basedpyright setting
 include = ["src", "tests"]
 
 [tool.mypy]

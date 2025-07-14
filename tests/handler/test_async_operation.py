@@ -1,7 +1,6 @@
 import dataclasses
 import uuid
 from datetime import timedelta
-from typing import Any
 
 import pytest
 
@@ -24,11 +23,6 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._decorators import operation_handler
 from tests.helpers import DummySerializer
-
-
-class _TestCase:
-    user_service_handler: Any
-
 
 _operation_results: dict[str, int] = {}
 

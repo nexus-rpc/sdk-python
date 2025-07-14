@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from nexusrpc import Content
 
@@ -12,6 +12,6 @@ class DummySerializer:
         raise NotImplementedError
 
     async def deserialize(
-        self, content: Content, as_type: Optional[Type[Any]] = None
+        self, content: Content, as_type: Optional[type[Any]] = None
     ) -> Any:
         return self.value

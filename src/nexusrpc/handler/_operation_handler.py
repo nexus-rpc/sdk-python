@@ -2,15 +2,8 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Generic,
-    Optional,
-    Type,
-    Union,
-)
+from collections.abc import Awaitable
+from typing import Any, Callable, Generic, Optional, Union
 
 from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, ServiceDefinition
@@ -145,7 +138,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
 
 
 def collect_operation_handler_factories_by_method_name(
-    user_service_cls: Type[ServiceHandlerT],
+    user_service_cls: type[ServiceHandlerT],
     service: Optional[ServiceDefinition],
 ) -> dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]]:
     """
@@ -192,7 +185,7 @@ def collect_operation_handler_factories_by_method_name(
 
 
 def validate_operation_handler_methods(
-    user_service_cls: Type[ServiceHandlerT],
+    user_service_cls: type[ServiceHandlerT],
     user_methods_by_method_name: dict[
         str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]
     ],

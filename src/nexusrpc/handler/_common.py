@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import (
-    Generic,
-    Mapping,
-    Optional,
-    Sequence,
-)
+from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
 
@@ -19,7 +15,7 @@ class OperationContext(ABC):
 
     Includes information from the request."""
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any):
         if cls is OperationContext:
             raise TypeError(
                 "OperationContext is an abstract class and cannot be instantiated directly"

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any
 
 import pytest
+from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -14,17 +15,22 @@ from nexusrpc.handler._core import ServiceHandler
 from nexusrpc.handler._decorators import operation_handler
 
 
-class _DecoratorValidationTestCase:
-    UserService: Type[Any]
-    UserServiceHandler: Type[Any]
+@dataclass_transform()
+class _TestCase:
+    pass
+
+
+class _DecoratorValidationTestCase(_TestCase):
+    UserService: type[Any]
+    UserServiceHandler: type[Any]
     expected_error_message_pattern: str
 
 
 class MissingOperationFromDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
     class UserService:
-        op_A: nexusrpc.Operation[int, str]
-        op_B: nexusrpc.Operation[bool, float]
+        op_A: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        op_B: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     class UserServiceHandler:
         @operation_handler
@@ -38,7 +44,7 @@ class MissingOperationFromDefinition(_DecoratorValidationTestCase):
 class MethodNameDoesNotMatchDefinition(_DecoratorValidationTestCase):
     @nexusrpc.service
     class UserService:
-        op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")
+        op_A: nexusrpc.Operation[int, str] = nexusrpc.Operation(name="foo")  # type: ignore[reportUninitializedInstanceVariable]
 
     class UserServiceHandler:
         @operation_handler
@@ -65,8 +71,8 @@ def test_decorator_validates_definition_compliance(
         service_handler(service=test_case.UserService)(test_case.UserServiceHandler)
 
 
-class _ServiceHandlerInheritanceTestCase:
-    UserServiceHandler: Type[Any]
+class _ServiceHandlerInheritanceTestCase(_TestCase):
+    UserServiceHandler: type[Any]
     expected_operations: set[str]
 
 
@@ -75,12 +81,12 @@ class ServiceHandlerInheritanceWithServiceDefinition(
 ):
     @nexusrpc.service
     class BaseUserService:
-        base_op: nexusrpc.Operation[int, str]
+        base_op: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
 
     @nexusrpc.service
     class UserService:
-        base_op: nexusrpc.Operation[int, str]
-        child_op: nexusrpc.Operation[bool, float]
+        base_op: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        child_op: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     @service_handler(service=BaseUserService)
     class BaseUserServiceHandler:
@@ -125,19 +131,19 @@ def test_service_implementation_inheritance(
     assert set(service_handler.service.operations) == test_case.expected_operations
 
 
-class _ServiceDefinitionInheritanceTestCase:
-    UserService: Type[Any]
+class _ServiceDefinitionInheritanceTestCase(_TestCase):
+    UserService: type[Any]
     expected_ops: set[str]
 
 
 class ServiceDefinitionInheritance(_ServiceDefinitionInheritanceTestCase):
     @nexusrpc.service
     class BaseUserService:
-        op_from_base_definition: nexusrpc.Operation[int, str]
+        op_from_base_definition: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
 
     @nexusrpc.service
     class UserService(BaseUserService):
-        op_from_child_definition: nexusrpc.Operation[bool, float]
+        op_from_child_definition: nexusrpc.Operation[bool, float]  # type: ignore[reportUninitializedInstanceVariable]
 
     expected_ops = {
         "op_from_base_definition",

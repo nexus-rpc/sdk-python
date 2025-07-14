@@ -4,7 +4,7 @@ input/ouput types.
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import pytest
 
@@ -31,9 +31,9 @@ class Output:
 
 @dataclass
 class _TestCase:
-    Service: Type[Any]
-    expected_operations: dict[str, nexusrpc.Operation]
-    Contract: Optional[Type[Any]] = None
+    Service: type[Any]
+    expected_operations: dict[str, nexusrpc.Operation[Any, Any]]
+    Contract: Optional[type[Any]] = None
 
 
 class ManualOperationHandler(_TestCase):
@@ -107,7 +107,7 @@ class SyncOperationWithOperationHandlerNameOverride(_TestCase):
 class ManualOperationWithContract(_TestCase):
     @nexusrpc.service
     class Contract:
-        operation: nexusrpc.Operation[Input, Output]
+        operation: nexusrpc.Operation[Input, Output]  # type: ignore[reportUninitializedInstanceVariable]
 
     @service_handler(service=Contract)
     class Service:
@@ -190,7 +190,7 @@ if False:
 )
 @pytest.mark.asyncio
 async def test_collected_operation_definitions(
-    test_case: Type[_TestCase],
+    test_case: type[_TestCase],
 ):
     service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
