@@ -51,8 +51,12 @@ def get_operation(
 ) -> Optional[nexusrpc.Operation[Any, Any]]:
     """Return the :py:class:`nexusrpc.Operation` for the object, or None
 
-    ``obj`` should be a decorated operation start method.
+    ``obj`` should be a decorated operation start method, or a method that takes
+    no arguments and returns an OperationHandler.
     """
+    if factory := getattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None):
+        # obj was a decorated operation start method
+        obj = factory
     op = getattr(obj, _NEXUS_OPERATION_ATTR_NAME, None)
     if op and not isinstance(op, nexusrpc.Operation):
         raise ValueError(f"{op} is not a nexusrpc.Operation")
@@ -74,23 +78,15 @@ def set_operation(
 
 def get_operation_factory(
     obj: Any,
-) -> tuple[
-    Optional[Callable[[Any], OperationHandler[InputT, OutputT]]],
-    Optional[nexusrpc.Operation[InputT, OutputT]],
-]:
-    """Return the :py:class:`Operation` for the object along with the factory function.
-
-    ``obj`` should be a decorated operation start method.
-    """
-    op = get_operation(obj)
-    if op:
-        factory = obj
-    else:
-        if factory := getattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None):
-            op = get_operation(factory)
-    if not isinstance(op, nexusrpc.Operation):
-        return None, None
-    return factory, op
+) -> Optional[Callable[[Any], OperationHandler[Any, Any]]]:
+    """Return the :py:class:`OperationHandler` factory function for the object."""
+    if factory := getattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None):
+        # obj was a decorated operation start method
+        return factory
+    if get_operation(obj):
+        # obj was the desired factory
+        return obj
+    return None
 
 
 def set_operation_factory(
