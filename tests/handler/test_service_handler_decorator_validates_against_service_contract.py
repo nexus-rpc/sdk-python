@@ -26,7 +26,7 @@ class _InterfaceImplementationTestCase(_BaseTestCase):
 class ValidImpl(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[None, None]
 
         def unrelated_method(self) -> None: ...
 
@@ -54,7 +54,7 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
 class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[int, str]
 
     with warnings.catch_warnings(record=True) as _warnings:
         warnings.simplefilter("always")
@@ -74,7 +74,7 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
 class MissingOperation(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[None, None]
 
     class Impl:
         pass
@@ -85,7 +85,7 @@ class MissingOperation(_InterfaceImplementationTestCase):
 class MissingInputAnnotation(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[None, None]
 
     with warnings.catch_warnings(record=True) as _warnings:
         warnings.simplefilter("always")
@@ -105,7 +105,7 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
 class MissingContextAnnotation(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[None, None]
 
     with warnings.catch_warnings(record=True) as _warnings:
         warnings.simplefilter("always")
@@ -125,7 +125,7 @@ class MissingContextAnnotation(_InterfaceImplementationTestCase):
 class WrongOutputType(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[None, int]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[None, int]
 
     class Impl:
         @sync_operation
@@ -137,7 +137,7 @@ class WrongOutputType(_InterfaceImplementationTestCase):
 class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[str, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[str, None]
 
     class Impl:
         @sync_operation
@@ -149,7 +149,7 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
 class ValidImplWithNone(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[str, None]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[str, None]
 
     class Impl:
         @sync_operation
@@ -161,7 +161,7 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
 class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[Any, Any]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[Any, Any]
 
     class Impl:
         @sync_operation
@@ -185,7 +185,7 @@ class Subclass(SuperClass):
 class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[X, X]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[X, X]
 
     class Impl:
         @sync_operation
@@ -197,7 +197,7 @@ class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
 class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[X, SuperClass]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[X, SuperClass]
 
     class Impl:
         @sync_operation
@@ -211,7 +211,7 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
 ):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[X, Subclass]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[X, Subclass]
 
     class Impl:
         @sync_operation
@@ -223,7 +223,7 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
 class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[X, X]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[X, X]
 
     class Impl:
         @sync_operation
@@ -235,7 +235,7 @@ class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase
 class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[Subclass, X]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[Subclass, X]
 
     class Impl:
         @sync_operation
@@ -247,7 +247,7 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
 class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestCase):
     @nexusrpc.service
     class Interface:
-        op: nexusrpc.Operation[SuperClass, X]  # type: ignore[reportUninitializedInstanceVariable]
+        op: nexusrpc.Operation[SuperClass, X]
 
     class Impl:
         @sync_operation
@@ -297,7 +297,7 @@ def test_service_decorator_enforces_interface_implementation(
 def test_service_does_not_implement_operation_name():
     @nexusrpc.service
     class Contract:
-        operation_a: nexusrpc.Operation[None, None]  # type: ignore[reportUninitializedInstanceVariable]
+        operation_a: nexusrpc.Operation[None, None]
 
     class Service:
         @sync_operation

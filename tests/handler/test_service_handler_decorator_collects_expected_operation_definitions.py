@@ -105,7 +105,7 @@ class SyncOperationWithOperationHandlerNameOverride(_TestCase):
 class ManualOperationWithContract(_TestCase):
     @nexusrpc.service
     class Contract:
-        operation: nexusrpc.Operation[Input, Output]  # type: ignore[reportUninitializedInstanceVariable]
+        operation: nexusrpc.Operation[Input, Output]
 
     @service_handler(service=Contract)
     class Service:
