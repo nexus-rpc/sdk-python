@@ -55,4 +55,4 @@ def test_interface_name_overrides(test_case: type[NameOverrideTestCase]):
 
 def test_name_must_not_be_empty():
     with pytest.raises(ValueError):
-        nexusrpc.service(name="")(object)
+        _ = nexusrpc.service(name="")(object)

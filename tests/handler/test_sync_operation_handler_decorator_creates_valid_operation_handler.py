@@ -17,7 +17,7 @@ class MyServiceHandler:
         self.mutable_container = []
 
     @sync_operation
-    def my_def_op(self, ctx: StartOperationContext, input: int) -> int:
+    def my_def_op(self, _ctx: StartOperationContext, input: int) -> int:
         """
         This is the docstring for the `my_def_op` sync operation.
         """
@@ -25,7 +25,7 @@ class MyServiceHandler:
         return input + 1
 
     @sync_operation(name="foo")
-    async def my_async_def_op(self, ctx: StartOperationContext, input: int) -> int:
+    async def my_async_def_op(self, _ctx: StartOperationContext, input: int) -> int:
         """
         This is the docstring for the `my_async_def_op` sync operation.
         """

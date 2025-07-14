@@ -144,7 +144,7 @@ def _get_pyright_errors(test_file: Path) -> dict[int, str]:
             os.unlink(config_path)
 
 
-def _get_mypy_errors(test_file: Path) -> dict[int, str]:
+def _get_mypy_errors(test_file: Path) -> dict[int, str]:  # pyright: ignore[reportUnusedFunction]
     """Run mypy on a file and parse the actual type errors.
 
     Note: mypy does not have a direct equivalent to pyright's enableTypeIgnoreComments=false,

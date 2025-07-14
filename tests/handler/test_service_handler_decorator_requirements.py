@@ -185,3 +185,5 @@ def test_service_definition_inheritance_behavior(
             def op_from_base_definition(
                 self,
             ) -> OperationHandler[int, str]: ...
+
+        _ = HandlerMissingChildOp

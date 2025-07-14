@@ -87,7 +87,7 @@ def test_service_decorator_name_overrides(test_case: type[_NameOverrideTestCase]
 
 def test_name_must_not_be_empty():
     with pytest.raises(ValueError):
-        service_handler(name="")(object)
+        _ = service_handler(name="")(object)
 
 
 def test_name_and_interface_are_mutually_exclusive():
