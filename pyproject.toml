@@ -69,7 +69,6 @@ reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
 reportUnnecessaryTypeIgnoreComment = "none"
 enableTypeIgnoreComments = true
-failOnWarnings = false  # basedpyright setting
 include = ["src", "tests"]
 
 [tool.mypy]

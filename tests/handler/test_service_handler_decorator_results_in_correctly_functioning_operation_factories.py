@@ -71,7 +71,7 @@ class SyncOperation(_TestCase):
     class Service:
         @sync_operation
         async def sync_operation_handler(
-            self, ctx: StartOperationContext, input: int
+            self, _ctx: StartOperationContext, _input: int
         ) -> int:
             return 7
 

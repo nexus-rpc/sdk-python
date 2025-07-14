@@ -24,7 +24,7 @@ def test_service_must_use_decorator():
         pass
 
     with pytest.raises(RuntimeError):
-        Handler([Service()])
+        _ = Handler([Service()])
 
 
 def test_services_are_collected():
@@ -77,4 +77,4 @@ def test_service_names_must_be_unique():
         pass
 
     with pytest.raises(RuntimeError):
-        Handler([Service1(), Service2()])
+        _ = Handler([Service1(), Service2()])

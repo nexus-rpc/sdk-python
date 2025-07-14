@@ -31,7 +31,7 @@ class ValidImpl(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: None) -> None: ...
+        async def op(self, _ctx: StartOperationContext, _input: None) -> None: ...
 
     error_message = None
 
@@ -43,7 +43,7 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
 
     class Impl:
         @sync_operation
-        async def extra_op(self, ctx: StartOperationContext, input: None) -> None: ...
+        async def extra_op(self, _ctx: StartOperationContext, _input: None) -> None: ...
 
         def unrelated_method(self) -> None: ...
 
@@ -104,7 +104,7 @@ class WrongOutputType(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: None) -> str: ...
+        async def op(self, _ctx: StartOperationContext, _input: None) -> str: ...
 
     error_message = "is not compatible with the output type"
 
@@ -116,7 +116,7 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: str) -> str: ...
+        async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
 
     error_message = "is not compatible with the output type"
 
@@ -128,7 +128,7 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: str) -> None: ...
+        async def op(self, _ctx: StartOperationContext, _input: str) -> None: ...
 
     error_message = None
 
@@ -140,7 +140,7 @@ class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: str) -> str: ...
+        async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
 
     error_message = None
 
@@ -164,7 +164,7 @@ class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: X) -> X: ...
+        async def op(self, _ctx: StartOperationContext, _input: X) -> X: ...
 
     error_message = None
 
@@ -176,7 +176,7 @@ class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: X) -> Subclass: ...
+        async def op(self, _ctx: StartOperationContext, _input: X) -> Subclass: ...
 
     error_message = None
 
@@ -190,7 +190,7 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: X) -> SuperClass: ...
+        async def op(self, _ctx: StartOperationContext, _input: X) -> SuperClass: ...
 
     error_message = "is not compatible with the output type"
 
@@ -202,7 +202,7 @@ class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: X) -> X: ...
+        async def op(self, _ctx: StartOperationContext, _input: X) -> X: ...
 
     error_message = None
 
@@ -214,7 +214,7 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: SuperClass) -> X: ...
+        async def op(self, _ctx: StartOperationContext, _input: SuperClass) -> X: ...
 
     error_message = None
 
@@ -226,7 +226,7 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
 
     class Impl:
         @sync_operation
-        async def op(self, ctx: StartOperationContext, input: Subclass) -> X: ...
+        async def op(self, _ctx: StartOperationContext, _input: Subclass) -> X: ...
 
     error_message = "is not compatible with the input type"
 
@@ -272,11 +272,11 @@ def test_service_does_not_implement_operation_name():
     class Service:
         @sync_operation
         async def operation_b(
-            self, ctx: StartOperationContext, input: None
+            self, _ctx: StartOperationContext, _input: None
         ) -> None: ...
 
     with pytest.raises(
         TypeError,
         match="does not match an operation method name in the service definition",
     ):
-        service_handler(service=Contract)(Service)
+        _ = service_handler(service=Contract)(Service)

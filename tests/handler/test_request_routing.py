@@ -30,7 +30,7 @@ class _TestCase(_BaseTestCase):
     class UserServiceHandler:
         op: Callable[..., Any] = lambda: None
 
-        async def _op_impl(self, ctx: StartOperationContext, input: None) -> bool:
+        async def _op_impl(self, ctx: StartOperationContext, _input: None) -> bool:
             assert (service_defn := get_service_definition(self.__class__))
             assert ctx.service == service_defn.name
             op_handler_op_defn = get_operation(self.op)

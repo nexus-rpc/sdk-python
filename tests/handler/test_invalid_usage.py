@@ -39,7 +39,11 @@ class OperationHandlerOverridesNameInconsistentlyWithServiceDefinition(_TestCase
         @service_handler(service=SD)
         class SH:
             @sync_operation(name="foo")
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+            async def my_op(
+                self, _ctx: StartOperationContext, _input: None
+            ) -> None: ...
+
+        _ = SH
 
     error_message = "Operation handlers may not override the name of an operation in the service definition"
 
@@ -56,8 +60,10 @@ class ServiceDefinitionHasExtraOp(_TestCase):
         class SH:
             @sync_operation
             async def my_op_1(
-                self, ctx: StartOperationContext, input: None
+                self, _ctx: StartOperationContext, _input: None
             ) -> None: ...
+
+        _ = SH
 
     error_message = "does not implement an operation with method name 'my_op_2'"
 
@@ -73,13 +79,15 @@ class ServiceHandlerHasExtraOp(_TestCase):
         class SH:
             @sync_operation
             async def my_op_1(
-                self, ctx: StartOperationContext, input: None
+                self, _ctx: StartOperationContext, _input: None
             ) -> None: ...
 
             @sync_operation
             async def my_op_2(
-                self, ctx: StartOperationContext, input: None
+                self, _ctx: StartOperationContext, _input: None
             ) -> None: ...
+
+        _ = SH
 
     error_message = "does not match an operation method name in the service definition"
 
@@ -94,7 +102,11 @@ class ServiceDefinitionOperationHasNoTypeParams(_TestCase):
         @service_handler(service=SD)
         class SH:
             @sync_operation
-            async def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+            async def my_op(
+                self, _ctx: StartOperationContext, _input: None
+            ) -> None: ...
+
+        _ = SH
 
     error_message = "has 0 type parameters"
 
@@ -105,9 +117,9 @@ class AsyncioHandlerWithSyncioOperation(_TestCase):
         @service_handler
         class SH:
             @sync_operation
-            def my_op(self, ctx: StartOperationContext, input: None) -> None: ...
+            def my_op(self, _ctx: StartOperationContext, _input: None) -> None: ...
 
-        Handler([SH()])
+        _ = Handler([SH()])
 
     error_message = "you have not supplied an executor"
 
@@ -130,6 +142,8 @@ class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
                 output_type=None,
             )
 
+        _ = SD
+
     error_message = "Operation method name 'my_op' is not unique"
 
 
@@ -140,6 +154,8 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         class SubclassingNoInputOutputTypeAnnotationsWithoutServiceDefinition:
             @operation_handler
             def op(self) -> OperationHandler: ...  # type: ignore
+
+        _ = SubclassingNoInputOutputTypeAnnotationsWithoutServiceDefinition
 
     error_message = r"has no input type"
 
