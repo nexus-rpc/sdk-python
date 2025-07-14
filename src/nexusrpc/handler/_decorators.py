@@ -266,6 +266,7 @@ def sync_operation(
                 _start.__doc__ = start.__doc__
                 return nexusrpc.handler._syncio.SyncOperationHandler(_start)
 
+        # TODO(preview): these types should only need to be inspected if the user has not supplied a service definition.
         input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
             start  # type: ignore[arg-type]
         )
