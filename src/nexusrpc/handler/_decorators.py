@@ -12,7 +12,7 @@ from nexusrpc._util import (
     get_callable_name,
     get_service_definition,
     is_async_callable,
-    set_operation_definition,
+    set_operation,
     set_operation_factory,
     set_service_definition,
 )
@@ -175,7 +175,7 @@ def operation_handler(
                     f"but operation {method.__name__} has {len(type_args)} type parameters: {type_args}"
                 )
 
-        set_operation_definition(
+        set_operation(
             method,
             Operation(
                 name=name or method.__name__,
@@ -266,12 +266,13 @@ def sync_operation(
                 _start.__doc__ = start.__doc__
                 return nexusrpc.handler._syncio.SyncOperationHandler(_start)
 
+        # TODO(preview): these types should only need to be inspected if the user has not supplied a service definition.
         input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
             start  # type: ignore[arg-type]
         )
 
         method_name = get_callable_name(start)
-        set_operation_definition(
+        set_operation(
             operation_handler_factory,
             Operation(
                 name=name or method_name,

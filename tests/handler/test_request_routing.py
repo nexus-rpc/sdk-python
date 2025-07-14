@@ -35,7 +35,7 @@ class _TestCase(_BaseTestCase):
             assert ctx.service == service_defn.name
             _, op_handler_op_defn = get_operation_factory(self.op)
             assert op_handler_op_defn
-            assert service_defn.operations.get(ctx.operation)
+            assert service_defn.operation_definitions.get(ctx.operation)
             return True
 
 
