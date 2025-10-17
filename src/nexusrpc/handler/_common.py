@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import timedelta
 from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
@@ -82,27 +81,6 @@ class CancelOperationContext(OperationContext):
     """Context for the cancel method.
 
     Includes information from the request."""
-
-
-@dataclass(frozen=True)
-class FetchOperationInfoContext(OperationContext):
-    """Context for the fetch_info method.
-
-    Includes information from the request."""
-
-
-@dataclass(frozen=True)
-class FetchOperationResultContext(OperationContext):
-    """Context for the fetch_result method.
-
-    Includes information from the request."""
-
-    wait: Optional[timedelta] = None
-    """
-    Allowed time to wait for the operation result (long poll). If by the end of the
-    wait period the operation is still running, a response with 412 status code will
-    be returned, and the caller may re-issue the request to start a new long poll.
-    """
 
 
 @dataclass(frozen=True)

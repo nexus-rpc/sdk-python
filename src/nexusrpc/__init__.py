@@ -23,8 +23,6 @@ from ._common import (
     Link,
     OperationError,
     OperationErrorState,
-    OperationInfo,
-    OperationState,
     OutputT,
 )
 from ._serializer import Content, LazyValue
@@ -49,8 +47,6 @@ __all__ = [
     "OperationDefinition",
     "OperationError",
     "OperationErrorState",
-    "OperationInfo",
-    "OperationState",
     "OutputT",
     "service",
     "ServiceDefinition",
