@@ -268,23 +268,6 @@ class OperationErrorState(Enum):
 
 
 @dataclass(frozen=True)
-class OperationInfo:
-    """
-    Information about an operation.
-    """
-
-    token: str
-    """
-    Token identifying the operation (returned on operation start).
-    """
-
-    state: OperationState
-    """
-    The operation's state.
-    """
-
-
-@dataclass(frozen=True)
 class Link:
     """
     A Link contains a URL and a type that can be used to decode the URL.
