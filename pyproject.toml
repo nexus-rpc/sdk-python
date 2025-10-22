@@ -5,7 +5,7 @@ name = "nexus-rpc"
 # 2025 and version numbering started from 1.1.0. Despite the version number, this is an
 # experimental release and backwards-incompatible changes are anticipated until a GA
 # release is announced.
-version = "1.1.0"
+version = "1.1.1"
 description = "Nexus Python SDK"
 readme = "README.md"
 authors = [
