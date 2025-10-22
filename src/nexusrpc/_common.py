@@ -243,32 +243,6 @@ class OperationError(Exception):
         return self._state
 
 
-class OperationState(Enum):
-    """
-    Describes the current state of an operation.
-    """
-
-    RUNNING = "running"
-    """
-    The operation is running.
-    """
-
-    SUCCEEDED = "succeeded"
-    """
-    The operation succeeded.
-    """
-
-    FAILED = "failed"
-    """
-    The operation failed.
-    """
-
-    CANCELED = "canceled"
-    """
-    The operation was canceled.
-    """
-
-
 class OperationErrorState(Enum):
     """
     The state of an operation as described by an :py:class:`OperationError`.
@@ -282,23 +256,6 @@ class OperationErrorState(Enum):
     CANCELED = "canceled"
     """
     The operation was canceled.
-    """
-
-
-@dataclass(frozen=True)
-class OperationInfo:
-    """
-    Information about an operation.
-    """
-
-    token: str
-    """
-    Token identifying the operation (returned on operation start).
-    """
-
-    state: OperationState
-    """
-    The operation's state.
     """
 
 

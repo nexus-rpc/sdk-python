@@ -106,15 +106,13 @@ from typing import Any, Callable, Optional, Union
 
 from typing_extensions import Self, TypeGuard
 
-from nexusrpc._common import HandlerError, HandlerErrorType, OperationInfo
+from nexusrpc._common import HandlerError, HandlerErrorType
 from nexusrpc._serializer import LazyValueT
 from nexusrpc._service import ServiceDefinition
 from nexusrpc._util import get_service_definition, is_async_callable
 
 from ._common import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
@@ -141,30 +139,6 @@ class AbstractHandler(ABC):
             ]
         ],
     ]: ...
-
-    @abstractmethod
-    def fetch_operation_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
-        """Handle a Fetch Operation Info request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        ...
-
-    @abstractmethod
-    def fetch_operation_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> Union[Any, Awaitable[Any]]:
-        """Handle a Fetch Operation Result request.
-
-        Args:
-            ctx: The operation context.
-            token: The operation token.
-        """
-        ...
 
     @abstractmethod
     def cancel_operation(
@@ -321,40 +295,11 @@ class Handler(BaseServiceCollectionHandler):
             assert self.executor
             return self.executor.submit(op_handler.cancel, ctx, token).result()
 
-    async def fetch_operation_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> OperationInfo:
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
-        if is_async_callable(op_handler.fetch_info):
-            return await op_handler.fetch_info(ctx, token)
-        else:
-            assert self.executor
-            return self.executor.submit(op_handler.fetch_info, ctx, token).result()
-
-    async def fetch_operation_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> Any:
-        if ctx.wait is not None or ctx.headers.get("request-timeout"):
-            raise NotImplementedError(
-                "The Nexus SDK is in pre-release and does not support the fetch result "
-                "wait parameter or request-timeout header."
-            )
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
-        if is_async_callable(op_handler.fetch_result):
-            return await op_handler.fetch_result(ctx, token)
-        else:
-            assert self.executor
-            return self.executor.submit(op_handler.fetch_result, ctx, token).result()
-
     def _validate_all_operation_handlers_are_async(self) -> None:
         for service_handler in self.service_handlers.values():
             for op_handler in service_handler.operation_handlers.values():
                 _ = self._assert_async_callable(op_handler.start)
                 _ = self._assert_async_callable(op_handler.cancel)
-                _ = self._assert_async_callable(op_handler.fetch_info)
-                _ = self._assert_async_callable(op_handler.fetch_result)
 
     def _assert_async_callable(
         self, method: Callable[..., Any]

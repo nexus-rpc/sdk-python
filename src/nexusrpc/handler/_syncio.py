@@ -4,14 +4,12 @@ from typing import (
     Callable,
 )
 
-from nexusrpc._common import InputT, OperationInfo, OutputT
+from nexusrpc._common import InputT, OutputT
 from nexusrpc._util import (
     is_async_callable,
 )
 from nexusrpc.handler._common import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     StartOperationContext,
     StartOperationResultSync,
 )
@@ -51,16 +49,6 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         Start the operation and return its final result synchronously.
         """
         return StartOperationResultSync(self._start(ctx, input))
-
-    def fetch_info(self, ctx: FetchOperationInfoContext, token: str) -> OperationInfo:
-        raise NotImplementedError(
-            "Cannot fetch operation info for an operation that responded synchronously."
-        )
-
-    def fetch_result(self, ctx: FetchOperationResultContext, token: str) -> OutputT:
-        raise NotImplementedError(
-            "Cannot fetch the result of an operation that responded synchronously."
-        )
 
     def cancel(self, ctx: CancelOperationContext, token: str) -> None:
         raise NotImplementedError(

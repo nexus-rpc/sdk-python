@@ -12,8 +12,6 @@ from nexusrpc import InputT, OutputT
 from nexusrpc._util import get_service_definition, is_async_callable
 from nexusrpc.handler import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,
@@ -47,16 +45,6 @@ class ManualOperationDefinition(_TestCase):
                     self, ctx: StartOperationContext, input: int
                 ) -> StartOperationResultSync[int]:
                     return StartOperationResultSync(7)
-
-                def fetch_info(
-                    self, ctx: FetchOperationInfoContext, token: str
-                ) -> nexusrpc.OperationInfo:
-                    raise NotImplementedError
-
-                def fetch_result(
-                    self, ctx: FetchOperationResultContext, token: str
-                ) -> int:
-                    raise NotImplementedError
 
                 def cancel(self, ctx: CancelOperationContext, token: str) -> None:
                     raise NotImplementedError

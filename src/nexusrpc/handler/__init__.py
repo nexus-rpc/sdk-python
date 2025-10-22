@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from ._common import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     OperationContext,
     StartOperationContext,
     StartOperationResultAsync,
@@ -25,8 +23,6 @@ from ._operation_handler import OperationHandler as OperationHandler
 
 __all__ = [
     "CancelOperationContext",
-    "FetchOperationInfoContext",
-    "FetchOperationResultContext",
     "Handler",
     "OperationContext",
     "OperationHandler",
