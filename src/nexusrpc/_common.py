@@ -90,9 +90,11 @@ class HandlerError(Exception):
             HandlerErrorType.UNAUTHENTICATED,
             HandlerErrorType.UNAUTHORIZED,
             HandlerErrorType.NOT_FOUND,
+            HandlerErrorType.CONFLICT,
             HandlerErrorType.NOT_IMPLEMENTED,
         }
         retryable_types = {
+            HandlerErrorType.REQUEST_TIMEOUT,
             HandlerErrorType.RESOURCE_EXHAUSTED,
             HandlerErrorType.INTERNAL,
             HandlerErrorType.UNAVAILABLE,
@@ -148,6 +150,22 @@ class HandlerErrorType(Enum):
     The requested resource could not be found but may be available in the future.
 
     Subsequent requests by the client are permissible but not advised.
+    """
+
+    REQUEST_TIMEOUT = "REQUEST_TIMEOUT"
+    """
+    Returned by the server when it has given up handling a request. This may occur by enforcing a client
+    provided `Request-Timeout` or for any arbitrary reason such as enforcing some configurable limit.
+
+    Subsequent requests by the client are permissible.
+    """
+
+    CONFLICT = "CONFLICT"
+    """
+    The request could not be made due to a conflict. This may happen when trying to create an operation that
+    has already been started.
+
+    Clients should not retry this request unless advised otherwise.
     """
 
     RESOURCE_EXHAUSTED = "RESOURCE_EXHAUSTED"
