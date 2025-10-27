@@ -5,11 +5,8 @@ correctly.
 
 import pytest
 
-from nexusrpc import OperationInfo
 from nexusrpc.handler import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     Handler,
     OperationHandler,
     StartOperationContext,
@@ -40,18 +37,6 @@ def test_services_are_collected():
             ctx: CancelOperationContext,
             token: str,
         ) -> None: ...
-
-        async def fetch_info(
-            self,
-            ctx: FetchOperationInfoContext,
-            token: str,
-        ) -> OperationInfo: ...
-
-        async def fetch_result(
-            self,
-            ctx: FetchOperationResultContext,
-            token: str,
-        ) -> int: ...
 
     @service_handler
     class Service1:

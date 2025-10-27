@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable
 from typing import Any, Callable, Generic, Optional, Union
 
-from nexusrpc._common import InputT, OperationInfo, OutputT, ServiceHandlerT
+from nexusrpc._common import InputT, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
 from nexusrpc._util import (
     get_operation,
@@ -17,8 +17,6 @@ from nexusrpc._util import (
 
 from ._common import (
     CancelOperationContext,
-    FetchOperationInfoContext,
-    FetchOperationResultContext,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
@@ -52,24 +50,6 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
 
         Returns the result synchronously, or returns an operation token. Which path is
         taken may be decided at operation handling time.
-        """
-        ...
-
-    @abstractmethod
-    def fetch_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> Union[OperationInfo, Awaitable[OperationInfo]]:
-        """
-        Return information about the current status of the operation.
-        """
-        ...
-
-    @abstractmethod
-    def fetch_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> Union[OutputT, Awaitable[OutputT]]:
-        """
-        Return the result of the operation.
         """
         ...
 
@@ -117,20 +97,6 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         version, see :py:class:`nexusrpc.handler.syncio.SyncOperationHandler`.
         """
         return StartOperationResultSync(await self._start(ctx, input))
-
-    async def fetch_info(
-        self, ctx: FetchOperationInfoContext, token: str
-    ) -> OperationInfo:
-        raise NotImplementedError(
-            "Cannot fetch operation info for an operation that responded synchronously."
-        )
-
-    async def fetch_result(
-        self, ctx: FetchOperationResultContext, token: str
-    ) -> OutputT:
-        raise NotImplementedError(
-            "Cannot fetch the result of an operation that responded synchronously."
-        )
 
     async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
         raise NotImplementedError(
