@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
+from nexusrpc.handler._cancellation import (
+    OperationTaskCancellation,
+    UncancellableOperationTaskCancellation,
+)
 
 
 @dataclass(frozen=True)
@@ -34,6 +38,12 @@ class OperationContext(ABC):
     headers: Mapping[str, str]
     """
     Optional header fields sent by the caller.
+    """
+    task_cancellation: OperationTaskCancellation = field(
+        default_factory=UncancellableOperationTaskCancellation, kw_only=True
+    )
+    """
+    Task cancellation information indicating that a running task should be interrupted. This is distinct from operation cancellation.
     """
 
 
