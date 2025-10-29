@@ -27,7 +27,7 @@ class OperationTaskCancellation(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def wait_until_cancelled_async(self):
+    async def wait_until_cancelled_async(self) -> None:
         """Await cancellation using async primitives."""
         raise NotImplementedError
 

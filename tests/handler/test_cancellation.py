@@ -50,7 +50,7 @@ class MyService:
         return CancellableAsyncOperationHandler()
 
     @sync_operation
-    async def cancellable_sync(self, ctx: StartOperationContext, input: None) -> str:
+    async def cancellable_sync(self, ctx: StartOperationContext, _input: None) -> str:
         cancelled = ctx.task_cancellation.wait_until_cancelled(1)
         if not cancelled:
             raise RuntimeError("Expected cancellation")
