@@ -1,6 +1,4 @@
 import asyncio
-import threading
-from typing import Optional
 
 import pytest
 
@@ -11,12 +9,12 @@ from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,
+    StartOperationResultSync,
+    operation_handler,
     service_handler,
+    sync_operation,
 )
-from nexusrpc.handler._cancellation import OperationTaskCancellation
-from nexusrpc.handler._common import StartOperationResultSync
-from nexusrpc.handler._decorators import operation_handler, sync_operation
-from tests.helpers import DummySerializer
+from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 
 class CancellableAsyncOperationHandler(OperationHandler[None, None]):
@@ -25,12 +23,12 @@ class CancellableAsyncOperationHandler(OperationHandler[None, None]):
     ) -> StartOperationResultAsync:
         try:
             await asyncio.wait_for(
-                ctx.task_cancellation.wait_until_cancelled_async(), timeout=1
+                ctx.task_cancellation.wait_until_cancelled(), timeout=1
             )
         except TimeoutError as err:
             raise RuntimeError("Expected cancellation") from err
 
-        details = ctx.task_cancellation.cancellation_details()
+        details = ctx.task_cancellation.cancellation_reason()
         if not details:
             raise RuntimeError("Expected cancellation details")
 
@@ -51,42 +49,15 @@ class MyService:
 
     @sync_operation
     async def cancellable_sync(self, ctx: StartOperationContext, _input: None) -> str:
-        cancelled = ctx.task_cancellation.wait_until_cancelled(1)
+        cancelled = ctx.task_cancellation.wait_until_cancelled_sync(1)
         if not cancelled:
             raise RuntimeError("Expected cancellation")
 
-        details = ctx.task_cancellation.cancellation_details()
+        details = ctx.task_cancellation.cancellation_reason()
         if not details:
             raise RuntimeError("Expected cancellation details")
 
         return details
-
-
-class TestOperationTaskCancellation(OperationTaskCancellation):
-    # A naive implementation of cancellation for use in tests
-    def __init__(self):
-        self._details = None
-        self._evt = threading.Event()
-        self._lock = threading.Lock()
-
-    def is_cancelled(self) -> bool:
-        return self._evt.is_set()
-
-    def cancellation_details(self) -> Optional[str]:
-        with self._lock:
-            return self._details
-
-    def wait_until_cancelled(self, timeout: float | None = None) -> bool:
-        return self._evt.wait(timeout)
-
-    async def wait_until_cancelled_async(self):
-        while not self.is_cancelled():
-            await asyncio.sleep(0.05)
-
-    def cancel(self):
-        with self._lock:
-            self._details = "test cancellation occurred"
-            self._evt.set()
 
 
 @pytest.mark.asyncio

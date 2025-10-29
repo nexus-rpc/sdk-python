@@ -1,15 +1,41 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
-from nexusrpc.handler._cancellation import (
-    OperationTaskCancellation,
-    UncancellableOperationTaskCancellation,
-)
+
+
+class OperationTaskCancellation(ABC):
+    """
+    Indicates whether a a Nexus task has been cancelled during a sync operation or before an async operation has
+    returned a token.
+
+    Nexus worker implementations are expected to provide an implementation that enables
+    cooperative cancellation for both sync and async operation handlers.
+    """
+
+    @abstractmethod
+    def is_cancelled(self) -> bool:
+        """Return True if the associated task has been cancelled."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def cancellation_reason(self) -> Optional[str]:
+        """Provide additional context for the cancellation, if available."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def wait_until_cancelled_sync(self, timeout: Optional[float] = None) -> bool:
+        """Block until cancellation occurs or the optional timeout elapses."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def wait_until_cancelled(self) -> None:
+        """Await cancellation using async primitives."""
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -39,9 +65,7 @@ class OperationContext(ABC):
     """
     Optional header fields sent by the caller.
     """
-    task_cancellation: OperationTaskCancellation = field(
-        default_factory=UncancellableOperationTaskCancellation, kw_only=True
-    )
+    task_cancellation: OperationTaskCancellation
     """
     Task cancellation information indicating that a running task should be interrupted. This is distinct from operation cancellation.
     """
