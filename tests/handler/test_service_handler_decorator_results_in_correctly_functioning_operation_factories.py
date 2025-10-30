@@ -23,6 +23,7 @@ from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import (
     collect_operation_handler_factories_by_method_name,
 )
+from tests.helpers import TestOperationTaskCancellation
 
 
 @dataclass_transform()
@@ -89,6 +90,7 @@ async def test_collected_operation_factories_match_service_definition(
         operation="operation",
         headers={},
         request_id="request_id",
+        task_cancellation=TestOperationTaskCancellation(),
     )
 
     async def execute(

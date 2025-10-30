@@ -13,8 +13,7 @@ from nexusrpc.handler import (
     sync_operation,
 )
 from nexusrpc.handler._common import StartOperationResultSync
-
-from ..helpers import DummySerializer
+from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 
 @dataclass_transform()
@@ -114,6 +113,7 @@ async def test_request_routing_with_service_definition(
         operation=request_op,
         headers={},
         request_id="request-id",
+        task_cancellation=TestOperationTaskCancellation(),
     )
     handler = Handler(user_service_handlers=[test_case.UserServiceHandler()])
     result = await handler.start_operation(
@@ -181,6 +181,7 @@ async def test_request_routing_without_service_definition(
         operation=request_op,
         headers={},
         request_id="request-id",
+        task_cancellation=TestOperationTaskCancellation(),
     )
     handler = Handler(user_service_handlers=[test_case.UserServiceHandler()])
     result = await handler.start_operation(
