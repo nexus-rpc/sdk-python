@@ -73,12 +73,6 @@ class OperationContext(ABC):
     Task cancellation information indicating that a running task should be interrupted. This is distinct from operation cancellation.
     """
 
-    request_deadline: Optional[datetime] = field(default=None, kw_only=True)
-    """
-    Get the deadline for the operation handler method. Note that this is the time by which the
-    current _request_ should complete, not the _operation_'s deadline.
-    """
-
 
 @dataclass(frozen=True)
 class StartOperationContext(OperationContext):
