@@ -442,7 +442,7 @@ class OperationHandlerInterceptor(ABC):
 class _EnsuredAwaitableOperationHandler(AwaitableOperationHandler[Any, Any]):
     """
     An :py:class:`AwaitableOperationHandler` that wraps an :py:class:`OperationHandler` and uses an :py:class:`_Executor` to ensure
-    that the `:py:attr:`start` and :py:attr:`cancel` methods are awaitable.
+    that the :py:attr:`start` and :py:attr:`cancel` methods are awaitable.
     """
 
     def __init__(
