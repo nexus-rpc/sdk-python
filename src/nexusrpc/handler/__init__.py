@@ -18,7 +18,7 @@ from ._common import (
     StartOperationResultAsync,
     StartOperationResultSync,
 )
-from ._core import Handler as Handler, OperationHandlerInterceptor
+from ._core import Handler, OperationHandlerInterceptor
 from ._decorators import operation_handler, service_handler, sync_operation
 from ._operation_handler import AwaitableOperationHandler, OperationHandler
 
