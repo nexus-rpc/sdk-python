@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable
-from typing import Any, Callable, Generic, Optional, Union
+from typing import Any, Callable, Generic, Optional
 
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
@@ -19,8 +19,6 @@ from ._common import (
     CancelOperationContext,
     StartOperationContext,
     StartOperationResultAsync,
-    StartOperationResult,
-    CancelOperationResult,
     StartOperationResultSync,
 )
 
@@ -41,7 +39,13 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
     @abstractmethod
     def start(
         self, ctx: StartOperationContext, input: InputT
-    ) -> StartOperationResult[OutputT]:
+    ) -> (
+        StartOperationResultSync[OutputT]
+        | Awaitable[StartOperationResultSync[OutputT]]
+        | StartOperationResultAsync
+        | Awaitable[StartOperationResultAsync]
+        | Awaitable[StartOperationResultSync[OutputT] | StartOperationResultAsync]
+    ):
         """
         Start the operation, completing either synchronously or asynchronously.
 
@@ -51,7 +55,7 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
         ...
 
     @abstractmethod
-    def cancel(self, ctx: CancelOperationContext, token: str) -> CancelOperationResult:
+    def cancel(self, ctx: CancelOperationContext, token: str) -> None | Awaitable[None]:
         """
         Cancel the operation.
         """
@@ -99,14 +103,29 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         )
 
 
-class InterceptedOperationHandler(OperationHandler[InputT, OutputT]):
+class AwaitableOperationHandler(OperationHandler[InputT, OutputT]):
+    """
+    An :py:class:`OperationHandler` where :py:method:`start` and :py:method:`cancel`
+    can be awaited by an async runtime. It can produce a result synchronously by returning
+    :py:class:`StartOperationResultSync` or asynchronously by returning :py:class:`StartOperationResultAsync`
+    in the same fashion that :py:class:`OperationHandler` does.
+    """
+
     @abstractmethod
     async def start(
         self, ctx: StartOperationContext, input: InputT
-    ) -> StartOperationResultSync[OutputT] | StartOperationResultAsync: ...
+    ) -> StartOperationResultSync[OutputT] | StartOperationResultAsync:
+        """
+        Start the operation and return it's result or an async token.
+        """
+        ...
 
     @abstractmethod
-    async def cancel(self, ctx: CancelOperationContext, token: str) -> None: ...
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        """
+        Cancel an in progress operation identified by the given token.
+        """
+        ...
 
 
 def collect_operation_handler_factories_by_method_name(

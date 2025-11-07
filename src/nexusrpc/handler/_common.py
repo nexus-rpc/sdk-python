@@ -150,14 +150,3 @@ class StartOperationResultAsync:
     A token representing the in-progress operation that the caller can submit with
     subsequent ``fetch_info``, ``fetch_result``, or ``cancel`` requests.
     """
-
-
-StartOperationResult = (
-    StartOperationResultSync[OutputT]
-    | Awaitable[StartOperationResultSync[OutputT]]
-    | StartOperationResultAsync
-    | Awaitable[StartOperationResultAsync]
-    | Awaitable[StartOperationResultSync[OutputT] | StartOperationResultAsync]
-)
-
-CancelOperationResult = None | Awaitable[None]

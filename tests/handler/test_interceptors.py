@@ -1,25 +1,24 @@
+import concurrent.futures
 import logging
-from typing import Any
 import uuid
+from typing import Any
 
 import pytest
 
 from nexusrpc import LazyValue
 from nexusrpc.handler import (
-    CancelOperationResult,
+    AwaitableOperationHandler,
     CancelOperationContext,
     Handler,
     OperationHandler,
     OperationHandlerInterceptor,
-    StartOperationResult,
     StartOperationContext,
     StartOperationResultAsync,
+    StartOperationResultSync,
     service_handler,
     sync_operation,
 )
-from nexusrpc.handler._common import StartOperationResultSync
 from nexusrpc.handler._decorators import operation_handler
-from nexusrpc.handler._operation_handler import InterceptedOperationHandler
 from tests.helpers import DummySerializer
 
 _operation_results: dict[str, int] = {}
@@ -49,7 +48,7 @@ class MyService:
 @service_handler
 class MyServiceSync:
     @sync_operation
-    async def incr(self, ctx: StartOperationContext, input: int) -> int:
+    def incr(self, ctx: StartOperationContext, input: int) -> int:
         return input + 1
 
 
@@ -59,15 +58,20 @@ class CountingInterceptor(OperationHandlerInterceptor):
         self.num_cancel = 0
 
     def intercept_operation_handler(
-        self, next: InterceptedOperationHandler[Any, Any]
-    ) -> InterceptedOperationHandler[Any, Any]:
+        self, next: AwaitableOperationHandler[Any, Any]
+    ) -> AwaitableOperationHandler[Any, Any]:
         return CountingOperationHandler(next, self)
 
 
-class CountingOperationHandler(InterceptedOperationHandler[Any, Any]):
+class CountingOperationHandler(AwaitableOperationHandler[Any, Any]):
+    """
+    An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
+    that counts the number of calls to each handler method.
+    """
+
     def __init__(
         self,
-        next: InterceptedOperationHandler[Any, Any],
+        next: AwaitableOperationHandler[Any, Any],
         interceptor: CountingInterceptor,
     ) -> None:
         self._next = next
@@ -84,19 +88,24 @@ class CountingOperationHandler(InterceptedOperationHandler[Any, Any]):
         return await self._next.cancel(ctx, token)
 
 
-class AssertingInterceptor(OperationHandlerInterceptor):
+class MustBeFirstInterceptor(OperationHandlerInterceptor):
     def __init__(self, counter: CountingInterceptor) -> None:
         self._counter = counter
 
     def intercept_operation_handler(
-        self, next: InterceptedOperationHandler[Any, Any]
-    ) -> InterceptedOperationHandler[Any, Any]:
-        return AssertingOperationHandler(next, self._counter)
+        self, next: AwaitableOperationHandler[Any, Any]
+    ) -> AwaitableOperationHandler[Any, Any]:
+        return MustBeFirstOperationHandler(next, self._counter)
 
 
-class AssertingOperationHandler(InterceptedOperationHandler[Any, Any]):
+class MustBeFirstOperationHandler(AwaitableOperationHandler[Any, Any]):
+    """
+    An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
+    and asserts that the wrapped interceptor has a count of 0 for each handler method
+    """
+
     def __init__(
-        self, next: InterceptedOperationHandler[Any, Any], counter: CountingInterceptor
+        self, next: AwaitableOperationHandler[Any, Any], counter: CountingInterceptor
     ) -> None:
         self._next = next
         self._counter = counter
@@ -106,7 +115,9 @@ class AssertingOperationHandler(InterceptedOperationHandler[Any, Any]):
     ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
         assert self._counter.num_start == 0
         logger.info("%s.%s: start operation", ctx.service, ctx.operation)
+
         result = await self._next.start(ctx, input)
+
         if isinstance(result, StartOperationResultAsync):
             logger.info(
                 "%s.%s: start operation completed async. token=%s",
@@ -121,6 +132,7 @@ class AssertingOperationHandler(InterceptedOperationHandler[Any, Any]):
                 ctx.operation,
                 result.value,
             )
+
         return result
 
     async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
@@ -134,7 +146,10 @@ async def test_async_operation_interceptors_applied():
     counting_interceptor = CountingInterceptor()
     handler = Handler(
         user_service_handlers=[MyService()],
-        interceptors=[AssertingInterceptor(counting_interceptor), counting_interceptor],
+        interceptors=[
+            MustBeFirstInterceptor(counting_interceptor),
+            counting_interceptor,
+        ],
     )
     start_ctx = StartOperationContext(
         service="MyService",
@@ -165,7 +180,11 @@ async def test_sync_operation_interceptors_applied():
     counting_interceptor = CountingInterceptor()
     handler = Handler(
         user_service_handlers=[MyServiceSync()],
-        interceptors=[AssertingInterceptor(counting_interceptor), counting_interceptor],
+        executor=concurrent.futures.ThreadPoolExecutor(),
+        interceptors=[
+            MustBeFirstInterceptor(counting_interceptor),
+            counting_interceptor,
+        ],
     )
     start_ctx = StartOperationContext(
         service="MyServiceSync",

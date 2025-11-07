@@ -118,8 +118,8 @@ from ._common import (
     StartOperationResultSync,
 )
 from ._operation_handler import (
+    AwaitableOperationHandler,
     OperationHandler,
-    InterceptedOperationHandler,
     collect_operation_handler_factories_by_method_name,
 )
 
@@ -212,41 +212,6 @@ class BaseServiceCollectionHandler(AbstractHandler, ABC):
         return service
 
 
-class OperationHandlerInterceptor(ABC):
-    def intercept_operation_handler(
-        self, next: InterceptedOperationHandler[Any, Any]
-    ) -> InterceptedOperationHandler[Any, Any]:
-        return next
-
-
-class _InterceptedOperationHandler(InterceptedOperationHandler[Any, Any]):
-    def __init__(
-        self,
-        executor: _Executor | None,
-        op_handler: OperationHandler[Any, Any],
-    ):
-        self._executor = executor
-        self._op_handler = op_handler
-
-    async def start(
-        self, ctx: StartOperationContext, input: Any
-    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
-        if is_async_callable(self._op_handler.start):
-            return await self._op_handler.start(ctx, input)
-        else:
-            assert self._executor
-            return await self._executor.submit_to_event_loop(
-                self._op_handler.start, ctx, input
-            )
-
-    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
-        if is_async_callable(self._op_handler.cancel):
-            return await self._op_handler.cancel(ctx, token)
-        else:
-            assert self._executor
-            return self._executor.submit(self._op_handler.cancel, ctx, token).result()
-
-
 class Handler(BaseServiceCollectionHandler):
     """
     A Nexus handler manages a collection of Nexus service handlers.
@@ -308,28 +273,11 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = self._get_operation_handler(ctx.service, ctx.operation)
-        # op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
+        op_handler = self._get_operation_handler(service_handler, ctx.operation)
 
         op_defn = service_handler.service.operation_definitions[ctx.operation]
         deserialized_input = await input.consume(as_type=op_defn.input_type)
         return await op_handler.start(ctx, deserialized_input)
-
-    def _get_operation_handler(
-        self, service_name: str, operation: str
-    ) -> InterceptedOperationHandler[Any, Any]:
-        service_handler = self._get_service_handler(service_name)
-        op_handler: InterceptedOperationHandler[Any, Any] = (
-            _InterceptedOperationHandler(
-                self.executor, service_handler._get_operation_handler(operation)
-            )
-        )  # pyright: ignore[reportPrivateUsage]
-
-        for interceptor in reversed(self._interceptors):
-            op_handler = interceptor.intercept_operation_handler(op_handler)
-            op_handler = _InterceptedOperationHandler(self.executor, op_handler)
-
-        return op_handler
 
     async def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
         """Handle a Cancel Operation request.
@@ -338,8 +286,26 @@ class Handler(BaseServiceCollectionHandler):
             ctx: The operation context.
             token: The operation token.
         """
-        op_handler = self._get_operation_handler(ctx.service, ctx.operation)  # pyright: ignore[reportPrivateUsage]
+        service_handler = self._get_service_handler(ctx.service)
+        op_handler = self._get_operation_handler(service_handler, ctx.operation)
         return await op_handler.cancel(ctx, token)
+
+    def _get_operation_handler(
+        self, service_handler: ServiceHandler, operation: str
+    ) -> AwaitableOperationHandler[Any, Any]:
+        """
+        Get the specified handler for the specified operation from the given service_handler and apply all interceptors.
+        """
+        op_handler: AwaitableOperationHandler[Any, Any] = (
+            _EnsuredAwaitableOperationHandler(
+                self.executor, service_handler.get_operation_handler(operation)
+            )
+        )
+
+        for interceptor in reversed(self._interceptors):
+            op_handler = interceptor.intercept_operation_handler(op_handler)
+
+        return op_handler
 
     def _validate_all_operation_handlers_are_async(self) -> None:
         for service_handler in self.service_handlers.values():
@@ -406,7 +372,7 @@ class ServiceHandler:
             operation_handlers=op_handlers,
         )
 
-    def _get_operation_handler(self, operation_name: str) -> OperationHandler[Any, Any]:
+    def get_operation_handler(self, operation_name: str) -> OperationHandler[Any, Any]:
         """Return an operation handler, given the operation name."""
         if operation_name not in self.service.operation_definitions:
             raise HandlerError(
@@ -447,3 +413,66 @@ class _Executor:
         self, fn: Callable[..., Any], *args: Any
     ) -> concurrent.futures.Future[Any]:
         return self._executor.submit(fn, *args)
+
+
+class OperationHandlerInterceptor(ABC):
+    """
+    Interceptor for operation handlers.
+
+    This should be extended by any operation handler interceptors.
+    """
+
+    def intercept_operation_handler(
+        self, next: AwaitableOperationHandler[Any, Any]
+    ) -> AwaitableOperationHandler[Any, Any]:
+        """
+        Method called for intercepting operation handlers.
+
+        Args:
+            next: The underlying operation handler that this interceptor
+                should delegate to.
+
+        Returns:
+            The new interceptor that will be used to invoke
+            :py:attr:`OperationHandler.start` or :py:attr:`OperationHandler.cancel`.
+        """
+        return next
+
+
+class _EnsuredAwaitableOperationHandler(AwaitableOperationHandler[Any, Any]):
+    """
+    An :py:class:`AwaitableOperationHandler` that wraps an :py:class:`OperationHandler` and uses an :py:class:`_Executor` to ensure
+    that the `:py:attr:`start` and :py:attr:`cancel` methods are awaitable.
+    """
+
+    def __init__(
+        self,
+        executor: _Executor | None,
+        op_handler: OperationHandler[Any, Any],
+    ):
+        self._executor = executor
+        self._op_handler = op_handler
+
+    async def start(
+        self, ctx: StartOperationContext, input: Any
+    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
+        """
+        Start the operation using the wrapped :py:class:`OperationHandler`.
+        """
+        if is_async_callable(self._op_handler.start):
+            return await self._op_handler.start(ctx, input)
+        else:
+            assert self._executor
+            return await self._executor.submit_to_event_loop(
+                self._op_handler.start, ctx, input
+            )
+
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        """
+        Cancel an operation using the wrapped :py:class:`OperationHandler`.
+        """
+        if is_async_callable(self._op_handler.cancel):
+            return await self._op_handler.cancel(ctx, token)
+        else:
+            assert self._executor
+            return self._executor.submit(self._op_handler.cancel, ctx, token).result()

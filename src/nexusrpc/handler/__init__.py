@@ -12,29 +12,27 @@ from __future__ import annotations
 
 from ._common import (
     CancelOperationContext,
-    CancelOperationResult,
     OperationContext,
     OperationTaskCancellation,
-    StartOperationResult,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
 )
 from ._core import Handler as Handler, OperationHandlerInterceptor
 from ._decorators import operation_handler, service_handler, sync_operation
-from ._operation_handler import OperationHandler as OperationHandler
+from ._operation_handler import AwaitableOperationHandler, OperationHandler
 
 __all__ = [
+    "AwaitableOperationHandler",
     "CancelOperationContext",
-    "CancelOperationResult",
     "Handler",
     "OperationContext",
     "OperationHandler",
     "OperationTaskCancellation",
     "OperationHandlerInterceptor",
+    "operation_handler",
     "service_handler",
     "StartOperationContext",
-    "StartOperationResult",
     "StartOperationResultAsync",
     "StartOperationResultSync",
     "sync_operation",
