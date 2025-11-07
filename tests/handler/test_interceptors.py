@@ -15,6 +15,7 @@ from nexusrpc.handler import (
     StartOperationContext,
     StartOperationResultAsync,
     service_handler,
+    sync_operation,
 )
 from nexusrpc.handler._common import StartOperationResultSync
 from nexusrpc.handler._decorators import operation_handler
@@ -45,20 +46,65 @@ class MyService:
         return MyAsyncOperationHandler()
 
 
-class MyInterceptor(OperationHandlerInterceptor):
+@service_handler
+class MyServiceSync:
+    @sync_operation
+    async def incr(self, ctx: StartOperationContext, input: int) -> int:
+        return input + 1
+
+
+class CountingInterceptor(OperationHandlerInterceptor):
+    def __init__(self) -> None:
+        self.num_start = 0
+        self.num_cancel = 0
+
     def intercept_operation_handler(
         self, next: InterceptedOperationHandler[Any, Any]
     ) -> InterceptedOperationHandler[Any, Any]:
-        return LoggingOperationHandler(next)
+        return CountingOperationHandler(next, self)
 
 
-class LoggingOperationHandler(InterceptedOperationHandler[Any, Any]):
-    def __init__(self, next: InterceptedOperationHandler[Any, Any]) -> None:
+class CountingOperationHandler(InterceptedOperationHandler[Any, Any]):
+    def __init__(
+        self,
+        next: InterceptedOperationHandler[Any, Any],
+        interceptor: CountingInterceptor,
+    ) -> None:
         self._next = next
+        self._interceptor = interceptor
 
     async def start(
         self, ctx: StartOperationContext, input: Any
     ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
+        self._interceptor.num_start += 1
+        return await self._next.start(ctx, input)
+
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        self._interceptor.num_cancel += 1
+        return await self._next.cancel(ctx, token)
+
+
+class AssertingInterceptor(OperationHandlerInterceptor):
+    def __init__(self, counter: CountingInterceptor) -> None:
+        self._counter = counter
+
+    def intercept_operation_handler(
+        self, next: InterceptedOperationHandler[Any, Any]
+    ) -> InterceptedOperationHandler[Any, Any]:
+        return AssertingOperationHandler(next, self._counter)
+
+
+class AssertingOperationHandler(InterceptedOperationHandler[Any, Any]):
+    def __init__(
+        self, next: InterceptedOperationHandler[Any, Any], counter: CountingInterceptor
+    ) -> None:
+        self._next = next
+        self._counter = counter
+
+    async def start(
+        self, ctx: StartOperationContext, input: Any
+    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
+        assert self._counter.num_start == 0
         logger.info("%s.%s: start operation", ctx.service, ctx.operation)
         result = await self._next.start(ctx, input)
         if isinstance(result, StartOperationResultAsync):
@@ -78,14 +124,17 @@ class LoggingOperationHandler(InterceptedOperationHandler[Any, Any]):
         return result
 
     async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        assert self._counter.num_cancel == 0
         logger.info("%s.%s: cancel token=%s", ctx.service, ctx.operation, token)
         return await self._next.cancel(ctx, token)
 
 
 @pytest.mark.asyncio
-async def test_async_operation_happy_path():
+async def test_async_operation_interceptors_applied():
+    counting_interceptor = CountingInterceptor()
     handler = Handler(
-        user_service_handlers=[MyService()], interceptors=[MyInterceptor()]
+        user_service_handlers=[MyService()],
+        interceptors=[AssertingInterceptor(counting_interceptor), counting_interceptor],
     )
     start_ctx = StartOperationContext(
         service="MyService",
@@ -106,3 +155,29 @@ async def test_async_operation_happy_path():
     )
     await handler.cancel_operation(cancel_ctx, start_result.token)
     assert start_result.token not in _operation_results
+
+    assert counting_interceptor.num_start == 1
+    assert counting_interceptor.num_cancel == 1
+
+
+@pytest.mark.asyncio
+async def test_sync_operation_interceptors_applied():
+    counting_interceptor = CountingInterceptor()
+    handler = Handler(
+        user_service_handlers=[MyServiceSync()],
+        interceptors=[AssertingInterceptor(counting_interceptor), counting_interceptor],
+    )
+    start_ctx = StartOperationContext(
+        service="MyServiceSync",
+        operation="incr",
+        headers={},
+        request_id="request_id",
+    )
+    start_result = await handler.start_operation(
+        start_ctx, LazyValue(DummySerializer(1), headers={})
+    )
+    assert isinstance(start_result, StartOperationResultSync)
+    assert start_result.value == 2
+
+    assert counting_interceptor.num_start == 1
+    assert counting_interceptor.num_cancel == 0
