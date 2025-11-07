@@ -48,7 +48,7 @@ class MyService:
 @service_handler
 class MyServiceSync:
     @sync_operation
-    def incr(self, ctx: StartOperationContext, input: int) -> int:
+    def incr(self, ctx: StartOperationContext, input: int) -> int:  # type: ignore[reportUnusedParameter]
         return input + 1
 
 

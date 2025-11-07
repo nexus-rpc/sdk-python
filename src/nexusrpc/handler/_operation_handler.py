@@ -103,7 +103,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         )
 
 
-class AwaitableOperationHandler(OperationHandler[InputT, OutputT]):
+class AwaitableOperationHandler(OperationHandler[InputT, OutputT], ABC):
     """
     An :py:class:`OperationHandler` where :py:method:`start` and :py:method:`cancel`
     can be awaited by an async runtime. It can produce a result synchronously by returning
