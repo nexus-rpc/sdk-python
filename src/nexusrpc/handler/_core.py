@@ -102,7 +102,7 @@ import concurrent.futures
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 from typing_extensions import Self, TypeGuard
 
@@ -119,6 +119,7 @@ from ._common import (
 )
 from ._operation_handler import (
     OperationHandler,
+    InterceptedOperationHandler,
     collect_operation_handler_factories_by_method_name,
 )
 
@@ -211,6 +212,41 @@ class BaseServiceCollectionHandler(AbstractHandler, ABC):
         return service
 
 
+class OperationHandlerInterceptor(ABC):
+    def intercept_operation_handler(
+        self, next: InterceptedOperationHandler[Any, Any]
+    ) -> InterceptedOperationHandler[Any, Any]:
+        return next
+
+
+class _InterceptedOperationHandler(InterceptedOperationHandler[Any, Any]):
+    def __init__(
+        self,
+        executor: _Executor | None,
+        op_handler: OperationHandler[Any, Any],
+    ):
+        self._executor = executor
+        self._op_handler = op_handler
+
+    async def start(
+        self, ctx: StartOperationContext, input: Any
+    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
+        if is_async_callable(self._op_handler.start):
+            return await self._op_handler.start(ctx, input)
+        else:
+            assert self._executor
+            return await self._executor.submit_to_event_loop(
+                self._op_handler.start, ctx, input
+            )
+
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        if is_async_callable(self._op_handler.cancel):
+            return await self._op_handler.cancel(ctx, token)
+        else:
+            assert self._executor
+            return self._executor.submit(self._op_handler.cancel, ctx, token).result()
+
+
 class Handler(BaseServiceCollectionHandler):
     """
     A Nexus handler manages a collection of Nexus service handlers.
@@ -248,7 +284,11 @@ class Handler(BaseServiceCollectionHandler):
         self,
         user_service_handlers: Sequence[Any],
         executor: Optional[concurrent.futures.Executor] = None,
+        interceptors: Sequence[OperationHandlerInterceptor] | None = None,
     ):
+        self._interceptors = cast(
+            Sequence[OperationHandlerInterceptor], interceptors or []
+        )
         super().__init__(user_service_handlers, executor=executor)
         if not self.executor:
             self._validate_all_operation_handlers_are_async()
@@ -268,17 +308,28 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
+        op_handler = self._get_operation_handler(ctx.service, ctx.operation)
+        # op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
+
         op_defn = service_handler.service.operation_definitions[ctx.operation]
         deserialized_input = await input.consume(as_type=op_defn.input_type)
-        # TODO(preview): apply middleware stack
-        if is_async_callable(op_handler.start):
-            return await op_handler.start(ctx, deserialized_input)
-        else:
-            assert self.executor
-            return await self.executor.submit_to_event_loop(
-                op_handler.start, ctx, deserialized_input
+        return await op_handler.start(ctx, deserialized_input)
+
+    def _get_operation_handler(
+        self, service_name: str, operation: str
+    ) -> InterceptedOperationHandler[Any, Any]:
+        service_handler = self._get_service_handler(service_name)
+        op_handler: InterceptedOperationHandler[Any, Any] = (
+            _InterceptedOperationHandler(
+                self.executor, service_handler._get_operation_handler(operation)
             )
+        )  # pyright: ignore[reportPrivateUsage]
+
+        for interceptor in reversed(self._interceptors):
+            op_handler = interceptor.intercept_operation_handler(op_handler)
+            op_handler = _InterceptedOperationHandler(self.executor, op_handler)
+
+        return op_handler
 
     async def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
         """Handle a Cancel Operation request.
@@ -287,13 +338,8 @@ class Handler(BaseServiceCollectionHandler):
             ctx: The operation context.
             token: The operation token.
         """
-        service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
-        if is_async_callable(op_handler.cancel):
-            return await op_handler.cancel(ctx, token)
-        else:
-            assert self.executor
-            return self.executor.submit(op_handler.cancel, ctx, token).result()
+        op_handler = self._get_operation_handler(ctx.service, ctx.operation)  # pyright: ignore[reportPrivateUsage]
+        return await op_handler.cancel(ctx, token)
 
     def _validate_all_operation_handlers_are_async(self) -> None:
         for service_handler in self.service_handlers.values():

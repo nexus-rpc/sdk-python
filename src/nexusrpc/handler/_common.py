@@ -3,7 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, Optional
+from datetime import datetime
+from typing import Any, Awaitable, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
 
@@ -70,6 +71,12 @@ class OperationContext(ABC):
     task_cancellation: OperationTaskCancellation
     """
     Task cancellation information indicating that a running task should be interrupted. This is distinct from operation cancellation.
+    """
+
+    request_deadline: Optional[datetime] = field(default=None, kw_only=True)
+    """
+    Get the deadline for the operation handler method. Note that this is the time by which the
+    current _request_ should complete, not the _operation_'s deadline.
     """
 
 
@@ -143,3 +150,14 @@ class StartOperationResultAsync:
     A token representing the in-progress operation that the caller can submit with
     subsequent ``fetch_info``, ``fetch_result``, or ``cancel`` requests.
     """
+
+
+StartOperationResult = (
+    StartOperationResultSync[OutputT]
+    | Awaitable[StartOperationResultSync[OutputT]]
+    | StartOperationResultAsync
+    | Awaitable[StartOperationResultAsync]
+    | Awaitable[StartOperationResultSync[OutputT] | StartOperationResultAsync]
+)
+
+CancelOperationResult = None | Awaitable[None]

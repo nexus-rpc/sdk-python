@@ -19,6 +19,8 @@ from ._common import (
     CancelOperationContext,
     StartOperationContext,
     StartOperationResultAsync,
+    StartOperationResult,
+    CancelOperationResult,
     StartOperationResultSync,
 )
 
@@ -39,12 +41,7 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
     @abstractmethod
     def start(
         self, ctx: StartOperationContext, input: InputT
-    ) -> Union[
-        StartOperationResultSync[OutputT],
-        Awaitable[StartOperationResultSync[OutputT]],
-        StartOperationResultAsync,
-        Awaitable[StartOperationResultAsync],
-    ]:
+    ) -> StartOperationResult[OutputT]:
         """
         Start the operation, completing either synchronously or asynchronously.
 
@@ -54,9 +51,7 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
         ...
 
     @abstractmethod
-    def cancel(
-        self, ctx: CancelOperationContext, token: str
-    ) -> Union[None, Awaitable[None]]:
+    def cancel(self, ctx: CancelOperationContext, token: str) -> CancelOperationResult:
         """
         Cancel the operation.
         """
@@ -102,6 +97,16 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         raise NotImplementedError(
             "An operation that responded synchronously cannot be cancelled."
         )
+
+
+class InterceptedOperationHandler(OperationHandler[InputT, OutputT]):
+    @abstractmethod
+    async def start(
+        self, ctx: StartOperationContext, input: InputT
+    ) -> StartOperationResultSync[OutputT] | StartOperationResultAsync: ...
+
+    @abstractmethod
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None: ...
 
 
 def collect_operation_handler_factories_by_method_name(
