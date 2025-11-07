@@ -12,7 +12,7 @@ from nexusrpc.handler import (
     service_handler,
 )
 from nexusrpc.handler._decorators import operation_handler
-from tests.helpers import DummySerializer
+from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 _operation_results: dict[str, int] = {}
 
@@ -44,6 +44,7 @@ async def test_async_operation_happy_path():
         operation="incr",
         headers={},
         request_id="request_id",
+        task_cancellation=TestOperationTaskCancellation(),
     )
     start_result = await handler.start_operation(
         start_ctx, LazyValue(DummySerializer(1), headers={})
@@ -55,6 +56,7 @@ async def test_async_operation_happy_path():
         service="MyService",
         operation="incr",
         headers={},
+        task_cancellation=TestOperationTaskCancellation(),
     )
     await handler.cancel_operation(cancel_ctx, start_result.token)
     assert start_result.token not in _operation_results
