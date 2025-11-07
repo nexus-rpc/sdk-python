@@ -3,8 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Awaitable, Generic, Optional
+from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
 
