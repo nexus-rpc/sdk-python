@@ -8,10 +8,11 @@ import pytest
 from nexusrpc import LazyValue
 from nexusrpc.handler import (
     AwaitableOperationHandler,
+    OperationContext,
     CancelOperationContext,
     Handler,
     OperationHandler,
-    OperationHandlerInterceptor,
+    OperationHandlerMiddleware,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
@@ -52,13 +53,13 @@ class MyServiceSync:
         return input + 1
 
 
-class CountingInterceptor(OperationHandlerInterceptor):
+class CountingMiddleware(OperationHandlerMiddleware):
     def __init__(self) -> None:
         self.num_start = 0
         self.num_cancel = 0
 
-    def intercept_operation_handler(
-        self, next: AwaitableOperationHandler[Any, Any]
+    def intercept(
+        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
     ) -> AwaitableOperationHandler[Any, Any]:
         return CountingOperationHandler(next, self)
 
@@ -72,7 +73,7 @@ class CountingOperationHandler(AwaitableOperationHandler[Any, Any]):
     def __init__(
         self,
         next: AwaitableOperationHandler[Any, Any],
-        interceptor: CountingInterceptor,
+        interceptor: CountingMiddleware,
     ) -> None:
         self._next = next
         self._interceptor = interceptor
@@ -88,12 +89,12 @@ class CountingOperationHandler(AwaitableOperationHandler[Any, Any]):
         return await self._next.cancel(ctx, token)
 
 
-class MustBeFirstInterceptor(OperationHandlerInterceptor):
-    def __init__(self, counter: CountingInterceptor) -> None:
+class MustBeFirstMiddleware(OperationHandlerMiddleware):
+    def __init__(self, counter: CountingMiddleware) -> None:
         self._counter = counter
 
-    def intercept_operation_handler(
-        self, next: AwaitableOperationHandler[Any, Any]
+    def intercept(
+        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
     ) -> AwaitableOperationHandler[Any, Any]:
         return MustBeFirstOperationHandler(next, self._counter)
 
@@ -105,7 +106,7 @@ class MustBeFirstOperationHandler(AwaitableOperationHandler[Any, Any]):
     """
 
     def __init__(
-        self, next: AwaitableOperationHandler[Any, Any], counter: CountingInterceptor
+        self, next: AwaitableOperationHandler[Any, Any], counter: CountingMiddleware
     ) -> None:
         self._next = next
         self._counter = counter
@@ -143,11 +144,11 @@ class MustBeFirstOperationHandler(AwaitableOperationHandler[Any, Any]):
 
 @pytest.mark.asyncio
 async def test_async_operation_interceptors_applied():
-    counting_interceptor = CountingInterceptor()
+    counting_interceptor = CountingMiddleware()
     handler = Handler(
         user_service_handlers=[MyService()],
         interceptors=[
-            MustBeFirstInterceptor(counting_interceptor),
+            MustBeFirstMiddleware(counting_interceptor),
             counting_interceptor,
         ],
     )
@@ -179,12 +180,12 @@ async def test_async_operation_interceptors_applied():
 
 @pytest.mark.asyncio
 async def test_sync_operation_interceptors_applied():
-    counting_interceptor = CountingInterceptor()
+    counting_interceptor = CountingMiddleware()
     handler = Handler(
         user_service_handlers=[MyServiceSync()],
         executor=concurrent.futures.ThreadPoolExecutor(),
         interceptors=[
-            MustBeFirstInterceptor(counting_interceptor),
+            MustBeFirstMiddleware(counting_interceptor),
             counting_interceptor,
         ],
     )

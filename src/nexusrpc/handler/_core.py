@@ -113,6 +113,7 @@ from nexusrpc._util import get_service_definition, is_async_callable
 
 from ._common import (
     CancelOperationContext,
+    OperationContext,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
@@ -249,10 +250,10 @@ class Handler(BaseServiceCollectionHandler):
         self,
         user_service_handlers: Sequence[Any],
         executor: Optional[concurrent.futures.Executor] = None,
-        interceptors: Sequence[OperationHandlerInterceptor] | None = None,
+        interceptors: Sequence[OperationHandlerMiddleware] | None = None,
     ):
         self._interceptors = cast(
-            Sequence[OperationHandlerInterceptor], interceptors or []
+            Sequence[OperationHandlerMiddleware], interceptors or []
         )
         super().__init__(user_service_handlers, executor=executor)
         if not self.executor:
@@ -273,7 +274,7 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = self._get_operation_handler(service_handler, ctx.operation)
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
 
         op_defn = service_handler.service.operation_definitions[ctx.operation]
         deserialized_input = await input.consume(as_type=op_defn.input_type)
@@ -287,11 +288,11 @@ class Handler(BaseServiceCollectionHandler):
             token: The operation token.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = self._get_operation_handler(service_handler, ctx.operation)
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
         return await op_handler.cancel(ctx, token)
 
     def _get_operation_handler(
-        self, service_handler: ServiceHandler, operation: str
+        self, ctx: OperationContext, service_handler: ServiceHandler, operation: str
     ) -> AwaitableOperationHandler[Any, Any]:
         """
         Get the specified handler for the specified operation from the given service_handler and apply all interceptors.
@@ -303,7 +304,7 @@ class Handler(BaseServiceCollectionHandler):
         )
 
         for interceptor in reversed(self._interceptors):
-            op_handler = interceptor.intercept_operation_handler(op_handler)
+            op_handler = interceptor.intercept(ctx, op_handler)
 
         return op_handler
 
@@ -415,20 +416,21 @@ class _Executor:
         return self._executor.submit(fn, *args)
 
 
-class OperationHandlerInterceptor(ABC):
+class OperationHandlerMiddleware(ABC):
     """
     Interceptor for operation handlers.
 
     This should be extended by any operation handler interceptors.
     """
 
-    def intercept_operation_handler(
-        self, next: AwaitableOperationHandler[Any, Any]
+    def intercept(
+        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
     ) -> AwaitableOperationHandler[Any, Any]:
         """
         Method called for intercepting operation handlers.
 
         Args:
+            ctx: The :py:class:`OperationContext` that will be passed to the operation handler.
             next: The underlying operation handler that this interceptor
                 should delegate to.
 
