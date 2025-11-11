@@ -424,7 +424,9 @@ class OperationHandlerMiddleware(ABC):
     """
 
     def intercept(
-        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
+        self,
+        ctx: OperationContext,  # type: ignore[reportUnusedParameter]
+        next: AwaitableOperationHandler[Any, Any],
     ) -> AwaitableOperationHandler[Any, Any]:
         """
         Method called for intercepting operation handlers.

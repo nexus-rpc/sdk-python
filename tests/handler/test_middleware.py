@@ -8,9 +8,9 @@ import pytest
 from nexusrpc import LazyValue
 from nexusrpc.handler import (
     AwaitableOperationHandler,
-    OperationContext,
     CancelOperationContext,
     Handler,
+    OperationContext,
     OperationHandler,
     OperationHandlerMiddleware,
     StartOperationContext,
