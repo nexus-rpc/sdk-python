@@ -423,6 +423,7 @@ class OperationHandlerMiddleware(ABC):
     This should be extended by any operation handler interceptors.
     """
 
+    @abstractmethod
     def intercept(
         self,
         ctx: OperationContext,  # type: ignore[reportUnusedParameter]
@@ -440,7 +441,7 @@ class OperationHandlerMiddleware(ABC):
             The new interceptor that will be used to invoke
             :py:attr:`OperationHandler.start` or :py:attr:`OperationHandler.cancel`.
         """
-        return next
+        ...
 
 
 class _EnsuredAwaitableOperationHandler(AwaitableOperationHandler[Any, Any]):

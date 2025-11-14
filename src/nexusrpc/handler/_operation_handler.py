@@ -41,9 +41,7 @@ class OperationHandler(ABC, Generic[InputT, OutputT]):
         self, ctx: StartOperationContext, input: InputT
     ) -> (
         StartOperationResultSync[OutputT]
-        | Awaitable[StartOperationResultSync[OutputT]]
         | StartOperationResultAsync
-        | Awaitable[StartOperationResultAsync]
         | Awaitable[StartOperationResultSync[OutputT] | StartOperationResultAsync]
     ):
         """
