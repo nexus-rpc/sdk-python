@@ -7,9 +7,9 @@ import pytest
 
 from nexusrpc import LazyValue
 from nexusrpc.handler import (
-    MiddlewareSafeOperationHandler,
     CancelOperationContext,
     Handler,
+    MiddlewareSafeOperationHandler,
     OperationContext,
     OperationHandler,
     OperationHandlerMiddleware,
