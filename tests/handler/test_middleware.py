@@ -7,7 +7,7 @@ import pytest
 
 from nexusrpc import LazyValue
 from nexusrpc.handler import (
-    AwaitableOperationHandler,
+    MiddlewareSafeOperationHandler,
     CancelOperationContext,
     Handler,
     OperationContext,
@@ -59,12 +59,12 @@ class CountingMiddleware(OperationHandlerMiddleware):
         self.num_cancel = 0
 
     def intercept(
-        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
-    ) -> AwaitableOperationHandler[Any, Any]:
+        self, ctx: OperationContext, next: MiddlewareSafeOperationHandler[Any, Any]
+    ) -> MiddlewareSafeOperationHandler[Any, Any]:
         return CountingOperationHandler(next, self)
 
 
-class CountingOperationHandler(AwaitableOperationHandler[Any, Any]):
+class CountingOperationHandler(MiddlewareSafeOperationHandler[Any, Any]):
     """
     An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
     that counts the number of calls to each handler method.
@@ -72,7 +72,7 @@ class CountingOperationHandler(AwaitableOperationHandler[Any, Any]):
 
     def __init__(
         self,
-        next: AwaitableOperationHandler[Any, Any],
+        next: MiddlewareSafeOperationHandler[Any, Any],
         interceptor: CountingMiddleware,
     ) -> None:
         self._next = next
@@ -94,19 +94,21 @@ class MustBeFirstMiddleware(OperationHandlerMiddleware):
         self._counter = counter
 
     def intercept(
-        self, ctx: OperationContext, next: AwaitableOperationHandler[Any, Any]
-    ) -> AwaitableOperationHandler[Any, Any]:
+        self, ctx: OperationContext, next: MiddlewareSafeOperationHandler[Any, Any]
+    ) -> MiddlewareSafeOperationHandler[Any, Any]:
         return MustBeFirstOperationHandler(next, self._counter)
 
 
-class MustBeFirstOperationHandler(AwaitableOperationHandler[Any, Any]):
+class MustBeFirstOperationHandler(MiddlewareSafeOperationHandler[Any, Any]):
     """
     An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
     and asserts that the wrapped interceptor has a count of 0 for each handler method
     """
 
     def __init__(
-        self, next: AwaitableOperationHandler[Any, Any], counter: CountingMiddleware
+        self,
+        next: MiddlewareSafeOperationHandler[Any, Any],
+        counter: CountingMiddleware,
     ) -> None:
         self._next = next
         self._counter = counter

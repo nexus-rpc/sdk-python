@@ -20,10 +20,10 @@ from ._common import (
 )
 from ._core import Handler, OperationHandlerMiddleware
 from ._decorators import operation_handler, service_handler, sync_operation
-from ._operation_handler import AwaitableOperationHandler, OperationHandler
+from ._operation_handler import MiddlewareSafeOperationHandler, OperationHandler
 
 __all__ = [
-    "AwaitableOperationHandler",
+    "MiddlewareSafeOperationHandler",
     "CancelOperationContext",
     "Handler",
     "OperationContext",

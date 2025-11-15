@@ -119,7 +119,7 @@ from ._common import (
     StartOperationResultSync,
 )
 from ._operation_handler import (
-    AwaitableOperationHandler,
+    MiddlewareSafeOperationHandler,
     OperationHandler,
     collect_operation_handler_factories_by_method_name,
 )
@@ -293,11 +293,11 @@ class Handler(BaseServiceCollectionHandler):
 
     def _get_operation_handler(
         self, ctx: OperationContext, service_handler: ServiceHandler, operation: str
-    ) -> AwaitableOperationHandler[Any, Any]:
+    ) -> MiddlewareSafeOperationHandler[Any, Any]:
         """
         Get the specified handler for the specified operation from the given service_handler and apply all interceptors.
         """
-        op_handler: AwaitableOperationHandler[Any, Any] = (
+        op_handler: MiddlewareSafeOperationHandler[Any, Any] = (
             _EnsuredAwaitableOperationHandler(
                 self.executor, service_handler.get_operation_handler(operation)
             )
@@ -427,8 +427,8 @@ class OperationHandlerMiddleware(ABC):
     def intercept(
         self,
         ctx: OperationContext,  # type: ignore[reportUnusedParameter]
-        next: AwaitableOperationHandler[Any, Any],
-    ) -> AwaitableOperationHandler[Any, Any]:
+        next: MiddlewareSafeOperationHandler[Any, Any],
+    ) -> MiddlewareSafeOperationHandler[Any, Any]:
         """
         Method called for intercepting operation handlers.
 
@@ -444,7 +444,7 @@ class OperationHandlerMiddleware(ABC):
         ...
 
 
-class _EnsuredAwaitableOperationHandler(AwaitableOperationHandler[Any, Any]):
+class _EnsuredAwaitableOperationHandler(MiddlewareSafeOperationHandler[Any, Any]):
     """
     An :py:class:`AwaitableOperationHandler` that wraps an :py:class:`OperationHandler` and uses an :py:class:`_Executor` to ensure
     that the :py:attr:`start` and :py:attr:`cancel` methods are awaitable.
