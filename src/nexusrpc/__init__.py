@@ -25,7 +25,7 @@ from ._common import (
     OperationErrorState,
     OutputT,
 )
-from ._serializer import Content, LazyValue
+from ._serializer import Content, LazyValue, LazyValueT, Serializer
 from ._service import Operation, OperationDefinition, ServiceDefinition, service
 from ._util import (
     get_operation,
@@ -42,12 +42,14 @@ __all__ = [
     "HandlerErrorType",
     "InputT",
     "LazyValue",
+    "LazyValueT",
     "Link",
     "Operation",
     "OperationDefinition",
     "OperationError",
     "OperationErrorState",
     "OutputT",
+    "Serializer",
     "service",
     "ServiceDefinition",
     "set_operation",

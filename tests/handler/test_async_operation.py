@@ -9,9 +9,9 @@ from nexusrpc.handler import (
     OperationHandler,
     StartOperationContext,
     StartOperationResultAsync,
+    operation_handler,
     service_handler,
 )
-from nexusrpc.handler._decorators import operation_handler
 from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 _operation_results: dict[str, int] = {}
