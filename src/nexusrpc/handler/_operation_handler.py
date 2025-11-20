@@ -101,7 +101,7 @@ class SyncOperationHandler(OperationHandler[InputT, OutputT]):
         )
 
 
-class MiddlewareSafeOperationHandler(OperationHandler[InputT, OutputT], ABC):
+class MiddlewareSafeOperationHandler(OperationHandler[Any, Any], ABC):
     """
     An :py:class:`OperationHandler` where :py:attr:`start` and :py:attr:`cancel`
     can be awaited by an async runtime. It can produce a result synchronously by returning
@@ -111,8 +111,8 @@ class MiddlewareSafeOperationHandler(OperationHandler[InputT, OutputT], ABC):
 
     @abstractmethod
     async def start(
-        self, ctx: StartOperationContext, input: InputT
-    ) -> StartOperationResultSync[OutputT] | StartOperationResultAsync:
+        self, ctx: StartOperationContext, input: Any
+    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
         """
         Start the operation and return it's result or an async token.
         """
