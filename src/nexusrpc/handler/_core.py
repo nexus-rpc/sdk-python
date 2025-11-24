@@ -252,9 +252,7 @@ class Handler(BaseServiceCollectionHandler):
         executor: Optional[concurrent.futures.Executor] = None,
         middleware: Sequence[OperationHandlerMiddleware] | None = None,
     ):
-        self._interceptors = cast(
-            Sequence[OperationHandlerMiddleware], middleware or []
-        )
+        self._middleware = cast(Sequence[OperationHandlerMiddleware], middleware or [])
         super().__init__(user_service_handlers, executor=executor)
         if not self.executor:
             self._validate_all_operation_handlers_are_async()
@@ -295,14 +293,14 @@ class Handler(BaseServiceCollectionHandler):
         self, ctx: OperationContext, service_handler: ServiceHandler, operation: str
     ) -> MiddlewareSafeOperationHandler:
         """
-        Get the specified handler for the specified operation from the given service_handler and apply all interceptors.
+        Get the specified handler for the specified operation from the given service_handler and apply all middleware.
         """
         op_handler: MiddlewareSafeOperationHandler = _EnsuredAwaitableOperationHandler(
             self.executor, service_handler.get_operation_handler(operation)
         )
 
-        for interceptor in reversed(self._interceptors):
-            op_handler = interceptor.intercept(ctx, op_handler)
+        for middleware in reversed(self._middleware):
+            op_handler = middleware.intercept(ctx, op_handler)
 
         return op_handler
 
@@ -416,9 +414,9 @@ class _Executor:
 
 class OperationHandlerMiddleware(ABC):
     """
-    Interceptor for operation handlers.
+    Middleware for operation handlers.
 
-    This should be extended by any operation handler interceptors.
+    This should be extended by any operation handler middelware.
     """
 
     @abstractmethod
@@ -432,11 +430,11 @@ class OperationHandlerMiddleware(ABC):
 
         Args:
             ctx: The :py:class:`OperationContext` that will be passed to the operation handler.
-            next: The underlying operation handler that this interceptor
+            next: The underlying operation handler that this middleware
                 should delegate to.
 
         Returns:
-            The new interceptor that will be used to invoke
+            The new middleware that will be used to invoke
             :py:attr:`OperationHandler.start` or :py:attr:`OperationHandler.cancel`.
         """
         ...

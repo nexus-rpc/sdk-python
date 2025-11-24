@@ -66,26 +66,26 @@ class CountingMiddleware(OperationHandlerMiddleware):
 
 class CountingOperationHandler(MiddlewareSafeOperationHandler):
     """
-    An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
+    An :py:class:`AwaitableOperationHandler` that wraps a counting middleware
     that counts the number of calls to each handler method.
     """
 
     def __init__(
         self,
         next: MiddlewareSafeOperationHandler,
-        interceptor: CountingMiddleware,
+        middleware: CountingMiddleware,
     ) -> None:
         self._next = next
-        self._interceptor = interceptor
+        self._middleware = middleware
 
     async def start(
         self, ctx: StartOperationContext, input: Any
     ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
-        self._interceptor.num_start += 1
+        self._middleware.num_start += 1
         return await self._next.start(ctx, input)
 
     async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
-        self._interceptor.num_cancel += 1
+        self._middleware.num_cancel += 1
         return await self._next.cancel(ctx, token)
 
 
@@ -101,8 +101,8 @@ class MustBeFirstMiddleware(OperationHandlerMiddleware):
 
 class MustBeFirstOperationHandler(MiddlewareSafeOperationHandler):
     """
-    An :py:class:`AwaitableOperationHandler` that wraps a counting interceptor
-    and asserts that the wrapped interceptor has a count of 0 for each handler method
+    An :py:class:`AwaitableOperationHandler` that wraps a counting middleware
+    and asserts that the wrapped middleware has a count of 0 for each handler method
     """
 
     def __init__(
@@ -145,13 +145,13 @@ class MustBeFirstOperationHandler(MiddlewareSafeOperationHandler):
 
 
 @pytest.mark.asyncio
-async def test_async_operation_interceptors_applied():
-    counting_interceptor = CountingMiddleware()
+async def test_async_operation_middleware_applied():
+    counting_middleware = CountingMiddleware()
     handler = Handler(
         user_service_handlers=[MyService()],
         middleware=[
-            MustBeFirstMiddleware(counting_interceptor),
-            counting_interceptor,
+            MustBeFirstMiddleware(counting_middleware),
+            counting_middleware,
         ],
     )
     start_ctx = StartOperationContext(
@@ -176,19 +176,19 @@ async def test_async_operation_interceptors_applied():
     await handler.cancel_operation(cancel_ctx, start_result.token)
     assert start_result.token not in _operation_results
 
-    assert counting_interceptor.num_start == 1
-    assert counting_interceptor.num_cancel == 1
+    assert counting_middleware.num_start == 1
+    assert counting_middleware.num_cancel == 1
 
 
 @pytest.mark.asyncio
-async def test_sync_operation_interceptors_applied():
-    counting_interceptor = CountingMiddleware()
+async def test_sync_operation_middleware_applied():
+    counting_middleware = CountingMiddleware()
     handler = Handler(
         user_service_handlers=[MyServiceSync()],
         executor=concurrent.futures.ThreadPoolExecutor(),
         middleware=[
-            MustBeFirstMiddleware(counting_interceptor),
-            counting_interceptor,
+            MustBeFirstMiddleware(counting_middleware),
+            counting_middleware,
         ],
     )
     start_ctx = StartOperationContext(
@@ -204,5 +204,5 @@ async def test_sync_operation_interceptors_applied():
     assert isinstance(start_result, StartOperationResultSync)
     assert start_result.value == 2
 
-    assert counting_interceptor.num_start == 1
-    assert counting_interceptor.num_cancel == 0
+    assert counting_middleware.num_start == 1
+    assert counting_middleware.num_cancel == 0
