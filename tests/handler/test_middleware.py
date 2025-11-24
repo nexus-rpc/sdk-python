@@ -149,7 +149,7 @@ async def test_async_operation_interceptors_applied():
     counting_interceptor = CountingMiddleware()
     handler = Handler(
         user_service_handlers=[MyService()],
-        interceptors=[
+        middleware=[
             MustBeFirstMiddleware(counting_interceptor),
             counting_interceptor,
         ],
@@ -186,7 +186,7 @@ async def test_sync_operation_interceptors_applied():
     handler = Handler(
         user_service_handlers=[MyServiceSync()],
         executor=concurrent.futures.ThreadPoolExecutor(),
-        interceptors=[
+        middleware=[
             MustBeFirstMiddleware(counting_interceptor),
             counting_interceptor,
         ],

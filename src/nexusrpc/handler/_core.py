@@ -250,10 +250,10 @@ class Handler(BaseServiceCollectionHandler):
         self,
         user_service_handlers: Sequence[Any],
         executor: Optional[concurrent.futures.Executor] = None,
-        interceptors: Sequence[OperationHandlerMiddleware] | None = None,
+        middleware: Sequence[OperationHandlerMiddleware] | None = None,
     ):
         self._interceptors = cast(
-            Sequence[OperationHandlerMiddleware], interceptors or []
+            Sequence[OperationHandlerMiddleware], middleware or []
         )
         super().__init__(user_service_handlers, executor=executor)
         if not self.executor:
