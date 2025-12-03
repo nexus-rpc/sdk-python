@@ -102,7 +102,7 @@ import concurrent.futures
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 from typing_extensions import Self, TypeGuard
 
@@ -113,11 +113,13 @@ from nexusrpc._util import get_service_definition, is_async_callable
 
 from ._common import (
     CancelOperationContext,
+    OperationContext,
     StartOperationContext,
     StartOperationResultAsync,
     StartOperationResultSync,
 )
 from ._operation_handler import (
+    MiddlewareSafeOperationHandler,
     OperationHandler,
     collect_operation_handler_factories_by_method_name,
 )
@@ -248,7 +250,9 @@ class Handler(BaseServiceCollectionHandler):
         self,
         user_service_handlers: Sequence[Any],
         executor: Optional[concurrent.futures.Executor] = None,
+        middleware: Sequence[OperationHandlerMiddleware] | None = None,
     ):
+        self._middleware = cast(Sequence[OperationHandlerMiddleware], middleware or [])
         super().__init__(user_service_handlers, executor=executor)
         if not self.executor:
             self._validate_all_operation_handlers_are_async()
@@ -268,17 +272,11 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
+
         op_defn = service_handler.service.operation_definitions[ctx.operation]
         deserialized_input = await input.consume(as_type=op_defn.input_type)
-        # TODO(preview): apply middleware stack
-        if is_async_callable(op_handler.start):
-            return await op_handler.start(ctx, deserialized_input)
-        else:
-            assert self.executor
-            return await self.executor.submit_to_event_loop(
-                op_handler.start, ctx, deserialized_input
-            )
+        return await op_handler.start(ctx, deserialized_input)
 
     async def cancel_operation(self, ctx: CancelOperationContext, token: str) -> None:
         """Handle a Cancel Operation request.
@@ -288,12 +286,23 @@ class Handler(BaseServiceCollectionHandler):
             token: The operation token.
         """
         service_handler = self._get_service_handler(ctx.service)
-        op_handler = service_handler._get_operation_handler(ctx.operation)  # pyright: ignore[reportPrivateUsage]
-        if is_async_callable(op_handler.cancel):
-            return await op_handler.cancel(ctx, token)
-        else:
-            assert self.executor
-            return self.executor.submit(op_handler.cancel, ctx, token).result()
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
+        return await op_handler.cancel(ctx, token)
+
+    def _get_operation_handler(
+        self, ctx: OperationContext, service_handler: ServiceHandler, operation: str
+    ) -> MiddlewareSafeOperationHandler:
+        """
+        Get the specified handler for the specified operation from the given service_handler and apply all middleware.
+        """
+        op_handler: MiddlewareSafeOperationHandler = _EnsuredAwaitableOperationHandler(
+            self.executor, service_handler.get_operation_handler(operation)
+        )
+
+        for middleware in reversed(self._middleware):
+            op_handler = middleware.intercept(ctx, op_handler)
+
+        return op_handler
 
     def _validate_all_operation_handlers_are_async(self) -> None:
         for service_handler in self.service_handlers.values():
@@ -360,7 +369,7 @@ class ServiceHandler:
             operation_handlers=op_handlers,
         )
 
-    def _get_operation_handler(self, operation_name: str) -> OperationHandler[Any, Any]:
+    def get_operation_handler(self, operation_name: str) -> OperationHandler[Any, Any]:
         """Return an operation handler, given the operation name."""
         if operation_name not in self.service.operation_definitions:
             raise HandlerError(
@@ -401,3 +410,70 @@ class _Executor:
         self, fn: Callable[..., Any], *args: Any
     ) -> concurrent.futures.Future[Any]:
         return self._executor.submit(fn, *args)
+
+
+class OperationHandlerMiddleware(ABC):
+    """
+    Middleware for operation handlers.
+
+    This should be extended by any operation handler middelware.
+    """
+
+    @abstractmethod
+    def intercept(
+        self,
+        ctx: OperationContext,  # type: ignore[reportUnusedParameter]
+        next: MiddlewareSafeOperationHandler,
+    ) -> MiddlewareSafeOperationHandler:
+        """
+        Method called for intercepting operation handlers.
+
+        Args:
+            ctx: The :py:class:`OperationContext` that will be passed to the operation handler.
+            next: The underlying operation handler that this middleware
+                should delegate to.
+
+        Returns:
+            The new middleware that will be used to invoke
+            :py:attr:`OperationHandler.start` or :py:attr:`OperationHandler.cancel`.
+        """
+        ...
+
+
+class _EnsuredAwaitableOperationHandler(MiddlewareSafeOperationHandler):
+    """
+    An :py:class:`AwaitableOperationHandler` that wraps an :py:class:`OperationHandler` and uses an :py:class:`_Executor` to ensure
+    that the :py:attr:`start` and :py:attr:`cancel` methods are awaitable.
+    """
+
+    def __init__(
+        self,
+        executor: _Executor | None,
+        op_handler: OperationHandler[Any, Any],
+    ):
+        self._executor = executor
+        self._op_handler = op_handler
+
+    async def start(
+        self, ctx: StartOperationContext, input: Any
+    ) -> StartOperationResultSync[Any] | StartOperationResultAsync:
+        """
+        Start the operation using the wrapped :py:class:`OperationHandler`.
+        """
+        if is_async_callable(self._op_handler.start):
+            return await self._op_handler.start(ctx, input)
+        else:
+            assert self._executor
+            return await self._executor.submit_to_event_loop(
+                self._op_handler.start, ctx, input
+            )
+
+    async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
+        """
+        Cancel an operation using the wrapped :py:class:`OperationHandler`.
+        """
+        if is_async_callable(self._op_handler.cancel):
+            return await self._op_handler.cancel(ctx, token)
+        else:
+            assert self._executor
+            return self._executor.submit(self._op_handler.cancel, ctx, token).result()
