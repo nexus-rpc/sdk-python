@@ -22,17 +22,23 @@ class OperationTaskCancellation(ABC):
 
     @abstractmethod
     def is_cancelled(self) -> bool:
-        """Return True if the associated task has been cancelled."""
+        """
+        Return True if the associated task has been cancelled.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def cancellation_reason(self) -> Optional[str]:
-        """Provide additional context for the cancellation, if available."""
+        """
+        Provide additional context for the cancellation, if available.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def wait_until_cancelled_sync(self, timeout: Optional[float] = None) -> bool:
-        """Block until cancellation occurs or the optional timeout elapses. Nexus worker implementations may return `True` for :py:attr:`is_cancelled` before this method returns and therefore may cause a race condition if both are used in tandem."""
+        """
+        Block until cancellation occurs or the optional timeout elapses. Nexus worker implementations may return `True` for :py:attr:`is_cancelled` before this method returns and therefore may cause a race condition if both are used in tandem.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -43,9 +49,11 @@ class OperationTaskCancellation(ABC):
 
 @dataclass(frozen=True, kw_only=True)
 class OperationContext(ABC):
-    """Context for the execution of the requested operation method.
+    """
+    Context for the execution of the requested operation method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
     def __new__(cls, *args: Any, **kwargs: Any):
         if cls is OperationContext:
@@ -64,7 +72,7 @@ class OperationContext(ABC):
     The name of the operation.
     """
 
-    headers: Mapping[str, str] = field(default_factory=dict)
+    headers: Mapping[str, str]
     """
     Optional header fields sent by the caller.
     """
@@ -83,9 +91,11 @@ class OperationContext(ABC):
 
 @dataclass(frozen=True, kw_only=True)
 class StartOperationContext(OperationContext):
-    """Context for the start method.
+    """
+    Context for the start method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
     request_id: str
     """
@@ -122,9 +132,11 @@ class StartOperationContext(OperationContext):
 
 @dataclass(frozen=True, kw_only=True)
 class CancelOperationContext(OperationContext):
-    """Context for the cancel method.
+    """
+    Context for the cancel method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
 
 @dataclass(frozen=True)
