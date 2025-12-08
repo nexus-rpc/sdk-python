@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Generic, Optional
 
 from nexusrpc._common import Link, OutputT
@@ -21,17 +22,23 @@ class OperationTaskCancellation(ABC):
 
     @abstractmethod
     def is_cancelled(self) -> bool:
-        """Return True if the associated task has been cancelled."""
+        """
+        Return True if the associated task has been cancelled.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def cancellation_reason(self) -> Optional[str]:
-        """Provide additional context for the cancellation, if available."""
+        """
+        Provide additional context for the cancellation, if available.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def wait_until_cancelled_sync(self, timeout: Optional[float] = None) -> bool:
-        """Block until cancellation occurs or the optional timeout elapses. Nexus worker implementations may return `True` for :py:attr:`is_cancelled` before this method returns and therefore may cause a race condition if both are used in tandem."""
+        """
+        Block until cancellation occurs or the optional timeout elapses. Nexus worker implementations may return `True` for :py:attr:`is_cancelled` before this method returns and therefore may cause a race condition if both are used in tandem.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -40,11 +47,13 @@ class OperationTaskCancellation(ABC):
         raise NotImplementedError
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class OperationContext(ABC):
-    """Context for the execution of the requested operation method.
+    """
+    Context for the execution of the requested operation method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
     def __new__(cls, *args: Any, **kwargs: Any):
         if cls is OperationContext:
@@ -67,17 +76,26 @@ class OperationContext(ABC):
     """
     Optional header fields sent by the caller.
     """
+
     task_cancellation: OperationTaskCancellation
     """
     Task cancellation information indicating that a running task should be interrupted. This is distinct from operation cancellation.
     """
 
+    request_deadline: Optional[datetime] = None
+    """
+    The deadline for the operation handler method. Note that this is the time by which the
+    current _request_ should complete, not the _operation_'s deadline.
+    """
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, kw_only=True)
 class StartOperationContext(OperationContext):
-    """Context for the start method.
+    """
+    Context for the start method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
     request_id: str
     """
@@ -112,11 +130,13 @@ class StartOperationContext(OperationContext):
     """
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class CancelOperationContext(OperationContext):
-    """Context for the cancel method.
+    """
+    Context for the cancel method.
 
-    Includes information from the request."""
+    Includes information from the request.
+    """
 
 
 @dataclass(frozen=True)
