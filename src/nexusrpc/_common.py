@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar, Self
+from typing import Optional, TypeVar
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -33,54 +33,24 @@ class HandlerError(Exception):
             import nexusrpc
 
             # Raise a bad request error
-            raise nexusrpc.HandlerError.from_error_type(
+            raise nexusrpc.HandlerError(
                 "Invalid input provided",
                 error_type=nexusrpc.HandlerErrorType.BAD_REQUEST
             )
 
             # Raise a retryable internal error
-            raise nexusrpc.HandlerError.from_error_type(
+            raise nexusrpc.HandlerError(
                 "Database unavailable",
                 error_type=nexusrpc.HandlerErrorType.INTERNAL,
                 retryable_override=True
             )
     """
 
-    @classmethod
-    def from_raw_error(
-        cls,
-        message: str,
-        *,
-        raw_error_type: str,
-        retryable_override: bool | None = None,
-    ) -> Self:
-        try:
-            error_type = HandlerErrorType[raw_error_type]
-        except KeyError:
-            logger.warning(
-                f"Unknown Nexus HandlerErrorType: {raw_error_type}"
-            )
-            error_type = HandlerErrorType.UNKNOWN
-        return cls(message, error_type=error_type, raw_error_type=raw_error_type, retryable_override=retryable_override)
-
-    @classmethod
-    def from_error_type(
-            cls,
-            message: str,
-            *,
-            error_type: HandlerErrorType,
-            retryable_override: bool | None = None,
-    ) -> Self:
-        return cls(message,
-                   error_type=error_type,
-                   retryable_override=retryable_override)
-
     def __init__(
         self,
         message: str,
         *,
-        error_type: HandlerErrorType,
-        raw_error_type: str | None = None,
+        error_type: HandlerErrorType | str,
         retryable_override: bool | None = None,
     ):
         """
@@ -89,18 +59,32 @@ class HandlerError(Exception):
         :param message: A descriptive message for the error. This will become
                         the `message` in the resulting Nexus Failure object.
 
-        :param error_type: The :py:class:`HandlerErrorType` of the error.
-
-        :param raw_error_type: The type of the error as a string. If not provided,
-                               defaults to the string value of the error type.
+        :param error_type: The :py:class:`HandlerErrorType` of the error, or a
+                          string representation of the error type. If a string is
+                          provided and doesn't match a known error type, it will
+                          be treated as UNKNOWN and a warning will be logged.
 
         :param retryable_override: Optionally set whether the error should be
                                    retried. By default, the error type is used
                                    to determine this.
         """
         super().__init__(message)
+
+        # Handle string error types
+        if isinstance(error_type, str):
+            raw_error_type = error_type
+            try:
+                error_type = HandlerErrorType[error_type]
+            except KeyError:
+                logger.warning(
+                    f"Unknown Nexus HandlerErrorType: {error_type}"
+                )
+                error_type = HandlerErrorType.UNKNOWN
+        else:
+            raw_error_type = error_type.value
+
         self.error_type = error_type
-        self.raw_error_type = raw_error_type if raw_error_type is not None else error_type.value
+        self.raw_error_type = raw_error_type
         self.retryable_override = retryable_override
 
     @property
