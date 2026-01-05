@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Self
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 InputT = TypeVar("InputT", contravariant=True)
 """Operation input type"""
@@ -30,25 +33,55 @@ class HandlerError(Exception):
             import nexusrpc
 
             # Raise a bad request error
-            raise nexusrpc.HandlerError(
+            raise nexusrpc.HandlerError.from_error_type(
                 "Invalid input provided",
-                type=nexusrpc.HandlerErrorType.BAD_REQUEST
+                error_type=nexusrpc.HandlerErrorType.BAD_REQUEST
             )
 
             # Raise a retryable internal error
-            raise nexusrpc.HandlerError(
+            raise nexusrpc.HandlerError.from_error_type(
                 "Database unavailable",
-                type=nexusrpc.HandlerErrorType.INTERNAL,
-                retryable=True
+                error_type=nexusrpc.HandlerErrorType.INTERNAL,
+                retryable_override=True
             )
     """
+
+    @classmethod
+    def from_raw_error(
+        cls,
+        message: str,
+        *,
+        raw_error_type: str,
+        retryable_override: bool | None = None,
+    ) -> Self:
+        try:
+            error_type = HandlerErrorType[raw_error_type]
+        except KeyError:
+            logger.warning(
+                f"Unknown Nexus HandlerErrorType: {raw_error_type}"
+            )
+            error_type = HandlerErrorType.UNKNOWN
+        return cls(message, error_type=error_type, raw_error_type=raw_error_type, retryable_override=retryable_override)
+
+    @classmethod
+    def from_error_type(
+            cls,
+            message: str,
+            *,
+            error_type: HandlerErrorType,
+            retryable_override: bool | None = None,
+    ) -> Self:
+        return cls(message,
+                   error_type=error_type,
+                   retryable_override=retryable_override)
 
     def __init__(
         self,
         message: str,
         *,
-        type: HandlerErrorType,
-        retryable_override: Optional[bool] = None,
+        error_type: HandlerErrorType,
+        raw_error_type: str | None = None,
+        retryable_override: bool | None = None,
     ):
         """
         Initialize a new HandlerError.
@@ -56,22 +89,19 @@ class HandlerError(Exception):
         :param message: A descriptive message for the error. This will become
                         the `message` in the resulting Nexus Failure object.
 
-        :param type: The :py:class:`HandlerErrorType` of the error.
+        :param error_type: The :py:class:`HandlerErrorType` of the error.
+
+        :param raw_error_type: The type of the error as a string. If not provided,
+                               defaults to the string value of the error type.
 
         :param retryable_override: Optionally set whether the error should be
                                    retried. By default, the error type is used
                                    to determine this.
         """
         super().__init__(message)
-        self._type = type
-        self._retryable_override = retryable_override
-
-    @property
-    def retryable_override(self) -> Optional[bool]:
-        """
-        The optional retryability override set when this error was created.
-        """
-        return self._retryable_override
+        self.error_type = error_type
+        self.raw_error_type = raw_error_type if raw_error_type is not None else error_type.value
+        self.retryable_override = retryable_override
 
     @property
     def retryable(self) -> bool:
@@ -82,46 +112,23 @@ class HandlerError(Exception):
         error type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        if self._retryable_override is not None:
-            return self._retryable_override
+        if self.retryable_override is not None:
+            return self.retryable_override
 
-        non_retryable_types = {
-            HandlerErrorType.BAD_REQUEST,
-            HandlerErrorType.UNAUTHENTICATED,
-            HandlerErrorType.UNAUTHORIZED,
-            HandlerErrorType.NOT_FOUND,
-            HandlerErrorType.CONFLICT,
-            HandlerErrorType.NOT_IMPLEMENTED,
-        }
-        retryable_types = {
-            HandlerErrorType.REQUEST_TIMEOUT,
-            HandlerErrorType.RESOURCE_EXHAUSTED,
-            HandlerErrorType.INTERNAL,
-            HandlerErrorType.UNAVAILABLE,
-            HandlerErrorType.UPSTREAM_TIMEOUT,
-        }
-        if self._type in non_retryable_types:
-            return False
-        elif self._type in retryable_types:
-            return True
-        else:
-            return True
-
-    @property
-    def type(self) -> HandlerErrorType:
-        """
-        The type of handler error.
-
-        See :py:class:`HandlerErrorType` and
-        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
-        """
-        return self._type
+        # Error types are retriable by default so anything not in NON_RETRYABLE_ERRORS
+        # is considered retriable even if it's not in RETRYABLE_ERRORS
+        return self.error_type not in HandlerErrorType.NON_RETRYABLE_ERRORS
 
 
 class HandlerErrorType(Enum):
     """Nexus handler error types.
 
     See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+    """
+
+    UNKNOWN = "UNKNOWN"
+    """
+    The error type is unknown.Subsequent requests by the client are permissible.
     """
 
     BAD_REQUEST = "BAD_REQUEST"
@@ -202,6 +209,24 @@ class HandlerErrorType(Enum):
 
     Subsequent requests by the client are permissible.
     """
+
+HandlerErrorType.NON_RETRYABLE_ERRORS = frozenset({
+    HandlerErrorType.BAD_REQUEST,
+    HandlerErrorType.UNAUTHENTICATED,
+    HandlerErrorType.UNAUTHORIZED,
+    HandlerErrorType.NOT_FOUND,
+    HandlerErrorType.CONFLICT,
+    HandlerErrorType.NOT_IMPLEMENTED,
+})
+
+HandlerErrorType.RETRYABLE_ERRORS = frozenset({
+    HandlerErrorType.REQUEST_TIMEOUT,
+    HandlerErrorType.RESOURCE_EXHAUSTED,
+    HandlerErrorType.INTERNAL,
+    HandlerErrorType.UNAVAILABLE,
+    HandlerErrorType.UPSTREAM_TIMEOUT,
+    HandlerErrorType.UNKNOWN,
+})
 
 
 class OperationError(Exception):
