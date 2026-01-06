@@ -12,7 +12,7 @@ authors = [{ name = "Temporal Technologies", email = "sdk@temporal.io" }]
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["ruff>=0.12.0", "typing-extensions>=4.12.2"]
+dependencies = ["typing-extensions>=4.12.2"]
 
 [dependency-groups]
 dev = [
