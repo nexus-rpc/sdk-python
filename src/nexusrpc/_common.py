@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
-from typing import ClassVar, TypeVar
+from typing import TypeVar
 
 logger = getLogger(__name__)
 
@@ -97,9 +97,25 @@ class HandlerError(Exception):
         if self.retryable_override is not None:
             return self.retryable_override
 
-        # Error types are retriable by default so anything not in NON_RETRYABLE_ERRORS
-        # is considered retriable even if it's not in RETRYABLE_ERRORS
-        return self.error_type not in HandlerErrorType.NON_RETRYABLE_ERRORS  # type: ignore[operator]
+        match self.error_type:
+            case (
+                HandlerErrorType.BAD_REQUEST
+                | HandlerErrorType.UNAUTHENTICATED
+                | HandlerErrorType.UNAUTHORIZED
+                | HandlerErrorType.NOT_FOUND
+                | HandlerErrorType.CONFLICT
+                | HandlerErrorType.NOT_IMPLEMENTED
+            ):
+                return False
+            case (
+                HandlerErrorType.RESOURCE_EXHAUSTED
+                | HandlerErrorType.REQUEST_TIMEOUT
+                | HandlerErrorType.INTERNAL
+                | HandlerErrorType.UNAVAILABLE
+                | HandlerErrorType.UPSTREAM_TIMEOUT
+                | HandlerErrorType.UNKNOWN
+            ):
+                return True
 
 
 class HandlerErrorType(Enum):
@@ -191,32 +207,6 @@ class HandlerErrorType(Enum):
 
     Subsequent requests by the client are permissible.
     """
-
-    NON_RETRYABLE_ERRORS: ClassVar[frozenset[HandlerErrorType]]
-    RETRYABLE_ERRORS: ClassVar[frozenset[HandlerErrorType]]
-
-
-HandlerErrorType.NON_RETRYABLE_ERRORS = frozenset(
-    {
-        HandlerErrorType.BAD_REQUEST,
-        HandlerErrorType.UNAUTHENTICATED,
-        HandlerErrorType.UNAUTHORIZED,
-        HandlerErrorType.NOT_FOUND,
-        HandlerErrorType.CONFLICT,
-        HandlerErrorType.NOT_IMPLEMENTED,
-    }
-)
-
-HandlerErrorType.RETRYABLE_ERRORS = frozenset(
-    {
-        HandlerErrorType.REQUEST_TIMEOUT,
-        HandlerErrorType.RESOURCE_EXHAUSTED,
-        HandlerErrorType.INTERNAL,
-        HandlerErrorType.UNAVAILABLE,
-        HandlerErrorType.UPSTREAM_TIMEOUT,
-        HandlerErrorType.UNKNOWN,
-    }
-)
 
 
 class OperationError(Exception):
