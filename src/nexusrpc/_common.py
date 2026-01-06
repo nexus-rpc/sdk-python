@@ -112,7 +112,7 @@ class HandlerErrorType(Enum):
 
     UNKNOWN = "UNKNOWN"
     """
-    The error type is unknown.Subsequent requests by the client are permissible.
+    The error type is unknown. Subsequent requests by the client are permissible.
     """
 
     BAD_REQUEST = "BAD_REQUEST"
