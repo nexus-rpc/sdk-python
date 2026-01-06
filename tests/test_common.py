@@ -58,6 +58,7 @@ def test_handler_error_non_retryable_type():
     assert err.error_type == non_retryable_error_type
     assert err.raw_error_type == non_retryable_error_type.value
 
+
 def test_handler_error_unknown_error_type():
     err = HandlerError("test", error_type="SOME_UNKNOWN_TYPE")
     assert err.retryable

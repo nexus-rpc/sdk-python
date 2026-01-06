@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
 from logging import getLogger
+from typing import ClassVar, TypeVar
 
 logger = getLogger(__name__)
 
@@ -76,9 +76,7 @@ class HandlerError(Exception):
             try:
                 error_type = HandlerErrorType[error_type]
             except KeyError:
-                logger.warning(
-                    f"Unknown Nexus HandlerErrorType: {error_type}"
-                )
+                logger.warning(f"Unknown Nexus HandlerErrorType: {error_type}")
                 error_type = HandlerErrorType.UNKNOWN
         else:
             raw_error_type = error_type.value
@@ -101,7 +99,7 @@ class HandlerError(Exception):
 
         # Error types are retriable by default so anything not in NON_RETRYABLE_ERRORS
         # is considered retriable even if it's not in RETRYABLE_ERRORS
-        return self.error_type not in HandlerErrorType.NON_RETRYABLE_ERRORS
+        return self.error_type not in HandlerErrorType.NON_RETRYABLE_ERRORS  # type: ignore[operator]
 
 
 class HandlerErrorType(Enum):
@@ -194,23 +192,31 @@ class HandlerErrorType(Enum):
     Subsequent requests by the client are permissible.
     """
 
-HandlerErrorType.NON_RETRYABLE_ERRORS = frozenset({
-    HandlerErrorType.BAD_REQUEST,
-    HandlerErrorType.UNAUTHENTICATED,
-    HandlerErrorType.UNAUTHORIZED,
-    HandlerErrorType.NOT_FOUND,
-    HandlerErrorType.CONFLICT,
-    HandlerErrorType.NOT_IMPLEMENTED,
-})
+    NON_RETRYABLE_ERRORS: ClassVar[frozenset[HandlerErrorType]]
+    RETRYABLE_ERRORS: ClassVar[frozenset[HandlerErrorType]]
 
-HandlerErrorType.RETRYABLE_ERRORS = frozenset({
-    HandlerErrorType.REQUEST_TIMEOUT,
-    HandlerErrorType.RESOURCE_EXHAUSTED,
-    HandlerErrorType.INTERNAL,
-    HandlerErrorType.UNAVAILABLE,
-    HandlerErrorType.UPSTREAM_TIMEOUT,
-    HandlerErrorType.UNKNOWN,
-})
+
+HandlerErrorType.NON_RETRYABLE_ERRORS = frozenset(
+    {
+        HandlerErrorType.BAD_REQUEST,
+        HandlerErrorType.UNAUTHENTICATED,
+        HandlerErrorType.UNAUTHORIZED,
+        HandlerErrorType.NOT_FOUND,
+        HandlerErrorType.CONFLICT,
+        HandlerErrorType.NOT_IMPLEMENTED,
+    }
+)
+
+HandlerErrorType.RETRYABLE_ERRORS = frozenset(
+    {
+        HandlerErrorType.REQUEST_TIMEOUT,
+        HandlerErrorType.RESOURCE_EXHAUSTED,
+        HandlerErrorType.INTERNAL,
+        HandlerErrorType.UNAVAILABLE,
+        HandlerErrorType.UPSTREAM_TIMEOUT,
+        HandlerErrorType.UNKNOWN,
+    }
+)
 
 
 class OperationError(Exception):
