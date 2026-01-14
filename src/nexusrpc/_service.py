@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 import typing
+import urllib.parse
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import (
@@ -27,6 +28,24 @@ from nexusrpc._util import (
     get_service_definition,
     set_service_definition,
 )
+
+
+def _validate_nexus_name(name: str) -> None:
+    """Validate that a name is valid for use as a Nexus service or operation name.
+
+    Per the spec: "The service name and operation name MUST not be empty and
+    may contain any arbitrary character sequence as long as they're encoded
+    into the URL."
+
+    Raises:
+        ValueError: If the name is empty, whitespace-only, or cannot be URL-encoded.
+    """
+    if not name or not name.strip():
+        raise ValueError("must not be empty")
+    try:
+        _ = urllib.parse.quote(name, safe="")
+    except (UnicodeEncodeError, KeyError):
+        raise ValueError("contains characters that cannot be URL-encoded")
 
 
 @dataclass
@@ -134,9 +153,12 @@ def service(
     # and __dict__
 
     def decorator(cls: type[ServiceT]) -> type[ServiceT]:
-        if name is not None and not name:
-            raise ValueError("Service name must not be empty.")
-        defn = ServiceDefinition.from_class(cls, name or cls.__name__)
+        service_name = name if name is not None else cls.__name__
+        try:
+            _validate_nexus_name(service_name)
+        except ValueError as e:
+            raise ValueError(f"Service name {service_name!r} {e}.")
+        defn = ServiceDefinition.from_class(cls, service_name)
         set_service_definition(cls, defn)
 
         # In order for callers to refer to operation definitions at run-time, a decorated user
@@ -239,10 +261,18 @@ class ServiceDefinition:
 
     def _validation_errors(self) -> list[str]:
         errors = []
-        if not self.name:
-            errors.append("Service has no name")
-        seen_method_names = set()
+        # Validate service name
+        try:
+            _validate_nexus_name(self.name)
+        except ValueError as e:
+            errors.append(f"Service name {self.name!r} {e}")
+        # Validate operation names and check for duplicate method names
+        seen_method_names: set[str] = set()
         for op_defn in self.operation_definitions.values():
+            try:
+                _validate_nexus_name(op_defn.name)
+            except ValueError as e:
+                errors.append(f"Operation name {op_defn.name!r} {e}")
             if op_defn.method_name in seen_method_names:
                 errors.append(
                     f"Operation method name '{op_defn.method_name}' is not unique"
