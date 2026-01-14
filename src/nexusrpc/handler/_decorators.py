@@ -266,7 +266,14 @@ def sync_operation(
                 _start.__doc__ = start.__doc__
                 return nexusrpc.handler._syncio.SyncOperationHandler(_start)
 
-        # TODO(preview): these types should only need to be inspected if the user has not supplied a service definition.
+        # Type inspection happens here at @sync_operation decoration time, before we know
+        # if a service definition will be provided to @service_handler. While we could
+        # theoretically defer this inspection until @service_handler time (and skip it when
+        # a service definition provides the types), doing so would require storing the
+        # original method reference and implementing lazy evaluation. The added complexity
+        # isn't worth the marginal performance benefit. When types are None and a service
+        # definition is provided, type validation is simply skipped (see
+        # validate_operation_handler_methods in _operation_handler.py).
         input_type, output_type = get_start_method_input_and_output_type_annotations(  # type: ignore[var-annotated]
             start  # type: ignore[arg-type]
         )
