@@ -144,14 +144,6 @@ def service(
                 process: nexusrpc.Operation[ProcessInput, ProcessOutput]
     """
 
-    # TODO(preview): error on attempt foo = Operation[int, str](name="bar")
-    #            The input and output types are not accessible on the instance.
-    # TODO(preview): Support foo = Operation[int, str]? E.g. via
-    # ops = {name: nexusrpc.Operation[int, int] for name in op_names}
-    # service_cls = nexusrpc.service(type("ServiceContract", (), ops))
-    # This will require forming a union of operations disovered via __annotations__
-    # and __dict__
-
     def decorator(cls: type[ServiceT]) -> type[ServiceT]:
         service_name = name if name is not None else cls.__name__
         try:
