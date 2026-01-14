@@ -124,29 +124,6 @@ class AsyncioHandlerWithSyncioOperation(_TestCase):
     error_message = "you have not supplied an executor"
 
 
-class ServiceDefinitionHasDuplicateMethodNames(_TestCase):
-    @staticmethod
-    def build():
-        @nexusrpc.service
-        class SD:
-            my_op: nexusrpc.Operation[None, None] = nexusrpc.Operation(
-                name="my_op",
-                method_name="my_op",
-                input_type=None,
-                output_type=None,
-            )
-            my_op_2: nexusrpc.Operation[None, None] = nexusrpc.Operation(
-                name="my_op_2",
-                method_name="my_op",
-                input_type=None,
-                output_type=None,
-            )
-
-        _ = SD
-
-    error_message = "Operation method name 'my_op' is not unique"
-
-
 class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_TestCase):
     @staticmethod
     def build():
@@ -168,7 +145,6 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         ServiceDefinitionHasExtraOp,
         ServiceHandlerHasExtraOp,
         AsyncioHandlerWithSyncioOperation,
-        ServiceDefinitionHasDuplicateMethodNames,
         OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition,
     ],
 )

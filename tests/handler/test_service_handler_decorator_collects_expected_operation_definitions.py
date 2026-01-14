@@ -43,7 +43,6 @@ class ManualOperationHandler(_TestCase):
     expected_operations = {
         "operation": nexusrpc.Operation(
             name="operation",
-            method_name="operation",
             input_type=Input,
             output_type=Output,
         ),
@@ -59,7 +58,6 @@ class ManualOperationHandlerWithNameOverride(_TestCase):
     expected_operations = {
         "operation": nexusrpc.Operation(
             name="operation-name",
-            method_name="operation",
             input_type=Input,
             output_type=Output,
         ),
@@ -77,7 +75,6 @@ class SyncOperation(_TestCase):
     expected_operations = {
         "sync_operation_handler": nexusrpc.Operation(
             name="sync_operation_handler",
-            method_name="sync_operation_handler",
             input_type=Input,
             output_type=Output,
         ),
@@ -95,7 +92,6 @@ class SyncOperationWithOperationHandlerNameOverride(_TestCase):
     expected_operations = {
         "sync_operation_handler": nexusrpc.Operation(
             name="sync-operation-name",
-            method_name="sync_operation_handler",
             input_type=Input,
             output_type=Output,
         ),
@@ -115,7 +111,6 @@ class ManualOperationWithContract(_TestCase):
     expected_operations = {
         "operation": nexusrpc.Operation(
             name="operation",
-            method_name="operation",
             input_type=Input,
             output_type=Output,
         ),
@@ -137,7 +132,6 @@ class ManualOperationWithContractNameOverrideAndOperationHandlerNameOverride(_Te
     expected_operations = {
         "operation": nexusrpc.Operation(
             name="operation-override",
-            method_name="operation",
             input_type=Input,
             output_type=Output,
         ),

@@ -46,8 +46,7 @@ class Operation(Generic[InputT, OutputT]):
     """
 
     name: str
-    # TODO(preview): they should not be able to set method_name in constructor
-    method_name: Optional[str] = dataclasses.field(default=None)
+    method_name: Optional[str] = dataclasses.field(default=None, init=False)
     input_type: Optional[type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[type[OutputT]] = dataclasses.field(default=None)
 
@@ -151,10 +150,10 @@ def service(
             if not hasattr(cls, op_name):
                 op = Operation(
                     name=op_defn.name,
-                    method_name=op_defn.method_name,
                     input_type=op_defn.input_type,
                     output_type=op_defn.output_type,
                 )
+                op.method_name = op_defn.method_name
                 setattr(cls, op_name, op)
 
         return cls
@@ -295,7 +294,6 @@ class ServiceDefinition:
                     # my_op: Operation[I, O]
                     op = operations[key] = Operation(
                         name=key,
-                        method_name=key,
                         input_type=input_type,
                         output_type=output_type,
                     )
@@ -319,15 +317,14 @@ class ServiceDefinition:
                 # It looked like
                 # my_op = Operation(...)
                 op = operations[key]
-                if not op.method_name:
-                    op.method_name = key
-                elif op.method_name != key:
-                    raise ValueError(
-                        f"Operation {key} method_name ({op.method_name}) must match attribute name {key}"
-                    )
 
-            if op.method_name is None:
-                op.method_name = key
+            # Validate that if method_name was set (via direct assignment after
+            # construction), it matches the attribute name
+            if op.method_name is not None and op.method_name != key:
+                raise ValueError(
+                    f"Operation {key} method_name ({op.method_name}) must match attribute name {key}"
+                )
+            op.method_name = key
 
         op_defns = {}
         for op in operations.values():
