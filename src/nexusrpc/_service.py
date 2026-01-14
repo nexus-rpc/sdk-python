@@ -44,8 +44,8 @@ def _validate_nexus_name(name: str) -> None:
         raise ValueError("must not be empty")
     try:
         _ = urllib.parse.quote(name, safe="")
-    except (UnicodeEncodeError, KeyError):
-        raise ValueError("contains characters that cannot be URL-encoded")
+    except (UnicodeEncodeError, KeyError) as e:
+        raise ValueError("contains characters that cannot be URL-encoded") from e
 
 
 @dataclass
@@ -86,10 +86,12 @@ class OperationDefinition(Generic[InputT, OutputT]):
     def from_operation(
         cls, operation: Operation[InputT, OutputT]
     ) -> OperationDefinition[InputT, OutputT]:
-        if not operation.name:
+        try:
+            _validate_nexus_name(operation.name)
+        except ValueError as e:
             raise ValueError(
-                f"Operation has no name (method_name is '{operation.method_name}')"
-            )
+                f"Operation name {operation.name!r} {e} (method_name is '{operation.method_name}')"
+            ) from e
         if not operation.method_name:
             raise ValueError(f"Operation '{operation.name}' has no method name")
         if not operation.input_type:

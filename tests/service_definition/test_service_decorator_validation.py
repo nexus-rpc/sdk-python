@@ -104,7 +104,7 @@ def test_valid_service_name_with_special_chars_succeeds():
 
 def test_empty_operation_name_raises():
     """Empty operation name should raise."""
-    with pytest.raises(ValueError, match="Operation.*has no name"):
+    with pytest.raises(ValueError, match=r"Operation name '' must not be empty"):
 
         @nexusrpc.service
         class MyService:  # pyright: ignore[reportUnusedClass]
