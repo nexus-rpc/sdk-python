@@ -133,7 +133,6 @@ def collect_operation_handler_factories_by_method_name(
     """
     Collect operation handler methods from a user service handler class.
     """
-    # TODO(preview): rename op/op_defn variables in this function
     factories: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]] = {}
     service_method_names = (
         {op_defn.method_name for op_defn in service.operation_definitions.values()}

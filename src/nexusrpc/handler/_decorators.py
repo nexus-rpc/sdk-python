@@ -34,7 +34,6 @@ from ._operation_handler import (
 def service_handler(cls: type[ServiceHandlerT]) -> type[ServiceHandlerT]: ...
 
 
-# TODO(preview): allow service to be provided as positional argument?
 @overload
 def service_handler(
     *,

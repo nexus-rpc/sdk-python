@@ -31,7 +31,9 @@ class TypeAnnotationsOnly(_TestCase):
     class A1:
         a: Operation[int, str]
 
-    # TODO(preview) why is the decorator omitted here?
+    # A2 intentionally omits @nexusrpc.service at definition time.
+    # The decorator will be applied in the test function to verify that
+    # service definitions correctly inherit operations from decorated parent classes.
     class A2(A1):
         b: Operation[int, str]  # type: ignore[reportUninitializedInstanceVariable]
 
@@ -44,7 +46,9 @@ class TypeAnnotationsWithValues(_TestCase):
     class A1:
         a: Operation[int, str] = Operation[int, str](name="a-name")
 
-    # TODO(preview) why is the decorator omitted here?
+    # A2 intentionally omits @nexusrpc.service at definition time.
+    # The decorator will be applied in the test function to verify that
+    # service definitions correctly inherit operations from decorated parent classes.
     class A2(A1):
         b: Operation[int, str] = Operation[int, str](name="b-name")
 
