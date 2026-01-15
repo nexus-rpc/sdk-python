@@ -174,15 +174,13 @@ def operation_handler(
                     f"but operation {method.__name__} has {len(type_args)} type parameters: {type_args}"
                 )
 
-        set_operation(
-            method,
-            Operation(
-                name=name or method.__name__,
-                method_name=method.__name__,
-                input_type=input_type,
-                output_type=output_type,
-            ),
+        op: Operation[Any, Any] = Operation(
+            name=name or method.__name__,
+            input_type=input_type,
+            output_type=output_type,
         )
+        op.method_name = method.__name__
+        set_operation(method, op)
         return method
 
     if method is None:
@@ -278,15 +276,13 @@ def sync_operation(
         )
 
         method_name = get_callable_name(start)
-        set_operation(
-            operation_handler_factory,
-            Operation(
-                name=name or method_name,
-                method_name=method_name,
-                input_type=input_type,
-                output_type=output_type,
-            ),
+        op = Operation(
+            name=name or method_name,
+            input_type=input_type,
+            output_type=output_type,
         )
+        op.method_name = method_name
+        set_operation(operation_handler_factory, op)
 
         set_operation_factory(start, operation_handler_factory)
         return start
