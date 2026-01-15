@@ -137,6 +137,27 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
     error_message = r"has no input type"
 
 
+class SyncOperationNoTypeAnnotationsWithoutServiceDefinition(_TestCase):
+    """Test that @sync_operation with missing type annotations raises an error
+    when no service definition is provided.
+
+    This tests the flow through get_start_method_input_and_output_type_annotations()
+    which returns (None, None) for missing types, followed by
+    OperationDefinition.from_operation() which raises ValueError.
+    """
+
+    @staticmethod
+    def build():
+        @service_handler
+        class ServiceWithMissingTypes:
+            @sync_operation
+            async def op(self, ctx, input): ...  # type: ignore[reportMissingParameterType]
+
+        _ = ServiceWithMissingTypes
+
+    error_message = r"has no input type"
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -146,6 +167,7 @@ class OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition(_Test
         ServiceHandlerHasExtraOp,
         AsyncioHandlerWithSyncioOperation,
         OperationHandlerNoInputOutputTypeAnnotationsWithoutServiceDefinition,
+        SyncOperationNoTypeAnnotationsWithoutServiceDefinition,
     ],
 )
 def test_invalid_usage(test_case: _TestCase):
