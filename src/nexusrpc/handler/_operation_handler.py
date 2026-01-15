@@ -212,7 +212,10 @@ def validate_operation_handler_methods(
                 f"is '{op_defn.name}'. Operation handlers may not override the name of an operation "
                 f"in the service definition."
             )
-        # Input type is contravariant: op handler input must be superclass of op defn output
+        # Input type is contravariant: op handler input must be superclass of op defn input.
+        # If handler's input_type is None (missing annotation), skip validation - the handler
+        # relies on the service definition for type information. This supports handlers without
+        # explicit type annotations when a service definition is provided.
         if (
             op.input_type is not None
             and Any not in (op.input_type, op_defn.input_type)
@@ -229,7 +232,9 @@ def validate_operation_handler_methods(
                 f"superclass of the operation definition input type."
             )
 
-        # Output type is covariant: op handler output must be subclass of op defn output
+        # Output type is covariant: op handler output must be subclass of op defn output.
+        # If handler's output_type is None (missing annotation), skip validation - the handler
+        # relies on the service definition for type information.
         if (
             op.output_type is not None
             and Any not in (op.output_type, op_defn.output_type)
