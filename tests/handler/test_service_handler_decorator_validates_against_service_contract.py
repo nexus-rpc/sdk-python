@@ -178,6 +178,46 @@ class InputContravarianceImplInputCannotBeSubclass(_InvalidInputTestCase):
         async def op(self, _ctx: StartOperationContext, _input: Subclass) -> X: ...
 
 
+class ValidImplWithGenericTypes(_ValidTestCase):
+    """Validates that generic types work with equality comparison."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[list[int], dict[str, bool]]
+
+    class Impl:
+        @sync_operation
+        async def op(
+            self, _ctx: StartOperationContext, _input: list[int]
+        ) -> dict[str, bool]: ...
+
+
+class InvalidImplWithWrongGenericInputType(_InvalidInputTestCase):
+    """Validates that mismatched generic input types are caught."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[list[int], str]
+
+    class Impl:
+        @sync_operation
+        async def op(self, _ctx: StartOperationContext, _input: list[str]) -> str: ...
+
+
+class InvalidImplWithWrongGenericOutputType(_InvalidOutputTestCase):
+    """Validates that mismatched generic output types are caught."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[str, dict[str, int]]
+
+    class Impl:
+        @sync_operation
+        async def op(
+            self, _ctx: StartOperationContext, _input: str
+        ) -> dict[str, str]: ...
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -193,6 +233,10 @@ class InputContravarianceImplInputCannotBeSubclass(_InvalidInputTestCase):
         OutputCovarianceImplOutputCannotBeSubclass,
         OutputCovarianceImplOutputCannotBeStrictSuperclass,
         InputContravarianceImplInputCannotBeSuperclass,
+        InputContravarianceImplInputCannotBeSubclass,
+        ValidImplWithGenericTypes,
+        InvalidImplWithWrongGenericInputType,
+        InvalidImplWithWrongGenericOutputType,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(
