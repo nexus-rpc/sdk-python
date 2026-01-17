@@ -212,26 +212,18 @@ def validate_operation_handler_methods(
                 f"is '{op_defn.name}'. Operation handlers may not override the name of an operation "
                 f"in the service definition."
             )
-        # Input type is contravariant: op handler input must be superclass of op defn input.
         # If handler's input_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information. This supports handlers without
         # explicit type annotations when a service definition is provided.
-        if op.input_type is not None and (
-            op_defn.input_type is not op.input_type
-            # or is_subtype(op_defn.input_type, op.input_type)
-        ):
+        if op.input_type is not None and (op_defn.input_type is not op.input_type):
             raise TypeError(
                 f"OperationHandler input type mismatch for '{service_cls}.{op_defn.method_name}'"
                 f"expected {op_defn.input_type}, got {op.input_type}"
             )
 
-        # Output type is covariant: op handler output must be subclass of op defn output.
         # If handler's output_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information.
-        if (
-            op.output_type is not None and op.output_type is not op_defn.output_type
-            # and not is_subtype(op.output_type, op_defn.output_type)
-        ):
+        if op.output_type is not None and op.output_type is not op_defn.output_type:
             raise TypeError(
                 f"OperationHandler output type mismatch for '{service_cls}.{op_defn.method_name}'"
                 f"expected {op_defn.output_type}, got {op.output_type}"
