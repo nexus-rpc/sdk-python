@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 import pytest
-from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc import LazyValue

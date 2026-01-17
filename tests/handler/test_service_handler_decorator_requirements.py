@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc._util import get_service_definition

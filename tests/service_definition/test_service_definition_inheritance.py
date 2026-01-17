@@ -3,10 +3,10 @@
 # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Optional
 
 import pytest
-from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc import Operation, ServiceDefinition

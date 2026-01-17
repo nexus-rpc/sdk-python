@@ -1,5 +1,6 @@
 import warnings
 from collections.abc import Awaitable
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
@@ -7,8 +8,8 @@ from typing import (
     get_args,
     get_origin,
 )
+
 import pytest
-from dataclasses import dataclass
 
 from nexusrpc.handler import StartOperationContext
 from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations

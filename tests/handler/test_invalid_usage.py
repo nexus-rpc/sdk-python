@@ -3,8 +3,9 @@ Tests for invalid ways that users may attempt to write service definition and se
 handler implementations.
 """
 
-import pytest
 from dataclasses import dataclass
+
+import pytest
 
 import nexusrpc
 from nexusrpc.handler import (

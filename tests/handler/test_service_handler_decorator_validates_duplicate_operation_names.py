@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from dataclasses import dataclass
 
 from nexusrpc.handler import (
     OperationHandler,

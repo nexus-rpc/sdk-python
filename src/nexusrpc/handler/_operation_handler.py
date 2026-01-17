@@ -12,7 +12,6 @@ from nexusrpc._util import (
     get_operation_factory,
     is_async_callable,
     is_callable,
-    is_subtype,
 )
 
 from ._common import (

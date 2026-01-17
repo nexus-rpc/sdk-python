@@ -1,5 +1,6 @@
-import pytest
 from dataclasses import dataclass
+
+import pytest
 
 import nexusrpc
 

@@ -2,10 +2,10 @@
 Test that operation decorators result in operation factories that return the correct result.
 """
 
+from dataclasses import dataclass
 from typing import Any, Union, cast
 
 import pytest
-from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
