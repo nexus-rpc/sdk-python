@@ -7,9 +7,8 @@ from typing import (
     get_args,
     get_origin,
 )
-
 import pytest
-from typing_extensions import dataclass_transform
+from dataclasses import dataclass
 
 from nexusrpc.handler import StartOperationContext
 from nexusrpc.handler._util import get_start_method_input_and_output_type_annotations
@@ -23,12 +22,8 @@ class Output:
     pass
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
+@dataclass()
+class _TestCase:
     start: Callable[..., Any]
     expected_types: tuple[Any, Any]
 

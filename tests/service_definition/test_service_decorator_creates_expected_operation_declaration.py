@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -11,12 +11,8 @@ class Output:
     pass
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class OperationDeclarationTestCase(_BaseTestCase):
+@dataclass()
+class OperationDeclarationTestCase:
     Interface: type
     expected_ops: dict[str, tuple[type[Any], type[Any]]]
 

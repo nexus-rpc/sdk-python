@@ -1,16 +1,12 @@
 import pytest
-from typing_extensions import dataclass_transform
+from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class NameOverrideTestCase(_BaseTestCase):
+@dataclass
+class NameOverrideTestCase:
     Interface: type
     expected_name: str
 

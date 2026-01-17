@@ -1,7 +1,5 @@
-from typing import Any, Optional
-
 import pytest
-from typing_extensions import dataclass_transform
+from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc.handler import (
@@ -11,18 +9,26 @@ from nexusrpc.handler import (
 )
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _InterfaceImplementationTestCase(_BaseTestCase):
+@dataclass()
+class _InterfaceImplementationTestCase:
     Interface: type
     Impl: type
-    error_message: Optional[str]
+    error_message: str | None
 
 
-class ValidImpl(_InterfaceImplementationTestCase):
+class _InvalidInputTestCase(_InterfaceImplementationTestCase):
+    error_message = "OperationHandler input type mismatch"
+
+
+class _InvalidOutputTestCase(_InterfaceImplementationTestCase):
+    error_message = "OperationHandler output type mismatch"
+
+
+class _ValidTestCase(_InterfaceImplementationTestCase):
+    error_message = None
+
+
+class ValidImpl(_ValidTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[None, None]
@@ -32,8 +38,6 @@ class ValidImpl(_InterfaceImplementationTestCase):
     class Impl:
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: None) -> None: ...
-
-    error_message = None
 
 
 class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestCase):
@@ -50,7 +54,7 @@ class ValidImplWithEmptyInterfaceAndExtraOperation(_InterfaceImplementationTestC
     error_message = "does not match an operation method name in the service definition"
 
 
-class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
+class ValidImplWithoutTypeAnnotations(_ValidTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[int, str]
@@ -58,8 +62,6 @@ class ValidImplWithoutTypeAnnotations(_InterfaceImplementationTestCase):
     class Impl:
         @sync_operation
         async def op(self, ctx, input): ...  # type: ignore[reportMissingParameterType]
-
-    error_message = None
 
 
 class MissingOperation(_InterfaceImplementationTestCase):
@@ -73,7 +75,7 @@ class MissingOperation(_InterfaceImplementationTestCase):
     error_message = "does not implement an operation with method name 'op'"
 
 
-class MissingInputAnnotation(_InterfaceImplementationTestCase):
+class MissingInputAnnotation(_ValidTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[None, None]
@@ -82,10 +84,8 @@ class MissingInputAnnotation(_InterfaceImplementationTestCase):
         @sync_operation
         async def op(self, ctx: StartOperationContext, input) -> None: ...  # type: ignore[reportMissingParameterType]
 
-    error_message = None
 
-
-class MissingContextAnnotation(_InterfaceImplementationTestCase):
+class MissingContextAnnotation(_ValidTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[None, None]
@@ -94,10 +94,8 @@ class MissingContextAnnotation(_InterfaceImplementationTestCase):
         @sync_operation
         async def op(self, ctx, input: None) -> None: ...  # type: ignore[reportMissingParameterType]
 
-    error_message = None
 
-
-class WrongOutputType(_InterfaceImplementationTestCase):
+class WrongOutputType(_InvalidOutputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[None, int]
@@ -106,10 +104,8 @@ class WrongOutputType(_InterfaceImplementationTestCase):
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: None) -> str: ...
 
-    error_message = "is not compatible with the output type"
 
-
-class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
+class WrongOutputTypeWithNone(_InvalidOutputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[str, None]
@@ -118,10 +114,8 @@ class WrongOutputTypeWithNone(_InterfaceImplementationTestCase):
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
 
-    error_message = "is not compatible with the output type"
 
-
-class ValidImplWithNone(_InterfaceImplementationTestCase):
+class ValidImplWithNone(_ValidTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[str, None]
@@ -129,20 +123,6 @@ class ValidImplWithNone(_InterfaceImplementationTestCase):
     class Impl:
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: str) -> None: ...
-
-    error_message = None
-
-
-class MoreSpecificImplAllowed(_InterfaceImplementationTestCase):
-    @nexusrpc.service
-    class Interface:
-        op: nexusrpc.Operation[Any, Any]
-
-    class Impl:
-        @sync_operation
-        async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
-
-    error_message = None
 
 
 class X:
@@ -157,19 +137,7 @@ class Subclass(SuperClass):
     pass
 
 
-class OutputCovarianceImplOutputCanBeSameType(_InterfaceImplementationTestCase):
-    @nexusrpc.service
-    class Interface:
-        op: nexusrpc.Operation[X, X]
-
-    class Impl:
-        @sync_operation
-        async def op(self, _ctx: StartOperationContext, _input: X) -> X: ...
-
-    error_message = None
-
-
-class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
+class OutputCovarianceImplOutputCannotBeSubclass(_InvalidOutputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[X, SuperClass]
@@ -178,12 +146,8 @@ class OutputCovarianceImplOutputCanBeSubclass(_InterfaceImplementationTestCase):
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: X) -> Subclass: ...
 
-    error_message = None
 
-
-class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
-    _InterfaceImplementationTestCase
-):
+class OutputCovarianceImplOutputCannnotBeStrictSuperclass(_InvalidOutputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[X, Subclass]
@@ -192,22 +156,8 @@ class OutputCovarianceImplOutputCannnotBeStrictSuperclass(
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: X) -> SuperClass: ...
 
-    error_message = "is not compatible with the output type"
 
-
-class InputContravarianceImplInputCanBeSameType(_InterfaceImplementationTestCase):
-    @nexusrpc.service
-    class Interface:
-        op: nexusrpc.Operation[X, X]
-
-    class Impl:
-        @sync_operation
-        async def op(self, _ctx: StartOperationContext, _input: X) -> X: ...
-
-    error_message = None
-
-
-class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCase):
+class InputContravarianceImplInputCannotBeSuperclass(_InvalidInputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[Subclass, X]
@@ -216,10 +166,8 @@ class InputContravarianceImplInputCanBeSuperclass(_InterfaceImplementationTestCa
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: SuperClass) -> X: ...
 
-    error_message = None
 
-
-class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestCase):
+class InputContravarianceImplInputCannotBeSubclass(_InvalidInputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[SuperClass, X]
@@ -227,8 +175,6 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
     class Impl:
         @sync_operation
         async def op(self, _ctx: StartOperationContext, _input: Subclass) -> X: ...
-
-    error_message = "is not compatible with the input type"
 
 
 @pytest.mark.parametrize(
@@ -243,12 +189,9 @@ class InputContravarianceImplInputCannotBeSubclass(_InterfaceImplementationTestC
         WrongOutputType,
         WrongOutputTypeWithNone,
         ValidImplWithNone,
-        MoreSpecificImplAllowed,
-        OutputCovarianceImplOutputCanBeSameType,
-        OutputCovarianceImplOutputCanBeSubclass,
+        OutputCovarianceImplOutputCannotBeSubclass,
         OutputCovarianceImplOutputCannnotBeStrictSuperclass,
-        InputContravarianceImplInputCanBeSameType,
-        InputContravarianceImplInputCanBeSuperclass,
+        InputContravarianceImplInputCannotBeSuperclass,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(

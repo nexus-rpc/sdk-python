@@ -3,10 +3,8 @@ Tests for invalid ways that users may attempt to write service definition and se
 handler implementations.
 """
 
-from typing import Any, Callable
-
 import pytest
-from typing_extensions import dataclass_transform
+from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc.handler import (
@@ -19,14 +17,13 @@ from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import OperationHandler
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
-    build: Callable[..., Any]
+@dataclass()
+class _TestCase:
     error_message: str
+
+    @staticmethod
+    def build():
+        pass
 
 
 class OperationHandlerOverridesNameInconsistentlyWithServiceDefinition(_TestCase):

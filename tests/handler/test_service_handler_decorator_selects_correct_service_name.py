@@ -1,7 +1,7 @@
 from typing import Optional
 
 import pytest
-from typing_extensions import dataclass_transform
+from dataclasses import dataclass
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -18,12 +18,8 @@ class ServiceInterfaceWithNameOverride:
     pass
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _NameOverrideTestCase(_BaseTestCase):
+@dataclass()
+class _NameOverrideTestCase:
     ServiceImpl: type
     expected_name: str
     expected_error: Optional[type[Exception]] = None

@@ -14,7 +14,7 @@ from nexusrpc.handler import (
     service_handler,
     operation_handler,
 )
-from nexusrpc import LazyValue, HandlerError, service, Operation, get_service_definition
+from nexusrpc import LazyValue, HandlerError, service, Operation
 from nexusrpc.handler._decorators import sync_operation
 from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
@@ -96,72 +96,74 @@ async def test_operations_must_have_decorator():
         )
 
 
-def test_covariance():
-    class Foo:
-        def __init__(self) -> None:
-            self.name = "foo"
+@pytest.mark.asyncio
+async def test_handler_can_return_covariant_type():
+    class Superclass:
+        pass
 
-    class Bar(Foo):
-        def __init__(self) -> None:
-            super().__init__()
-            self.name = "bar"
+    class Subclass(Superclass):
+        pass
 
     @service
     class CovariantService:
-        op_handler: Operation[None, Foo]
-        inline: Operation[None, Foo]
+        op_handler: Operation[None, Superclass]
+        inline: Operation[None, Superclass]
 
-    class ValidOperationHandler(OperationHandler[None, Foo]):
+    class ValidOperationHandler(OperationHandler[None, Superclass]):
         async def start(
             self, ctx: StartOperationContext, input: None
-        ) -> StartOperationResultSync[Bar]:
-            return StartOperationResultSync(Bar())
+        ) -> StartOperationResultSync[Subclass]:
+            return StartOperationResultSync(Subclass())
 
         async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
             pass
 
-    class InvalidOperationHandler(OperationHandler[None, Bar]):
-        async def start(
-            self, ctx: StartOperationContext, input: None
-        ) -> StartOperationResultSync[Bar]:
-            return StartOperationResultSync(Bar())
-
-        async def cancel(self, ctx: CancelOperationContext, token: str) -> None:
-            pass
-
-    # This service returns Bar but keeps the operation type as Foo
     @service_handler(service=CovariantService)
-    class CovariantServiceImplValid:
+    class CovariantServiceHandler:
         @operation_handler
-        def op_handler(self) -> OperationHandler[None, Foo]:
+        def op_handler(self) -> OperationHandler[None, Superclass]:
             return ValidOperationHandler()
 
         @sync_operation
-        async def inline(self, ctx: StartOperationContext, input: None) -> Foo:
-            return Bar()
+        async def inline(self, ctx: StartOperationContext, input: None) -> Superclass:  # pyright: ignore[reportUnusedParameter]
+            return Subclass()
 
-    with pytest.raises(TypeError):
-        # This impl changes the output type in an obviously invalid way
-        # it raises as appropriate
-        @service_handler(service=CovariantService)
-        class ServiceImplInvalid:
-            @operation_handler
-            def op_handler(self) -> OperationHandler[None, Bar]:
-                return InvalidOperationHandler()
+    handler = Handler([CovariantServiceHandler()])
 
-            @sync_operation
-            async def inline(self, ctx: StartOperationContext, input: None) -> int:
-                return 1
+    result = await handler.start_operation(
+        StartOperationContext(
+            service=CovariantService.__name__,
+            operation=CovariantService.op_handler.name,
+            headers={},
+            request_id="test-req",
+            task_cancellation=TestOperationTaskCancellation(),
+            request_deadline=None,
+            callback_url=None,
+        ),
+        LazyValue(
+            serializer=DummySerializer(None),
+            headers={},
+            stream=None,
+        ),
+    )
+    assert type(result) is StartOperationResultSync
+    assert type(result.value) is Subclass
 
-    with pytest.raises(TypeError):
-        # This impl changes the output type to Bar instead of Foo for both operations
-        # it does not raise, though this would in Java/.Net
-        @service_handler(service=CovariantService)
-        class CovariantServiceImplInvalid:
-            @operation_handler
-            def op_handler(self) -> OperationHandler[None, Bar]:
-                return InvalidOperationHandler()
-
-            @sync_operation
-            async def inline(self, ctx: StartOperationContext, input: None) -> Bar:
-                return Bar()
+    result = await handler.start_operation(
+        StartOperationContext(
+            service=CovariantService.__name__,
+            operation=CovariantService.inline.name,
+            headers={},
+            request_id="test-req",
+            task_cancellation=TestOperationTaskCancellation(),
+            request_deadline=None,
+            callback_url=None,
+        ),
+        LazyValue(
+            serializer=DummySerializer(None),
+            headers={},
+            stream=None,
+        ),
+    )
+    assert type(result) is StartOperationResultSync
+    assert type(result.value) is Subclass

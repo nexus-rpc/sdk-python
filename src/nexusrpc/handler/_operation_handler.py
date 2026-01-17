@@ -216,36 +216,25 @@ def validate_operation_handler_methods(
         # If handler's input_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information. This supports handlers without
         # explicit type annotations when a service definition is provided.
-        if (
-            op.input_type is not None
-            and Any not in (op.input_type, op_defn.input_type)
-            and not (
-                op_defn.input_type == op.input_type
-                or is_subtype(op_defn.input_type, op.input_type)
-            )
+        if op.input_type is not None and (
+            op_defn.input_type is not op.input_type
+            # or is_subtype(op_defn.input_type, op.input_type)
         ):
             raise TypeError(
-                f"Operation '{op_defn.method_name}' in service '{service_cls}' "
-                f"has input type '{op.input_type}', which is not "
-                f"compatible with the input type '{op_defn.input_type}' in interface "
-                f"'{service_definition.name}'. The input type must be the same as or a "
-                f"superclass of the operation definition input type."
+                f"OperationHandler input type mismatch for '{service_cls}.{op_defn.method_name}'"
+                f"expected {op_defn.input_type}, got {op.input_type}"
             )
 
         # Output type is covariant: op handler output must be subclass of op defn output.
         # If handler's output_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information.
         if (
-            op.output_type is not None
-            and Any not in (op.output_type, op_defn.output_type)
-            and not is_subtype(op.output_type, op_defn.output_type)
+            op.output_type is not None and op.output_type is not op_defn.output_type
+            # and not is_subtype(op.output_type, op_defn.output_type)
         ):
             raise TypeError(
-                f"Operation '{op_defn.method_name}' in service '{service_cls}' "
-                f"has output type '{op.output_type}', which is not "
-                f"compatible with the output type '{op_defn.output_type}' in interface "
-                f" '{service_definition}'. The output type must be the same as or a "
-                f"subclass of the operation definition output type."
+                f"OperationHandler output type mismatch for '{service_cls}.{op_defn.method_name}'"
+                f"expected {op_defn.output_type}, got {op.output_type}"
             )
     if operation_handler_factories_by_method_name:
         raise ValueError(
