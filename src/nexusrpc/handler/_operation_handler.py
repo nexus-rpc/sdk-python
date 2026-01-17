@@ -216,7 +216,7 @@ def validate_operation_handler_methods(
         # explicit type annotations when a service definition is provided.
         if op.input_type is not None and (op_defn.input_type is not op.input_type):
             raise TypeError(
-                f"OperationHandler input type mismatch for '{service_cls}.{op_defn.method_name}'"
+                f"OperationHandler input type mismatch for '{service_cls}.{op_defn.method_name}': "
                 f"expected {op_defn.input_type}, got {op.input_type}"
             )
 
@@ -224,7 +224,7 @@ def validate_operation_handler_methods(
         # relies on the service definition for type information.
         if op.output_type is not None and op.output_type is not op_defn.output_type:
             raise TypeError(
-                f"OperationHandler output type mismatch for '{service_cls}.{op_defn.method_name}'"
+                f"OperationHandler output type mismatch for '{service_cls}.{op_defn.method_name}': "
                 f"expected {op_defn.output_type}, got {op.output_type}"
             )
     if operation_handler_factories_by_method_name:

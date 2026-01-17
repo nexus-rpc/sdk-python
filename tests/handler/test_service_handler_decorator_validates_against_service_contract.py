@@ -148,7 +148,7 @@ class OutputCovarianceImplOutputCannotBeSubclass(_InvalidOutputTestCase):
         async def op(self, _ctx: StartOperationContext, _input: X) -> Subclass: ...
 
 
-class OutputCovarianceImplOutputCannnotBeStrictSuperclass(_InvalidOutputTestCase):
+class OutputCovarianceImplOutputCannotBeStrictSuperclass(_InvalidOutputTestCase):
     @nexusrpc.service
     class Interface:
         op: nexusrpc.Operation[X, Subclass]
@@ -191,7 +191,7 @@ class InputContravarianceImplInputCannotBeSubclass(_InvalidInputTestCase):
         WrongOutputTypeWithNone,
         ValidImplWithNone,
         OutputCovarianceImplOutputCannotBeSubclass,
-        OutputCovarianceImplOutputCannnotBeStrictSuperclass,
+        OutputCovarianceImplOutputCannotBeStrictSuperclass,
         InputContravarianceImplInputCannotBeSuperclass,
     ],
 )
