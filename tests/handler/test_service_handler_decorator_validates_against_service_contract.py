@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -218,6 +219,42 @@ class InvalidImplWithWrongGenericOutputType(_InvalidOutputTestCase):
         ) -> dict[str, str]: ...
 
 
+class ValidImplWithAnyTypes(_ValidTestCase):
+    """Validates that Any types require exact match (Any == Any)."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[Any, Any]
+
+    class Impl:
+        @sync_operation
+        async def op(self, _ctx: StartOperationContext, _input: Any) -> Any: ...
+
+
+class InvalidImplWithAnyInputButSpecificImpl(_InvalidInputTestCase):
+    """Validates that Any in interface does not act as wildcard for input types."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[Any, str]
+
+    class Impl:
+        @sync_operation
+        async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
+
+
+class InvalidImplWithAnyOutputButSpecificImpl(_InvalidOutputTestCase):
+    """Validates that Any in interface does not act as wildcard for output types."""
+
+    @nexusrpc.service
+    class Interface:
+        op: nexusrpc.Operation[str, Any]
+
+    class Impl:
+        @sync_operation
+        async def op(self, _ctx: StartOperationContext, _input: str) -> str: ...
+
+
 @pytest.mark.parametrize(
     "test_case",
     [
@@ -237,6 +274,9 @@ class InvalidImplWithWrongGenericOutputType(_InvalidOutputTestCase):
         ValidImplWithGenericTypes,
         InvalidImplWithWrongGenericInputType,
         InvalidImplWithWrongGenericOutputType,
+        ValidImplWithAnyTypes,
+        InvalidImplWithAnyInputButSpecificImpl,
+        InvalidImplWithAnyOutputButSpecificImpl,
     ],
 )
 def test_service_decorator_enforces_interface_implementation(

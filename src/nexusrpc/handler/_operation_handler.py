@@ -179,9 +179,8 @@ def validate_operation_handler_methods(
     1. There must be a method in ``user_methods`` whose method name matches the method
        name from the service definition.
 
-    2. The input and output types of the user method must be such that the user method
-       is a subtype of the operation defined in the service definition, i.e. respecting
-       input type contravariance and output type covariance.
+    2. The input and output types of the handler method must exactly match the types
+       declared in the service definition.
     """
     operation_handler_factories_by_method_name = (
         operation_handler_factories_by_method_name.copy()
