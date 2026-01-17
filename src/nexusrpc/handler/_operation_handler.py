@@ -214,7 +214,7 @@ def validate_operation_handler_methods(
         # If handler's input_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information. This supports handlers without
         # explicit type annotations when a service definition is provided.
-        if op.input_type is not None and (op_defn.input_type is not op.input_type):
+        if op.input_type is not None and op_defn.input_type != op.input_type:
             raise TypeError(
                 f"OperationHandler input type mismatch for '{service_cls}.{op_defn.method_name}': "
                 f"expected {op_defn.input_type}, got {op.input_type}"
@@ -222,7 +222,7 @@ def validate_operation_handler_methods(
 
         # If handler's output_type is None (missing annotation), skip validation - the handler
         # relies on the service definition for type information.
-        if op.output_type is not None and op.output_type is not op_defn.output_type:
+        if op.output_type is not None and op.output_type != op_defn.output_type:
             raise TypeError(
                 f"OperationHandler output type mismatch for '{service_cls}.{op_defn.method_name}': "
                 f"expected {op_defn.output_type}, got {op.output_type}"
