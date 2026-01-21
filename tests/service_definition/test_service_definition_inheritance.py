@@ -3,10 +3,10 @@
 # See https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Optional
 
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import Operation, ServiceDefinition
@@ -15,12 +15,8 @@ from nexusrpc._util import get_service_definition
 # See https://docs.python.org/3/howto/annotations.html
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
+@dataclass()
+class _TestCase:
     UserService: type[Any]
     expected_operation_names: set[str]
     expected_error: Optional[str] = None

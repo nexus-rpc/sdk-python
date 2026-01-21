@@ -2,10 +2,10 @@
 Test that operation decorators result in operation factories that return the correct result.
 """
 
+from dataclasses import dataclass
 from typing import Any, Union, cast
 
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import InputT, OutputT
@@ -26,12 +26,8 @@ from nexusrpc.handler._operation_handler import (
 from tests.helpers import TestOperationTaskCancellation
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
+@dataclass()
+class _TestCase:
     Service: type[Any]
     expected_operation_factories: dict[str, Any]
 

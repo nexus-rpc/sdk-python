@@ -5,15 +5,17 @@ correctly.
 
 import pytest
 
+from nexusrpc import HandlerError, LazyValue
 from nexusrpc.handler import (
     CancelOperationContext,
     Handler,
     OperationHandler,
     StartOperationContext,
     StartOperationResultSync,
+    operation_handler,
     service_handler,
 )
-from nexusrpc.handler._decorators import operation_handler
+from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 
 def test_service_must_use_decorator():
@@ -63,3 +65,31 @@ def test_service_names_must_be_unique():
 
     with pytest.raises(RuntimeError):
         _ = Handler([Service1(), Service2()])
+
+
+@pytest.mark.asyncio
+async def test_operations_must_have_decorator():
+    @service_handler
+    class TestService:
+        async def op(self, _ctx: StartOperationContext, input: str) -> str:
+            return input
+
+    handler = Handler([TestService()])
+
+    with pytest.raises(HandlerError, match="has no operation 'op'"):
+        _ = await handler.start_operation(
+            StartOperationContext(
+                service=TestService.__name__,
+                operation=TestService.op.__name__,
+                headers={},
+                request_id="test-req",
+                task_cancellation=TestOperationTaskCancellation(),
+                request_deadline=None,
+                callback_url=None,
+            ),
+            LazyValue(
+                serializer=DummySerializer(value="test"),
+                headers={},
+                stream=None,
+            ),
+        )

@@ -1,5 +1,6 @@
+from dataclasses import dataclass
+
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 
@@ -8,12 +9,8 @@ class Output:
     pass
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
+@dataclass()
+class _TestCase:
     Contract: type
     expected_error: Exception
 

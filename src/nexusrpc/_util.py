@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 import inspect
-import typing
 from collections.abc import Awaitable
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
@@ -140,14 +139,6 @@ def get_callable_name(fn: Callable[..., Any]) -> str:
             f"expected {fn} to be a function or callable instance."
         )
     return method_name
-
-
-def is_subtype(type1: type[Any], type2: type[Any]) -> bool:
-    # Note that issubclass() argument 2 cannot be a parameterized generic
-    # TODO(nexus-preview): review desired type compatibility logic
-    if type1 == type2:
-        return True
-    return issubclass(type1, typing.get_origin(type2) or type2)
 
 
 # See

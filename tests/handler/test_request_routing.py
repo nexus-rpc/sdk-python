@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc import LazyValue
@@ -16,12 +16,8 @@ from nexusrpc.handler._common import StartOperationResultSync
 from tests.helpers import DummySerializer, TestOperationTaskCancellation
 
 
-@dataclass_transform()
-class _BaseTestCase:
-    pass
-
-
-class _TestCase(_BaseTestCase):
+@dataclass()
+class _TestCase:
     UserService: type[Any]
     # (service_name, op_name)
     supported_request: tuple[str, str]

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from typing_extensions import dataclass_transform
 
 import nexusrpc
 from nexusrpc._util import get_service_definition
@@ -15,12 +15,8 @@ from nexusrpc.handler._core import ServiceHandler
 from nexusrpc.handler._decorators import operation_handler
 
 
-@dataclass_transform()
-class _TestCase:
-    pass
-
-
-class _DecoratorValidationTestCase(_TestCase):
+@dataclass()
+class _DecoratorValidationTestCase:
     UserService: type[Any]
     UserServiceHandler: type[Any]
     expected_error_message_pattern: str
@@ -71,7 +67,8 @@ def test_decorator_validates_definition_compliance(
         service_handler(service=test_case.UserService)(test_case.UserServiceHandler)
 
 
-class _ServiceHandlerInheritanceTestCase(_TestCase):
+@dataclass()
+class _ServiceHandlerInheritanceTestCase:
     UserServiceHandler: type[Any]
     expected_operations: set[str]
 
@@ -134,7 +131,8 @@ def test_service_implementation_inheritance(
     )
 
 
-class _ServiceDefinitionInheritanceTestCase(_TestCase):
+@dataclass()
+class _ServiceDefinitionInheritanceTestCase:
     UserService: type[Any]
     expected_ops: set[str]
 
