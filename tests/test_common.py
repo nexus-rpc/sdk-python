@@ -1,65 +1,126 @@
-from nexusrpc._common import HandlerError, HandlerErrorType
+from nexusrpc._common import (
+    Failure,
+    HandlerError,
+    HandlerErrorType,
+    OperationError,
+    OperationErrorState,
+)
 
 
-def test_handler_error_retryable_type():
-    retryable_error_type = HandlerErrorType.RESOURCE_EXHAUSTED
-    err = HandlerError(
+def test_failure_basic():
+    f = Failure("test message")
+    assert str(f) == "test message"
+    assert f.message == "test message"
+    assert f.stack_trace is None
+    assert f.metadata is None
+    assert f.details is None
+    assert f.cause is None
+    assert isinstance(f, Exception)
+
+
+def test_failure_with_all_fields():
+    cause = Failure("root cause")
+    f = Failure(
         "test",
-        error_type=retryable_error_type,
+        stack_trace="Traceback:\n  File 'test.py', line 1",
+        metadata={"key": "value"},
+        details={"code": 123},
+        cause=cause,
+    )
+    assert f.message == "test"
+    assert f.stack_trace == "Traceback:\n  File 'test.py', line 1"
+    assert f.metadata == {"key": "value"}
+    assert f.details == {"code": 123}
+    assert f.cause is cause
+
+
+def test_handler_error_spec_representation():
+    """Test that HandlerError is a Failure and sets metadata/details per spec."""
+    # Basic error with spec-compliant metadata and details
+    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+    assert isinstance(err, Failure)
+    assert isinstance(err, Exception)
+    assert err.message == "test"
+    assert err.metadata == {"type": "nexus.HandlerError"}
+    assert err.details == {"type": "INTERNAL"}
+
+    # With retryable_override
+    err_with_retry = HandlerError(
+        "test",
+        error_type=HandlerErrorType.INTERNAL,
         retryable_override=True,
     )
-    assert err.retryable
-    assert err.error_type == retryable_error_type
-    assert err.raw_error_type == retryable_error_type.value
+    assert err_with_retry.details == {"type": "INTERNAL", "retryableOverride": True}
 
+
+def test_handler_error_with_all_fields():
+    """Test HandlerError with all Failure fields populated."""
+    cause = Failure("root cause")
     err = HandlerError(
         "test",
-        error_type=retryable_error_type,
-        retryable_override=False,
+        error_type=HandlerErrorType.INTERNAL,
+        stack_trace="stack trace",
+        metadata={"k": "v"},
+        details={"code": 1},
+        cause=cause,
     )
-    assert not err.retryable
-    assert err.error_type == retryable_error_type
-    assert err.raw_error_type == retryable_error_type.value
+    assert err.message == "test"
+    assert err.stack_trace == "stack trace"
+    # User-provided keys merged with spec-required keys
+    assert err.metadata == {"type": "nexus.HandlerError", "k": "v"}
+    assert err.details == {"type": "INTERNAL", "code": 1}
+    assert err.cause is cause
 
+
+def test_handler_error_spec_keys_cannot_be_overridden():
+    """Test that user-provided values cannot override spec-required keys."""
     err = HandlerError(
         "test",
-        error_type=retryable_error_type,
-    )
-    assert err.retryable
-    assert err.error_type == retryable_error_type
-    assert err.raw_error_type == retryable_error_type.value
-
-
-def test_handler_error_non_retryable_type():
-    non_retryable_error_type = HandlerErrorType.BAD_REQUEST
-    err = HandlerError(
-        "test",
-        error_type=non_retryable_error_type,
+        error_type=HandlerErrorType.INTERNAL,
         retryable_override=True,
+        metadata={"type": "user-type", "user-key": "user-value"},
+        details={
+            "type": "user-type",
+            "retryableOverride": False,
+            "user-key": "user-value",
+        },
     )
+    assert err.metadata is not None
+    assert err.details is not None
+    # Spec keys take precedence
+    assert err.metadata["type"] == "nexus.HandlerError"
+    assert err.details["type"] == "INTERNAL"
+    assert err.details["retryableOverride"] is True
+    # User keys are preserved
+    assert err.metadata["user-key"] == "user-value"
+    assert err.details["user-key"] == "user-value"
+
+
+def test_handler_error_retryable_behavior():
+    """Test retryable behavior based on error type and override."""
+    # Retryable error type (RESOURCE_EXHAUSTED)
+    retryable_type = HandlerErrorType.RESOURCE_EXHAUSTED
+    err = HandlerError("test", error_type=retryable_type)
     assert err.retryable
-    assert err.error_type == non_retryable_error_type
-    assert err.raw_error_type == non_retryable_error_type.value
+    assert err.error_type == retryable_type
+    assert err.raw_error_type == retryable_type.value
 
-    err = HandlerError(
-        "test",
-        error_type=non_retryable_error_type,
-        retryable_override=False,
-    )
+    err = HandlerError("test", error_type=retryable_type, retryable_override=False)
     assert not err.retryable
-    assert err.error_type == non_retryable_error_type
-    assert err.raw_error_type == non_retryable_error_type.value
 
-    err = HandlerError(
-        "test",
-        error_type=non_retryable_error_type,
-    )
+    # Non-retryable error type (BAD_REQUEST)
+    non_retryable_type = HandlerErrorType.BAD_REQUEST
+    err = HandlerError("test", error_type=non_retryable_type)
     assert not err.retryable
-    assert err.error_type == non_retryable_error_type
-    assert err.raw_error_type == non_retryable_error_type.value
+    assert err.error_type == non_retryable_type
+    assert err.raw_error_type == non_retryable_type.value
+
+    err = HandlerError("test", error_type=non_retryable_type, retryable_override=True)
+    assert err.retryable
 
 
 def test_handler_error_unknown_error_type():
+    """Test handling of unknown error type strings."""
     err = HandlerError("test", error_type="SOME_UNKNOWN_TYPE")
     assert err.retryable
     assert err.error_type == HandlerErrorType.UNKNOWN
@@ -67,5 +128,58 @@ def test_handler_error_unknown_error_type():
 
     err = HandlerError("test", error_type="SOME_UNKNOWN_TYPE", retryable_override=False)
     assert not err.retryable
-    assert err.error_type == HandlerErrorType.UNKNOWN
-    assert err.raw_error_type == "SOME_UNKNOWN_TYPE"
+
+
+def test_operation_error_spec_representation():
+    """Test that OperationError is a Failure and sets metadata/details per spec."""
+    # Failed state
+    err = OperationError("test", state=OperationErrorState.FAILED)
+    assert isinstance(err, Failure)
+    assert isinstance(err, Exception)
+    assert err.message == "test"
+    assert err.state == OperationErrorState.FAILED
+    assert err.metadata == {"type": "nexus.OperationError"}
+    assert err.details == {"state": "failed"}
+
+    # Canceled state
+    err_canceled = OperationError("test", state=OperationErrorState.CANCELED)
+    assert err_canceled.state == OperationErrorState.CANCELED
+    assert err_canceled.details == {"state": "canceled"}
+
+
+def test_operation_error_with_all_fields():
+    """Test OperationError with all Failure fields populated."""
+    cause = Failure("root cause")
+    err = OperationError(
+        "test",
+        state=OperationErrorState.CANCELED,
+        stack_trace="stack trace",
+        metadata={"k": "v"},
+        details={"code": 1},
+        cause=cause,
+    )
+    assert err.message == "test"
+    assert err.state == OperationErrorState.CANCELED
+    assert err.stack_trace == "stack trace"
+    # User-provided keys merged with spec-required keys
+    assert err.metadata == {"type": "nexus.OperationError", "k": "v"}
+    assert err.details == {"state": "canceled", "code": 1}
+    assert err.cause is cause
+
+
+def test_operation_error_spec_keys_cannot_be_overridden():
+    """Test that user-provided values cannot override spec-required keys."""
+    err = OperationError(
+        "test",
+        state=OperationErrorState.FAILED,
+        metadata={"type": "user-type", "user-key": "user-value"},
+        details={"state": "user-state", "user-key": "user-value"},
+    )
+    assert err.metadata is not None
+    assert err.details is not None
+    # Spec keys take precedence
+    assert err.metadata["type"] == "nexus.OperationError"
+    assert err.details["state"] == "failed"
+    # User keys are preserved
+    assert err.metadata["user-key"] == "user-value"
+    assert err.details["user-key"] == "user-value"
