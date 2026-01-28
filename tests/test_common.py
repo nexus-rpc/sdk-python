@@ -183,3 +183,30 @@ def test_operation_error_spec_keys_cannot_be_overridden():
     # User keys are preserved
     assert err.metadata["user-key"] == "user-value"
     assert err.details["user-key"] == "user-value"
+
+
+def test_failure_traceback_when_raised():
+    """Test that stack_trace captures traceback when exception is raised."""
+    # Failure
+    try:
+        raise Failure("raised failure")
+    except Failure as f:
+        assert f.stack_trace is not None
+        assert "test_failure_traceback_when_raised" in f.stack_trace
+        assert "raise Failure" in f.stack_trace
+
+    # HandlerError
+    try:
+        raise HandlerError("raised handler error", error_type=HandlerErrorType.INTERNAL)
+    except HandlerError as e:
+        assert e.stack_trace is not None
+        assert "test_failure_traceback_when_raised" in e.stack_trace
+        assert "raise HandlerError" in e.stack_trace
+
+    # OperationError
+    try:
+        raise OperationError("raised operation error", state=OperationErrorState.FAILED)
+    except OperationError as e:
+        assert e.stack_trace is not None
+        assert "test_failure_traceback_when_raised" in e.stack_trace
+        assert "raise OperationError" in e.stack_trace

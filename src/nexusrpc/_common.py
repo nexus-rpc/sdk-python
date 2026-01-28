@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import traceback
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
@@ -29,6 +30,8 @@ class Failure(Exception):
     See https://github.com/nexus-rpc/api/blob/main/SPEC.md#failure
     """
 
+    _stack_trace: str | None
+
     def __init__(
         self,
         message: str,
@@ -56,10 +59,26 @@ class Failure(Exception):
         """
         super().__init__(message)
         self.message = message
-        self.stack_trace = stack_trace
+        self._stack_trace = stack_trace
         self.metadata = metadata
         self.details = details
         self.cause = cause
+
+    @property
+    def stack_trace(self) -> str | None:
+        """
+        The stack trace associated with this failure.
+
+        Returns the explicit stack trace if one was provided during construction.
+        Otherwise, if this exception has been raised and caught, returns the
+        traceback from ``self.__traceback__``. Returns ``None`` if no stack trace
+        is available.
+        """
+        if self._stack_trace:
+            return self._stack_trace
+        if self.__traceback__ is None:
+            return None
+        return "\n".join(traceback.format_tb(self.__traceback__))
 
 
 class HandlerError(Failure):
