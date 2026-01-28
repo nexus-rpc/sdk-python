@@ -4,6 +4,7 @@ import traceback
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
+from types import MappingProxyType
 from typing import Any, Mapping, TypeVar
 
 logger = getLogger(__name__)
@@ -38,7 +39,7 @@ class Failure(Exception):
         *,
         stack_trace: str | None = None,
         metadata: Mapping[str, str] | None = None,
-        details: Any = None,
+        details: Mapping[str, Any] | None = None,
         cause: Failure | None = None,
     ):
         """
@@ -60,9 +61,19 @@ class Failure(Exception):
         super().__init__(message)
         self.message = message
         self._stack_trace = stack_trace
-        self.metadata = metadata
-        self.details = details
+        self.metadata: Mapping[str, str] | None = (
+            MappingProxyType(dict(metadata)) if metadata else None
+        )
+        self.details: Mapping[str, Any] | None = (
+            MappingProxyType(dict(details)) if details else None
+        )
         self.cause = cause
+
+    def __repr__(self) -> str:
+        return (
+            f"Failure(message={self.message!r}, metadata={self.metadata!r}, "
+            f"details={self.details!r}, cause={self.cause!r})"
+        )
 
     @property
     def stack_trace(self) -> str | None:
@@ -179,6 +190,13 @@ class HandlerError(Failure):
         self.error_type = error_type
         self.raw_error_type = raw_error_type
         self.retryable_override = retryable_override
+
+    def __repr__(self) -> str:
+        return (
+            f"HandlerError(message={self.message!r}, error_type={self.error_type!r}, "
+            f"retryable={self.retryable}, metadata={self.metadata!r}, "
+            f"details={self.details!r}, cause={self.cause!r})"
+        )
 
     @property
     def retryable(self) -> bool:
@@ -373,6 +391,12 @@ class OperationError(Failure):
             cause=cause,
         )
         self.state = state
+
+    def __repr__(self) -> str:
+        return (
+            f"OperationError(message={self.message!r}, state={self.state!r}, "
+            f"metadata={self.metadata!r}, details={self.details!r}, cause={self.cause!r})"
+        )
 
 
 class OperationErrorState(Enum):
