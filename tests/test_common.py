@@ -1,3 +1,5 @@
+import pytest
+
 from nexusrpc._common import (
     Failure,
     HandlerError,
@@ -210,3 +212,48 @@ def test_failure_traceback_when_raised():
         assert e.stack_trace is not None
         assert "test_failure_traceback_when_raised" in e.stack_trace
         assert "raise OperationError" in e.stack_trace
+
+
+def test_explicit_stack_trace_takes_precedence():
+    """Test that explicit stack_trace takes precedence over __traceback__."""
+    try:
+        raise Failure("test", stack_trace="explicit trace")
+    except Failure as f:
+        # Even though __traceback__ is set, explicit stack_trace wins
+        assert f.stack_trace == "explicit trace"
+        assert f.__traceback__ is not None  # Verify traceback exists
+
+
+def test_metadata_details_immutable():
+    """Test that metadata and details cannot be modified after construction."""
+    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+
+    with pytest.raises(TypeError):
+        err.metadata["new_key"] = "value"  # type: ignore[index]
+
+    with pytest.raises(TypeError):
+        err.details["new_key"] = "value"  # type: ignore[index]
+
+
+def test_failure_repr():
+    """Test __repr__ methods for debugging."""
+    # Failure
+    f = Failure("test message", metadata={"k": "v"}, details={"code": 1})
+    repr_str = repr(f)
+    assert "Failure(" in repr_str
+    assert "message='test message'" in repr_str
+
+    # HandlerError
+    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+    repr_str = repr(err)
+    assert "HandlerError(" in repr_str
+    assert "message='test'" in repr_str
+    assert "error_type=" in repr_str
+    assert "retryable=" in repr_str
+
+    # OperationError
+    op_err = OperationError("test", state=OperationErrorState.FAILED)
+    repr_str = repr(op_err)
+    assert "OperationError(" in repr_str
+    assert "message='test'" in repr_str
+    assert "state=" in repr_str
