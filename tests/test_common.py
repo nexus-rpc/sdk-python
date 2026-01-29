@@ -16,7 +16,7 @@ def test_failure_basic():
     assert f.stack_trace is None
     assert f.metadata is None
     assert f.details is None
-    assert f.cause is None
+    assert f.__cause__ is None
     assert isinstance(f, Exception)
 
 
@@ -33,7 +33,7 @@ def test_failure_with_all_fields():
     assert f.stack_trace == "Traceback:\n  File 'test.py', line 1"
     assert f.metadata == {"key": "value"}
     assert f.details == {"code": 123}
-    assert f.cause is cause
+    assert f.__cause__ is cause
 
 
 def test_handler_error_spec_representation():
@@ -71,7 +71,7 @@ def test_handler_error_with_all_fields():
     # User-provided keys merged with spec-required keys
     assert err.metadata == {"type": "nexus.HandlerError", "k": "v"}
     assert err.details == {"type": "INTERNAL", "code": 1}
-    assert err.cause is cause
+    assert err.__cause__ is cause
 
 
 def test_handler_error_spec_keys_cannot_be_overridden():
@@ -166,7 +166,7 @@ def test_operation_error_with_all_fields():
     # User-provided keys merged with spec-required keys
     assert err.metadata == {"type": "nexus.OperationError", "k": "v"}
     assert err.details == {"state": "canceled", "code": 1}
-    assert err.cause is cause
+    assert err.__cause__ is cause
 
 
 def test_operation_error_spec_keys_cannot_be_overridden():
@@ -233,6 +233,52 @@ def test_metadata_details_immutable():
 
     with pytest.raises(TypeError):
         err.details["new_key"] = "value"  # type: ignore[index]
+
+
+def test_failure_native_exception_chaining():
+    """Test that Python's native 'raise ... from ...' syntax works with Failure."""
+    root_cause = Failure("root cause")
+
+    # Test raise ... from ... syntax
+    try:
+        try:
+            raise root_cause
+        except Failure:
+            raise Failure("outer failure") from root_cause
+    except Failure as f:
+        assert f.__cause__ is root_cause
+        assert f.message == "outer failure"
+        assert f.__cause__.message == "root cause"  # type: ignore[union-attr]
+
+    # Test that constructor cause= parameter also sets __cause__
+    f2 = Failure("test", cause=root_cause)
+    assert f2.__cause__ is root_cause
+
+    # Test chaining with HandlerError
+    try:
+        raise HandlerError(
+            "handler error", error_type=HandlerErrorType.INTERNAL
+        ) from root_cause
+    except HandlerError as e:
+        assert e.__cause__ is root_cause
+
+    # Test chaining with OperationError
+    try:
+        raise OperationError(
+            "op error", state=OperationErrorState.FAILED
+        ) from root_cause
+    except OperationError as e:
+        assert e.__cause__ is root_cause
+
+    # Test chaining from a non-Failure exception
+    try:
+        try:
+            raise ValueError("invalid value")
+        except ValueError as e:
+            raise Failure("wrapped error") from e
+    except Failure as f:
+        assert isinstance(f.__cause__, ValueError)
+        assert str(f.__cause__) == "invalid value"
 
 
 def test_failure_repr():
