@@ -67,12 +67,14 @@ class Failure(Exception):
         self.details: Mapping[str, Any] | None = (
             MappingProxyType(dict(details)) if details else None
         )
-        self.cause = cause
+
+        if cause is not None:
+            self.__cause__ = cause
 
     def __repr__(self) -> str:
         return (
             f"Failure(message={self.message!r}, metadata={self.metadata!r}, "
-            f"details={self.details!r}, cause={self.cause!r})"
+            f"details={self.details!r}, cause={self.__cause__!r})"
         )
 
     @property
@@ -195,7 +197,7 @@ class HandlerError(Failure):
         return (
             f"HandlerError(message={self.message!r}, error_type={self.error_type!r}, "
             f"retryable={self.retryable}, metadata={self.metadata!r}, "
-            f"details={self.details!r}, cause={self.cause!r})"
+            f"details={self.details!r}, cause={self.__cause__!r})"
         )
 
     @property
@@ -395,7 +397,7 @@ class OperationError(Failure):
     def __repr__(self) -> str:
         return (
             f"OperationError(message={self.message!r}, state={self.state!r}, "
-            f"metadata={self.metadata!r}, details={self.details!r}, cause={self.cause!r})"
+            f"metadata={self.metadata!r}, details={self.details!r}, cause={self.__cause__!r})"
         )
 
 
