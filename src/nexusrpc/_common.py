@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import traceback
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
+from logging import getLogger
+from types import MappingProxyType
+from typing import Any, Mapping, TypeVar
+
+logger = getLogger(__name__)
 
 InputT = TypeVar("InputT", contravariant=True)
 """Operation input type"""
@@ -17,7 +22,79 @@ ServiceT = TypeVar("ServiceT")
 """A user's service definition class, typically decorated with @service"""
 
 
-class HandlerError(Exception):
+class Failure(Exception):
+    """
+    A Nexus Failure represents protocol-level failures.
+
+    Base class for :py:class:`HandlerError` and :py:class:`OperationError`.
+
+    See https://github.com/nexus-rpc/api/blob/main/SPEC.md#failure
+    """
+
+    _stack_trace: str | None
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        stack_trace: str | None = None,
+        metadata: Mapping[str, str] | None = None,
+        details: Mapping[str, Any] | None = None,
+        cause: Failure | None = None,
+    ):
+        """
+        Initialize a new Failure.
+
+        :param message: A descriptive message for the failure. This will become
+                        the `message` in the resulting Nexus Failure object.
+
+        :param stack_trace: An optional stack trace string. This is used for
+                            cross-language interoperability where native Python
+                            exception chaining may not be available.
+
+        :param metadata: Optional key-value metadata associated with the failure.
+
+        :param details: Optional additional details about the failure.
+
+        :param cause: An optional Failure that caused this failure.
+        """
+        super().__init__(message)
+        self.message = message
+        self._stack_trace = stack_trace
+        self.metadata: Mapping[str, str] | None = (
+            MappingProxyType(dict(metadata)) if metadata else None
+        )
+        self.details: Mapping[str, Any] | None = (
+            MappingProxyType(dict(details)) if details else None
+        )
+
+        if cause is not None:
+            self.__cause__ = cause
+
+    def __repr__(self) -> str:
+        return (
+            f"Failure(message={self.message!r}, metadata={self.metadata!r}, "
+            f"details={self.details!r}, cause={self.__cause__!r})"
+        )
+
+    @property
+    def stack_trace(self) -> str | None:
+        """
+        The stack trace associated with this failure.
+
+        Returns the explicit stack trace if one was provided during construction.
+        Otherwise, if this exception has been raised and caught, returns the
+        traceback from ``self.__traceback__``. Returns ``None`` if no stack trace
+        is available.
+        """
+        if self._stack_trace:
+            return self._stack_trace
+        if self.__traceback__ is None:
+            return None
+        return "\n".join(traceback.format_tb(self.__traceback__))
+
+
+class HandlerError(Failure):
     """
     A Nexus handler error.
 
@@ -32,14 +109,14 @@ class HandlerError(Exception):
             # Raise a bad request error
             raise nexusrpc.HandlerError(
                 "Invalid input provided",
-                type=nexusrpc.HandlerErrorType.BAD_REQUEST
+                error_type=nexusrpc.HandlerErrorType.BAD_REQUEST
             )
 
             # Raise a retryable internal error
             raise nexusrpc.HandlerError(
                 "Database unavailable",
-                type=nexusrpc.HandlerErrorType.INTERNAL,
-                retryable=True
+                error_type=nexusrpc.HandlerErrorType.INTERNAL,
+                retryable_override=True
             )
     """
 
@@ -47,8 +124,12 @@ class HandlerError(Exception):
         self,
         message: str,
         *,
-        type: HandlerErrorType,
-        retryable_override: Optional[bool] = None,
+        error_type: HandlerErrorType | str,
+        retryable_override: bool | None = None,
+        stack_trace: str | None = None,
+        metadata: Mapping[str, str] | None = None,
+        details: Mapping[str, Any] | None = None,
+        cause: Failure | None = None,
     ):
         """
         Initialize a new HandlerError.
@@ -56,22 +137,68 @@ class HandlerError(Exception):
         :param message: A descriptive message for the error. This will become
                         the `message` in the resulting Nexus Failure object.
 
-        :param type: The :py:class:`HandlerErrorType` of the error.
+        :param error_type: The :py:class:`HandlerErrorType` of the error, or a
+                          string representation of the error type. If a string is
+                          provided and doesn't match a known error type, it will
+                          be treated as UNKNOWN and a warning will be logged.
 
         :param retryable_override: Optionally set whether the error should be
                                    retried. By default, the error type is used
                                    to determine this.
-        """
-        super().__init__(message)
-        self._type = type
-        self._retryable_override = retryable_override
 
-    @property
-    def retryable_override(self) -> Optional[bool]:
+        :param stack_trace: An optional stack trace string. This is used for
+                            cross-language interoperability where native Python
+                            exception chaining may not be available.
+
+        :param metadata: Optional key-value metadata associated with the error.
+                         The key ``"type"`` is reserved and will be set to
+                         ``"nexus.HandlerError"`` per the Nexus spec.
+
+        :param details: Optional additional details about the error. The keys
+                        ``"type"`` and ``"retryableOverride"`` are reserved and
+                        will be set per the Nexus spec.
+
+        :param cause: An optional Failure that caused this error.
         """
-        The optional retryability override set when this error was created.
-        """
-        return self._retryable_override
+        # Handle string error types (must be done before super().__init__ to build details)
+        if isinstance(error_type, str):
+            raw_error_type = error_type
+            try:
+                error_type = HandlerErrorType[error_type]
+            except KeyError:
+                logger.warning(f"Unknown Nexus HandlerErrorType: {error_type}")
+                error_type = HandlerErrorType.UNKNOWN
+        else:
+            raw_error_type = error_type.value
+
+        # Build metadata: user values first, then spec-required "type" (cannot be overridden)
+        failure_metadata: dict[str, str] = dict(metadata) if metadata else {}
+        failure_metadata["type"] = "nexus.HandlerError"
+
+        # Build details: user values first, then spec-required fields (cannot be overridden)
+        failure_details: dict[str, Any] = dict(details) if details else {}
+        failure_details["type"] = raw_error_type
+        if retryable_override is not None:
+            failure_details["retryableOverride"] = retryable_override
+
+        super().__init__(
+            message,
+            stack_trace=stack_trace,
+            metadata=failure_metadata,
+            details=failure_details,
+            cause=cause,
+        )
+
+        self.error_type = error_type
+        self.raw_error_type = raw_error_type
+        self.retryable_override = retryable_override
+
+    def __repr__(self) -> str:
+        return (
+            f"HandlerError(message={self.message!r}, error_type={self.error_type!r}, "
+            f"retryable={self.retryable}, metadata={self.metadata!r}, "
+            f"details={self.details!r}, cause={self.__cause__!r})"
+        )
 
     @property
     def retryable(self) -> bool:
@@ -82,46 +209,39 @@ class HandlerError(Exception):
         error type is used. See
         https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
         """
-        if self._retryable_override is not None:
-            return self._retryable_override
+        if self.retryable_override is not None:
+            return self.retryable_override
 
-        non_retryable_types = {
-            HandlerErrorType.BAD_REQUEST,
-            HandlerErrorType.UNAUTHENTICATED,
-            HandlerErrorType.UNAUTHORIZED,
-            HandlerErrorType.NOT_FOUND,
-            HandlerErrorType.CONFLICT,
-            HandlerErrorType.NOT_IMPLEMENTED,
-        }
-        retryable_types = {
-            HandlerErrorType.REQUEST_TIMEOUT,
-            HandlerErrorType.RESOURCE_EXHAUSTED,
-            HandlerErrorType.INTERNAL,
-            HandlerErrorType.UNAVAILABLE,
-            HandlerErrorType.UPSTREAM_TIMEOUT,
-        }
-        if self._type in non_retryable_types:
-            return False
-        elif self._type in retryable_types:
-            return True
-        else:
-            return True
-
-    @property
-    def type(self) -> HandlerErrorType:
-        """
-        The type of handler error.
-
-        See :py:class:`HandlerErrorType` and
-        https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors.
-        """
-        return self._type
+        match self.error_type:
+            case (
+                HandlerErrorType.BAD_REQUEST
+                | HandlerErrorType.UNAUTHENTICATED
+                | HandlerErrorType.UNAUTHORIZED
+                | HandlerErrorType.NOT_FOUND
+                | HandlerErrorType.CONFLICT
+                | HandlerErrorType.NOT_IMPLEMENTED
+            ):
+                return False
+            case (
+                HandlerErrorType.RESOURCE_EXHAUSTED
+                | HandlerErrorType.REQUEST_TIMEOUT
+                | HandlerErrorType.INTERNAL
+                | HandlerErrorType.UNAVAILABLE
+                | HandlerErrorType.UPSTREAM_TIMEOUT
+                | HandlerErrorType.UNKNOWN
+            ):
+                return True
 
 
 class HandlerErrorType(Enum):
     """Nexus handler error types.
 
     See https://github.com/nexus-rpc/api/blob/main/SPEC.md#predefined-handler-errors
+    """
+
+    UNKNOWN = "UNKNOWN"
+    """
+    The error type is unknown. Subsequent requests by the client are permissible.
     """
 
     BAD_REQUEST = "BAD_REQUEST"
@@ -204,14 +324,9 @@ class HandlerErrorType(Enum):
     """
 
 
-class OperationError(Exception):
+class OperationError(Failure):
     """
     An error that represents "failed" and "canceled" operation results.
-
-    :param message: A descriptive message for the error. This will become the
-                    `message` in the resulting Nexus Failure object.
-
-    :param state:
 
     Example:
         .. code-block:: python
@@ -231,16 +346,59 @@ class OperationError(Exception):
             )
     """
 
-    def __init__(self, message: str, *, state: OperationErrorState):
-        super().__init__(message)
-        self._state = state
+    def __init__(
+        self,
+        message: str,
+        *,
+        state: OperationErrorState,
+        stack_trace: str | None = None,
+        metadata: Mapping[str, str] | None = None,
+        details: Mapping[str, Any] | None = None,
+        cause: Failure | None = None,
+    ):
+        """
+        Initialize a new OperationError.
 
-    @property
-    def state(self) -> OperationErrorState:
+        :param message: A descriptive message for the error. This will become the
+                        `message` in the resulting Nexus Failure object.
+
+        :param state: The state of the operation (:py:class:`OperationErrorState`).
+
+        :param stack_trace: An optional stack trace string. This is used for
+                            cross-language interoperability where native Python
+                            exception chaining may not be available.
+
+        :param metadata: Optional key-value metadata associated with the error.
+                         The key ``"type"`` is reserved and will be set to
+                         ``"nexus.OperationError"`` per the Nexus spec.
+
+        :param details: Optional additional details about the error. The key
+                        ``"state"`` is reserved and will be set per the Nexus spec.
+
+        :param cause: An optional Failure that caused this error.
         """
-        The state of the operation.
-        """
-        return self._state
+        # Build metadata: user values first, then spec-required "type" (cannot be overridden)
+        failure_metadata: dict[str, str] = dict(metadata) if metadata else {}
+        failure_metadata["type"] = "nexus.OperationError"
+
+        # Build details: user values first, then spec-required "state" (cannot be overridden)
+        failure_details: dict[str, Any] = dict(details) if details else {}
+        failure_details["state"] = state.value
+
+        super().__init__(
+            message,
+            stack_trace=stack_trace,
+            metadata=failure_metadata,
+            details=failure_details,
+            cause=cause,
+        )
+        self.state = state
+
+    def __repr__(self) -> str:
+        return (
+            f"OperationError(message={self.message!r}, state={self.state!r}, "
+            f"metadata={self.metadata!r}, details={self.details!r}, cause={self.__cause__!r})"
+        )
 
 
 class OperationErrorState(Enum):

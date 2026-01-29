@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from . import handler
 from ._common import (
+    Failure,
     HandlerError,
     HandlerErrorType,
     InputT,
@@ -35,6 +36,7 @@ from ._util import (
 
 __all__ = [
     "Content",
+    "Failure",
     "get_operation",
     "get_service_definition",
     "handler",
