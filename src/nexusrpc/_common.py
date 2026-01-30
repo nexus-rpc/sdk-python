@@ -170,13 +170,13 @@ class HandlerError(Failure):
             cause=cause,
         )
 
-        self.error_type = type
+        self.type = type
         self.raw_error_type = raw_error_type
         self.retryable_override = retryable_override
 
     def __repr__(self) -> str:
         return (
-            f"HandlerError(message={self.message!r}, error_type={self.error_type!r}, "
+            f"HandlerError(message={self.message!r}, error_type={self.type!r}, "
             f"retryable={self.retryable}, metadata={self.metadata!r}, "
             f"details={self.details!r}, cause={self.__cause__!r})"
         )
@@ -193,7 +193,7 @@ class HandlerError(Failure):
         if self.retryable_override is not None:
             return self.retryable_override
 
-        match self.error_type:
+        match self.type:
             case (
                 HandlerErrorType.BAD_REQUEST
                 | HandlerErrorType.UNAUTHENTICATED
