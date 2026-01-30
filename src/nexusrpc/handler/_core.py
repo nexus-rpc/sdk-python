@@ -416,7 +416,7 @@ class OperationHandlerMiddleware(ABC):
     """
     Middleware for operation handlers.
 
-    This should be extended by any operation handler middelware.
+    This should be extended by any operation handler middleware.
     """
 
     @abstractmethod
