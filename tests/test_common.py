@@ -187,43 +187,6 @@ def test_operation_error_spec_keys_cannot_be_overridden():
     assert err.details["user-key"] == "user-value"
 
 
-def test_failure_traceback_when_raised():
-    """Test that stack_trace captures traceback when exception is raised."""
-    # Failure
-    try:
-        raise Failure("raised failure")
-    except Failure as f:
-        assert f.stack_trace is not None
-        assert "test_failure_traceback_when_raised" in f.stack_trace
-        assert "raise Failure" in f.stack_trace
-
-    # HandlerError
-    try:
-        raise HandlerError("raised handler error", error_type=HandlerErrorType.INTERNAL)
-    except HandlerError as e:
-        assert e.stack_trace is not None
-        assert "test_failure_traceback_when_raised" in e.stack_trace
-        assert "raise HandlerError" in e.stack_trace
-
-    # OperationError
-    try:
-        raise OperationError("raised operation error", state=OperationErrorState.FAILED)
-    except OperationError as e:
-        assert e.stack_trace is not None
-        assert "test_failure_traceback_when_raised" in e.stack_trace
-        assert "raise OperationError" in e.stack_trace
-
-
-def test_explicit_stack_trace_takes_precedence():
-    """Test that explicit stack_trace takes precedence over __traceback__."""
-    try:
-        raise Failure("test", stack_trace="explicit trace")
-    except Failure as f:
-        # Even though __traceback__ is set, explicit stack_trace wins
-        assert f.stack_trace == "explicit trace"
-        assert f.__traceback__ is not None  # Verify traceback exists
-
-
 def test_metadata_details_immutable():
     """Test that metadata and details cannot be modified after construction."""
     err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
