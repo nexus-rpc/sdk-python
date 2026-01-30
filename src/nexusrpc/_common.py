@@ -105,7 +105,7 @@ class HandlerError(Failure):
         self,
         message: str,
         *,
-        error_type: HandlerErrorType | str,
+        type: HandlerErrorType | str,
         retryable_override: bool | None = None,
         stack_trace: str | None = None,
         metadata: Mapping[str, str] | None = None,
@@ -142,15 +142,15 @@ class HandlerError(Failure):
         :param cause: An optional Failure that caused this error.
         """
         # Handle string error types (must be done before super().__init__ to build details)
-        if isinstance(error_type, str):
-            raw_error_type = error_type
+        if isinstance(type, str):
+            raw_error_type = type
             try:
-                error_type = HandlerErrorType[error_type]
+                type = HandlerErrorType[type]
             except KeyError:
-                logger.warning(f"Unknown Nexus HandlerErrorType: {error_type}")
-                error_type = HandlerErrorType.UNKNOWN
+                logger.warning(f"Unknown Nexus HandlerErrorType: {type}")
+                type = HandlerErrorType.UNKNOWN
         else:
-            raw_error_type = error_type.value
+            raw_error_type = type.value
 
         # Build metadata: user values first, then spec-required "type" (cannot be overridden)
         failure_metadata: dict[str, str] = dict(metadata) if metadata else {}
@@ -170,7 +170,7 @@ class HandlerError(Failure):
             cause=cause,
         )
 
-        self.error_type = error_type
+        self.error_type = type
         self.raw_error_type = raw_error_type
         self.retryable_override = retryable_override
 

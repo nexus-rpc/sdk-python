@@ -39,7 +39,7 @@ def test_failure_with_all_fields():
 def test_handler_error_spec_representation():
     """Test that HandlerError is a Failure and sets metadata/details per spec."""
     # Basic error with spec-compliant metadata and details
-    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
     assert isinstance(err, Failure)
     assert isinstance(err, Exception)
     assert err.message == "test"
@@ -49,7 +49,7 @@ def test_handler_error_spec_representation():
     # With retryable_override
     err_with_retry = HandlerError(
         "test",
-        error_type=HandlerErrorType.INTERNAL,
+        type=HandlerErrorType.INTERNAL,
         retryable_override=True,
     )
     assert err_with_retry.details == {"type": "INTERNAL", "retryableOverride": True}
@@ -60,7 +60,7 @@ def test_handler_error_with_all_fields():
     cause = Failure("root cause")
     err = HandlerError(
         "test",
-        error_type=HandlerErrorType.INTERNAL,
+        type=HandlerErrorType.INTERNAL,
         stack_trace="stack trace",
         metadata={"k": "v"},
         details={"code": 1},
@@ -78,7 +78,7 @@ def test_handler_error_spec_keys_cannot_be_overridden():
     """Test that user-provided values cannot override spec-required keys."""
     err = HandlerError(
         "test",
-        error_type=HandlerErrorType.INTERNAL,
+        type=HandlerErrorType.INTERNAL,
         retryable_override=True,
         metadata={"type": "user-type", "user-key": "user-value"},
         details={
@@ -102,33 +102,33 @@ def test_handler_error_retryable_behavior():
     """Test retryable behavior based on error type and override."""
     # Retryable error type (RESOURCE_EXHAUSTED)
     retryable_type = HandlerErrorType.RESOURCE_EXHAUSTED
-    err = HandlerError("test", error_type=retryable_type)
+    err = HandlerError("test", type=retryable_type)
     assert err.retryable
     assert err.error_type == retryable_type
     assert err.raw_error_type == retryable_type.value
 
-    err = HandlerError("test", error_type=retryable_type, retryable_override=False)
+    err = HandlerError("test", type=retryable_type, retryable_override=False)
     assert not err.retryable
 
     # Non-retryable error type (BAD_REQUEST)
     non_retryable_type = HandlerErrorType.BAD_REQUEST
-    err = HandlerError("test", error_type=non_retryable_type)
+    err = HandlerError("test", type=non_retryable_type)
     assert not err.retryable
     assert err.error_type == non_retryable_type
     assert err.raw_error_type == non_retryable_type.value
 
-    err = HandlerError("test", error_type=non_retryable_type, retryable_override=True)
+    err = HandlerError("test", type=non_retryable_type, retryable_override=True)
     assert err.retryable
 
 
 def test_handler_error_unknown_error_type():
     """Test handling of unknown error type strings."""
-    err = HandlerError("test", error_type="SOME_UNKNOWN_TYPE")
+    err = HandlerError("test", type="SOME_UNKNOWN_TYPE")
     assert err.retryable
     assert err.error_type == HandlerErrorType.UNKNOWN
     assert err.raw_error_type == "SOME_UNKNOWN_TYPE"
 
-    err = HandlerError("test", error_type="SOME_UNKNOWN_TYPE", retryable_override=False)
+    err = HandlerError("test", type="SOME_UNKNOWN_TYPE", retryable_override=False)
     assert not err.retryable
 
 
@@ -189,7 +189,7 @@ def test_operation_error_spec_keys_cannot_be_overridden():
 
 def test_metadata_details_immutable():
     """Test that metadata and details cannot be modified after construction."""
-    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
 
     with pytest.raises(TypeError):
         err.metadata["new_key"] = "value"  # type: ignore[index]
@@ -220,7 +220,7 @@ def test_failure_native_exception_chaining():
     # Test chaining with HandlerError
     try:
         raise HandlerError(
-            "handler error", error_type=HandlerErrorType.INTERNAL
+            "handler error", type=HandlerErrorType.INTERNAL
         ) from root_cause
     except HandlerError as e:
         assert e.__cause__ is root_cause
@@ -253,7 +253,7 @@ def test_failure_repr():
     assert "message='test message'" in repr_str
 
     # HandlerError
-    err = HandlerError("test", error_type=HandlerErrorType.INTERNAL)
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
     repr_str = repr(err)
     assert "HandlerError(" in repr_str
     assert "message='test'" in repr_str

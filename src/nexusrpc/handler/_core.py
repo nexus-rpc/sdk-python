@@ -208,7 +208,7 @@ class BaseServiceCollectionHandler(AbstractHandler, ABC):
         if service is None:
             raise HandlerError(
                 f"No handler for service '{service_name}'.",
-                error_type=HandlerErrorType.NOT_FOUND,
+                type=HandlerErrorType.NOT_FOUND,
             )
         return service
 
@@ -376,7 +376,7 @@ class ServiceHandler:
                 f"Nexus service definition '{self.service.name}' has no operation "
                 f"'{operation_name}'. There are {len(self.service.operation_definitions)} operations "
                 f"in the definition.",
-                error_type=HandlerErrorType.NOT_FOUND,
+                type=HandlerErrorType.NOT_FOUND,
             )
         operation_handler = self.operation_handlers.get(operation_name)
         if operation_handler is None:
@@ -384,7 +384,7 @@ class ServiceHandler:
                 f"Nexus service implementation '{self.service.name}' has no handler for "
                 f"operation '{operation_name}'. There are {len(self.operation_handlers)} "
                 f"available operation handlers.",
-                error_type=HandlerErrorType.NOT_FOUND,
+                type=HandlerErrorType.NOT_FOUND,
             )
         return operation_handler
 
