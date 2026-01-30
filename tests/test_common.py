@@ -104,7 +104,7 @@ def test_handler_error_retryable_behavior():
     retryable_type = HandlerErrorType.RESOURCE_EXHAUSTED
     err = HandlerError("test", type=retryable_type)
     assert err.retryable
-    assert err.error_type == retryable_type
+    assert err.type == retryable_type
     assert err.raw_error_type == retryable_type.value
 
     err = HandlerError("test", type=retryable_type, retryable_override=False)
@@ -114,7 +114,7 @@ def test_handler_error_retryable_behavior():
     non_retryable_type = HandlerErrorType.BAD_REQUEST
     err = HandlerError("test", type=non_retryable_type)
     assert not err.retryable
-    assert err.error_type == non_retryable_type
+    assert err.type == non_retryable_type
     assert err.raw_error_type == non_retryable_type.value
 
     err = HandlerError("test", type=non_retryable_type, retryable_override=True)
@@ -125,7 +125,7 @@ def test_handler_error_unknown_error_type():
     """Test handling of unknown error type strings."""
     err = HandlerError("test", type="SOME_UNKNOWN_TYPE")
     assert err.retryable
-    assert err.error_type == HandlerErrorType.UNKNOWN
+    assert err.type == HandlerErrorType.UNKNOWN
     assert err.raw_error_type == "SOME_UNKNOWN_TYPE"
 
     err = HandlerError("test", type="SOME_UNKNOWN_TYPE", retryable_override=False)
@@ -211,7 +211,7 @@ def test_failure_native_exception_chaining():
     except Failure as f:
         assert f.__cause__ is root_cause
         assert f.message == "outer failure"
-        assert f.__cause__.message == "root cause"  # type: ignore[union-attr]
+        assert getattr(f.__cause__, "message") == "root cause"
 
     # Test that constructor cause= parameter also sets __cause__
     f2 = Failure("test", cause=root_cause)
