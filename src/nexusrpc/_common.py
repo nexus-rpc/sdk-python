@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import traceback
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
@@ -31,8 +30,6 @@ class Failure(Exception):
     See https://github.com/nexus-rpc/api/blob/main/SPEC.md#failure
     """
 
-    _stack_trace: str | None
-
     def __init__(
         self,
         message: str,
@@ -48,9 +45,9 @@ class Failure(Exception):
         :param message: A descriptive message for the failure. This will become
                         the `message` in the resulting Nexus Failure object.
 
-        :param stack_trace: An optional stack trace string. This is used for
-                            cross-language interoperability where native Python
-                            exception chaining may not be available.
+        :param stack_trace: An optional explicit stack trace string, typically from
+                            deserialization or remote sources. This is not auto-captured;
+                            consumers should check ``__traceback__`` for local tracebacks.
 
         :param metadata: Optional key-value metadata associated with the failure.
 
@@ -60,7 +57,7 @@ class Failure(Exception):
         """
         super().__init__(message)
         self.message = message
-        self._stack_trace = stack_trace
+        self.stack_trace = stack_trace
         self.metadata: Mapping[str, str] | None = (
             MappingProxyType(dict(metadata)) if metadata else None
         )
@@ -76,22 +73,6 @@ class Failure(Exception):
             f"Failure(message={self.message!r}, metadata={self.metadata!r}, "
             f"details={self.details!r}, cause={self.__cause__!r})"
         )
-
-    @property
-    def stack_trace(self) -> str | None:
-        """
-        The stack trace associated with this failure.
-
-        Returns the explicit stack trace if one was provided during construction.
-        Otherwise, if this exception has been raised and caught, returns the
-        traceback from ``self.__traceback__``. Returns ``None`` if no stack trace
-        is available.
-        """
-        if self._stack_trace:
-            return self._stack_trace
-        if self.__traceback__ is None:
-            return None
-        return "\n".join(traceback.format_tb(self.__traceback__))
 
 
 class HandlerError(Failure):
