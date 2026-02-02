@@ -90,13 +90,13 @@ class HandlerError(Failure):
             # Raise a bad request error
             raise nexusrpc.HandlerError(
                 "Invalid input provided",
-                error_type=nexusrpc.HandlerErrorType.BAD_REQUEST
+                type=nexusrpc.HandlerErrorType.BAD_REQUEST
             )
 
             # Raise a retryable internal error
             raise nexusrpc.HandlerError(
                 "Database unavailable",
-                error_type=nexusrpc.HandlerErrorType.INTERNAL,
+                type=nexusrpc.HandlerErrorType.INTERNAL,
                 retryable_override=True
             )
     """
@@ -118,10 +118,10 @@ class HandlerError(Failure):
         :param message: A descriptive message for the error. This will become
                         the `message` in the resulting Nexus Failure object.
 
-        :param error_type: The :py:class:`HandlerErrorType` of the error, or a
-                          string representation of the error type. If a string is
-                          provided and doesn't match a known error type, it will
-                          be treated as UNKNOWN and a warning will be logged.
+        :param type: The :py:class:`HandlerErrorType` of the error, or a
+                     string representation of the error type. If a string is
+                     provided and doesn't match a known error type, it will
+                     be treated as UNKNOWN and a warning will be logged.
 
         :param retryable_override: Optionally set whether the error should be
                                    retried. By default, the error type is used
@@ -176,7 +176,7 @@ class HandlerError(Failure):
 
     def __repr__(self) -> str:
         return (
-            f"HandlerError(message={self.message!r}, error_type={self.type!r}, "
+            f"HandlerError(message={self.message!r}, type={self.type!r}, "
             f"retryable={self.retryable}, metadata={self.metadata!r}, "
             f"details={self.details!r}, cause={self.__cause__!r})"
         )
