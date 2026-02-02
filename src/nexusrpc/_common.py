@@ -6,6 +6,8 @@ from logging import getLogger
 from types import MappingProxyType
 from typing import Any, Mapping, TypeVar
 
+from typing_extensions import Never
+
 logger = getLogger(__name__)
 
 InputT = TypeVar("InputT", contravariant=True)
@@ -212,6 +214,14 @@ class HandlerError(Failure):
                 | HandlerErrorType.UNKNOWN
             ):
                 return True
+
+            # Type checking enforces exhaustive matching but
+            # the default case is included to provide a runtime default.
+            # If a case is missing from above, the assignment to Never
+            # will cause a type checking error.
+            case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
+                _: Never = unreachable  # pyright: ignore[reportUnreachable]
+                return True  # pyright: ignore[reportUnreachable]
 
 
 class HandlerErrorType(Enum):
