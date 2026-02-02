@@ -257,7 +257,7 @@ def test_failure_repr():
     repr_str = repr(err)
     assert "HandlerError(" in repr_str
     assert "message='test'" in repr_str
-    assert "error_type=" in repr_str
+    assert "type=" in repr_str
     assert "retryable=" in repr_str
 
     # OperationError
