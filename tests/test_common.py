@@ -1,41 +1,268 @@
-from nexusrpc._common import HandlerError, HandlerErrorType
+import pytest
+
+from nexusrpc._common import (
+    Failure,
+    HandlerError,
+    HandlerErrorType,
+    OperationError,
+    OperationErrorState,
+)
 
 
-def test_handler_error_retryable_type():
-    retryable_error_type = HandlerErrorType.RESOURCE_EXHAUSTED
-    assert HandlerError(
+def test_failure_basic():
+    f = Failure("test message")
+    assert str(f) == "test message"
+    assert f.message == "test message"
+    assert f.stack_trace is None
+    assert f.metadata is None
+    assert f.details is None
+    assert f.__cause__ is None
+    assert isinstance(f, Exception)
+
+
+def test_failure_with_all_fields():
+    cause = Failure("root cause")
+    f = Failure(
         "test",
-        type=retryable_error_type,
+        stack_trace="Traceback:\n  File 'test.py', line 1",
+        metadata={"key": "value"},
+        details={"code": 123},
+        cause=cause,
+    )
+    assert f.message == "test"
+    assert f.stack_trace == "Traceback:\n  File 'test.py', line 1"
+    assert f.metadata == {"key": "value"}
+    assert f.details == {"code": 123}
+    assert f.__cause__ is cause
+
+
+def test_handler_error_spec_representation():
+    """Test that HandlerError is a Failure and sets metadata/details per spec."""
+    # Basic error with spec-compliant metadata and details
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
+    assert isinstance(err, Failure)
+    assert isinstance(err, Exception)
+    assert err.message == "test"
+    assert err.metadata == {"type": "nexus.HandlerError"}
+    assert err.details == {"type": "INTERNAL"}
+
+    # With retryable_override
+    err_with_retry = HandlerError(
+        "test",
+        type=HandlerErrorType.INTERNAL,
         retryable_override=True,
-    ).retryable
+    )
+    assert err_with_retry.details == {"type": "INTERNAL", "retryableOverride": True}
 
-    assert not HandlerError(
+
+def test_handler_error_with_all_fields():
+    """Test HandlerError with all Failure fields populated."""
+    cause = Failure("root cause")
+    err = HandlerError(
         "test",
-        type=retryable_error_type,
-        retryable_override=False,
-    ).retryable
+        type=HandlerErrorType.INTERNAL,
+        stack_trace="stack trace",
+        metadata={"k": "v"},
+        details={"code": 1},
+        cause=cause,
+    )
+    assert err.message == "test"
+    assert err.stack_trace == "stack trace"
+    # User-provided keys merged with spec-required keys
+    assert err.metadata == {"type": "nexus.HandlerError", "k": "v"}
+    assert err.details == {"type": "INTERNAL", "code": 1}
+    assert err.__cause__ is cause
 
-    assert HandlerError(
+
+def test_handler_error_spec_keys_cannot_be_overridden():
+    """Test that user-provided values cannot override spec-required keys."""
+    err = HandlerError(
         "test",
-        type=retryable_error_type,
-    ).retryable
-
-
-def test_handler_error_non_retryable_type():
-    non_retryable_error_type = HandlerErrorType.BAD_REQUEST
-    assert HandlerError(
-        "test",
-        type=non_retryable_error_type,
+        type=HandlerErrorType.INTERNAL,
         retryable_override=True,
-    ).retryable
+        metadata={"type": "user-type", "user-key": "user-value"},
+        details={
+            "type": "user-type",
+            "retryableOverride": False,
+            "user-key": "user-value",
+        },
+    )
+    assert err.metadata is not None
+    assert err.details is not None
+    # Spec keys take precedence
+    assert err.metadata["type"] == "nexus.HandlerError"
+    assert err.details["type"] == "INTERNAL"
+    assert err.details["retryableOverride"] is True
+    # User keys are preserved
+    assert err.metadata["user-key"] == "user-value"
+    assert err.details["user-key"] == "user-value"
 
-    assert not HandlerError(
-        "test",
-        type=non_retryable_error_type,
-        retryable_override=False,
-    ).retryable
 
-    assert not HandlerError(
+def test_handler_error_retryable_behavior():
+    """Test retryable behavior based on error type and override."""
+    # Retryable error type (RESOURCE_EXHAUSTED)
+    retryable_type = HandlerErrorType.RESOURCE_EXHAUSTED
+    err = HandlerError("test", type=retryable_type)
+    assert err.retryable
+    assert err.type == retryable_type
+    assert err.raw_error_type == retryable_type.value
+
+    err = HandlerError("test", type=retryable_type, retryable_override=False)
+    assert not err.retryable
+
+    # Non-retryable error type (BAD_REQUEST)
+    non_retryable_type = HandlerErrorType.BAD_REQUEST
+    err = HandlerError("test", type=non_retryable_type)
+    assert not err.retryable
+    assert err.type == non_retryable_type
+    assert err.raw_error_type == non_retryable_type.value
+
+    err = HandlerError("test", type=non_retryable_type, retryable_override=True)
+    assert err.retryable
+
+
+def test_handler_error_unknown_error_type():
+    """Test handling of unknown error type strings."""
+    err = HandlerError("test", type="SOME_UNKNOWN_TYPE")
+    assert err.retryable
+    assert err.type == HandlerErrorType.UNKNOWN
+    assert err.raw_error_type == "SOME_UNKNOWN_TYPE"
+
+    err = HandlerError("test", type="SOME_UNKNOWN_TYPE", retryable_override=False)
+    assert not err.retryable
+
+
+def test_operation_error_spec_representation():
+    """Test that OperationError is a Failure and sets metadata/details per spec."""
+    # Failed state
+    err = OperationError("test", state=OperationErrorState.FAILED)
+    assert isinstance(err, Failure)
+    assert isinstance(err, Exception)
+    assert err.message == "test"
+    assert err.state == OperationErrorState.FAILED
+    assert err.metadata == {"type": "nexus.OperationError"}
+    assert err.details == {"state": "failed"}
+
+    # Canceled state
+    err_canceled = OperationError("test", state=OperationErrorState.CANCELED)
+    assert err_canceled.state == OperationErrorState.CANCELED
+    assert err_canceled.details == {"state": "canceled"}
+
+
+def test_operation_error_with_all_fields():
+    """Test OperationError with all Failure fields populated."""
+    cause = Failure("root cause")
+    err = OperationError(
         "test",
-        type=non_retryable_error_type,
-    ).retryable
+        state=OperationErrorState.CANCELED,
+        stack_trace="stack trace",
+        metadata={"k": "v"},
+        details={"code": 1},
+        cause=cause,
+    )
+    assert err.message == "test"
+    assert err.state == OperationErrorState.CANCELED
+    assert err.stack_trace == "stack trace"
+    # User-provided keys merged with spec-required keys
+    assert err.metadata == {"type": "nexus.OperationError", "k": "v"}
+    assert err.details == {"state": "canceled", "code": 1}
+    assert err.__cause__ is cause
+
+
+def test_operation_error_spec_keys_cannot_be_overridden():
+    """Test that user-provided values cannot override spec-required keys."""
+    err = OperationError(
+        "test",
+        state=OperationErrorState.FAILED,
+        metadata={"type": "user-type", "user-key": "user-value"},
+        details={"state": "user-state", "user-key": "user-value"},
+    )
+    assert err.metadata is not None
+    assert err.details is not None
+    # Spec keys take precedence
+    assert err.metadata["type"] == "nexus.OperationError"
+    assert err.details["state"] == "failed"
+    # User keys are preserved
+    assert err.metadata["user-key"] == "user-value"
+    assert err.details["user-key"] == "user-value"
+
+
+def test_metadata_details_immutable():
+    """Test that metadata and details cannot be modified after construction."""
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
+
+    with pytest.raises(TypeError):
+        err.metadata["new_key"] = "value"  # type: ignore[index]
+
+    with pytest.raises(TypeError):
+        err.details["new_key"] = "value"  # type: ignore[index]
+
+
+def test_failure_native_exception_chaining():
+    """Test that Python's native 'raise ... from ...' syntax works with Failure."""
+    root_cause = Failure("root cause")
+
+    # Test raise ... from ... syntax
+    try:
+        try:
+            raise root_cause
+        except Failure:
+            raise Failure("outer failure") from root_cause
+    except Failure as f:
+        assert f.__cause__ is root_cause
+        assert f.message == "outer failure"
+        assert getattr(f.__cause__, "message") == "root cause"
+
+    # Test that constructor cause= parameter also sets __cause__
+    f2 = Failure("test", cause=root_cause)
+    assert f2.__cause__ is root_cause
+
+    # Test chaining with HandlerError
+    try:
+        raise HandlerError(
+            "handler error", type=HandlerErrorType.INTERNAL
+        ) from root_cause
+    except HandlerError as e:
+        assert e.__cause__ is root_cause
+
+    # Test chaining with OperationError
+    try:
+        raise OperationError(
+            "op error", state=OperationErrorState.FAILED
+        ) from root_cause
+    except OperationError as e:
+        assert e.__cause__ is root_cause
+
+    # Test chaining from a non-Failure exception
+    try:
+        try:
+            raise ValueError("invalid value")
+        except ValueError as e:
+            raise Failure("wrapped error") from e
+    except Failure as f:
+        assert isinstance(f.__cause__, ValueError)
+        assert str(f.__cause__) == "invalid value"
+
+
+def test_failure_repr():
+    """Test __repr__ methods for debugging."""
+    # Failure
+    f = Failure("test message", metadata={"k": "v"}, details={"code": 1})
+    repr_str = repr(f)
+    assert "Failure(" in repr_str
+    assert "message='test message'" in repr_str
+
+    # HandlerError
+    err = HandlerError("test", type=HandlerErrorType.INTERNAL)
+    repr_str = repr(err)
+    assert "HandlerError(" in repr_str
+    assert "message='test'" in repr_str
+    assert "type=" in repr_str
+    assert "retryable=" in repr_str
+
+    # OperationError
+    op_err = OperationError("test", state=OperationErrorState.FAILED)
+    repr_str = repr(op_err)
+    assert "OperationError(" in repr_str
+    assert "message='test'" in repr_str
+    assert "state=" in repr_str
