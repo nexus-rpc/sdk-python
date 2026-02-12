@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from inspect import stack
 from logging import getLogger
-from types import MappingProxyType
 from typing import Any, Mapping, TypeVar
 
 from typing_extensions import Never
@@ -77,8 +75,7 @@ class HandlerError(Exception):
         """
         Initialize a new HandlerError.
 
-        :param message: A descriptive message for the error. This will become
-                        the `message` in the resulting Nexus Failure object.
+        :param message: A descriptive message for the error.
 
         :param type: The :py:class:`HandlerErrorType` of the error, or a
                      string representation of the error type. If a string is
@@ -89,9 +86,9 @@ class HandlerError(Exception):
                                    retried. By default, the error type is used
                                    to determine this.
 
-        :param stack_trace: An optional stack trace string. This is used for
-                            cross-language interoperability where native Python
-                            exception chaining may not be available.
+        :param stack_trace: An optional stack trace string.
+
+        :param original_failure: Set if this error is constructed from a failure object.
         """
         # Handle string error types (must be done before super().__init__ to build details)
         if isinstance(type, str):
@@ -277,21 +274,13 @@ class OperationError(Exception):
         """
         Initialize a new OperationError.
 
-        :param message: A descriptive message for the error. This will become the
-                        `message` in the resulting Nexus Failure object.
+        :param message: A descriptive message for the error.
 
         :param state: The state of the operation (:py:class:`OperationErrorState`).
 
-        :param stack_trace: An optional stack trace string. This is used for
-                            cross-language interoperability where native Python
-                            exception chaining may not be available.
+        :param stack_trace: An optional stack trace string.
 
-        :param metadata: Optional key-value metadata associated with the error.
-                         The key ``"type"`` is reserved and will be set to
-                         ``"nexus.OperationError"`` per the Nexus spec.
-
-        :param details: Optional additional details about the error. The key
-                        ``"state"`` is reserved and will be set per the Nexus spec.
+        :param original_failure: Set if this error is constructed from a failure object.
 
         """
 
