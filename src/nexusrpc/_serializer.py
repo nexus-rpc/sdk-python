@@ -16,6 +16,9 @@ class Content:
     A container for a map of headers and a byte array of data.
 
     It is used by the SDK's Serializer interface implementations.
+
+    .. warning::
+        This API is experimental and may change in the future.
     """
 
     headers: Mapping[str, str]
@@ -32,6 +35,9 @@ class Content:
 class Serializer(Protocol):
     """
     Serializer is used by the framework to serialize/deserialize input and output.
+
+    .. warning::
+        This API is experimental and may change in the future.
     """
 
     def serialize(self, value: Any) -> Union[Content, Awaitable[Content]]:
@@ -62,6 +68,9 @@ class LazyValue(LazyValueT):
     A container for a value encoded in an underlying stream.
 
     It is used to stream inputs and outputs in the various client and server APIs.
+
+    .. warning::
+        This API is experimental and may change in the future.
 
     Example:
         .. code-block:: python
