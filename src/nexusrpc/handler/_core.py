@@ -126,6 +126,11 @@ from ._operation_handler import (
 
 
 class AbstractHandler(ABC):
+    """
+    .. warning::
+        This API is experimental and may change in the future.
+    """
+
     @abstractmethod
     def start_operation(
         self,
@@ -161,6 +166,9 @@ class BaseServiceCollectionHandler(AbstractHandler, ABC):
 
     Operation requests are delegated to a :py:class:`ServiceHandler` based on the service
     name in the operation context.
+
+    .. warning::
+        This API is experimental and may change in the future.
     """
 
     def __init__(
@@ -225,6 +233,9 @@ class Handler(BaseServiceCollectionHandler):
 
     The methods of this class itself are `async def`. There is currently no alternative
     Handler class with `def` methods.
+
+    .. warning::
+        This API is experimental and may change in the future.
 
     Example:
         .. code-block:: python
@@ -417,6 +428,9 @@ class OperationHandlerMiddleware(ABC):
     Middleware for operation handlers.
 
     This should be extended by any operation handler middelware.
+
+    .. warning::
+        This API is experimental and may change in the future.
     """
 
     @abstractmethod

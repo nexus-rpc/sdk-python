@@ -106,6 +106,9 @@ class MiddlewareSafeOperationHandler(OperationHandler[Any, Any], ABC):
     can be awaited by an async runtime. It can produce a result synchronously by returning
     :py:class:`StartOperationResultSync` or asynchronously by returning :py:class:`StartOperationResultAsync`
     in the same fashion that :py:class:`OperationHandler` does.
+
+    .. warning::
+        This API is experimental and may change in the future.
     """
 
     @abstractmethod
