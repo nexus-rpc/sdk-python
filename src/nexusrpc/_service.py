@@ -52,12 +52,13 @@ class Operation(Generic[InputT, OutputT]):
     service: Optional[ServiceDefinition] = dataclasses.field(
         default=None, init=False, compare=False, repr=False
     )
-    """The service that this operation belongs to.
+    """The service that contains this operation.
 
-    Set by :py:func:`nexusrpc.service` and
-    :py:func:`nexusrpc.handler.service_handler`. Each decorated class has its own
-    operations, so an operation inherited from a parent service reports the
-    child service. None for an operation that is not part of a decorated class.
+    :py:func:`nexusrpc.service` and :py:func:`nexusrpc.handler.service_handler`
+    set this value. Each decorated class has its own operations. Thus, when a child
+    service inherits an operation from a parent service, the operation reports the
+    child service. The value is None when the operation is not part of a decorated
+    class.
     """
 
 
@@ -143,8 +144,8 @@ def service(
         # In order for callers to refer to operation definitions at run-time, a decorated user
         # service class must itself have a class attribute for every operation, even if
         # declared only via a type annotation, and whether inherited from a parent class
-        # or not. Inherited operations get a new Operation instance so that each
-        # operation reports the service of the class it was accessed on.
+        # or not. Each inherited operation gets a new Operation instance. Thus, each
+        # operation reports the service of the class that holds it.
         for op_defn in defn.operation_definitions.values():
             op = cls.__dict__.get(op_defn.method_name)
             if not isinstance(op, Operation):

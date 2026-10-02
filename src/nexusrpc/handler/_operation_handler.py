@@ -245,18 +245,19 @@ def bind_operation_handler_methods_to_service(
 ) -> None:
     """Give each operation handler method of a service handler class its own operation.
 
-    The operation of each method reports ``service_definition`` as its service, and has
-    the name and types from the service definition. A method inherited from a parent
-    class is replaced on ``service_cls`` by a wrapper, so that the method of the parent
-    class keeps its own operation.
+    The operation of each method reports ``service_definition`` as its service. The
+    operation gets its name and types from the service definition. When
+    ``service_cls`` inherits a method from a parent class, this function replaces the
+    method on ``service_cls`` with a wrapper. Thus, the method of the parent class
+    keeps its own operation.
 
-    Call this function after the methods have been validated against the service
-    definition.
+    Validate the methods against the service definition before you call this
+    function.
     """
     for op_defn in service_definition.operation_definitions.values():
         method = getattr(service_cls, op_defn.method_name)
-        # A start method decorated with e.g. @sync_operation holds a factory. A method
-        # decorated with @operation_handler is itself the factory.
+        # A start method with a decorator such as @sync_operation holds a factory. A
+        # method with the @operation_handler decorator is the factory.
         factory = getattr(method, "__nexus_operation_factory__", None)
 
         op: Operation[Any, Any] = Operation(

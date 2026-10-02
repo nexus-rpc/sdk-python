@@ -63,7 +63,7 @@ def test_inherited_definition_operations_report_the_child_service():
     # The parent keeps its own operations
     assert SubDefinition.annotated is not BaseDefinition.annotated
     assert _service_name(BaseDefinition.annotated) == "base-definition"
-    # The service is not part of equality
+    # Equality ignores the service
     assert SubDefinition.annotated == BaseDefinition.annotated
 
 
