@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable
@@ -12,6 +13,8 @@ from nexusrpc._util import (
     get_operation_factory,
     is_async_callable,
     is_callable,
+    set_operation,
+    set_operation_factory,
 )
 
 from ._common import (
@@ -234,6 +237,72 @@ def validate_operation_handler_methods(
             f"Service '{service_cls}' implements more operations than the interface '{service_definition}'. "
             f"Extra operations: {', '.join(sorted(operation_handler_factories_by_method_name.keys()))}."
         )
+
+
+def bind_operation_handler_methods_to_service(
+    service_cls: type[ServiceHandlerT],
+    service_definition: ServiceDefinition,
+) -> None:
+    """Give each operation handler method of a service handler class its own operation.
+
+    The operation of each method reports ``service_definition`` as its service, and has
+    the name and types from the service definition. A method inherited from a parent
+    class is replaced on ``service_cls`` by a wrapper, so that the method of the parent
+    class keeps its own operation.
+
+    Call this function after the methods have been validated against the service
+    definition.
+    """
+    for op_defn in service_definition.operation_definitions.values():
+        method = getattr(service_cls, op_defn.method_name)
+        # A start method decorated with e.g. @sync_operation holds a factory. A method
+        # decorated with @operation_handler is itself the factory.
+        factory = getattr(method, "__nexus_operation_factory__", None)
+
+        op: Operation[Any, Any] = Operation(
+            name=op_defn.name,
+            input_type=op_defn.input_type,
+            output_type=op_defn.output_type,
+        )
+        op.method_name = op_defn.method_name
+        op.service = service_definition
+
+        if op_defn.method_name not in service_cls.__dict__:
+            method = _wrap_inherited_method(method)
+            setattr(service_cls, op_defn.method_name, method)
+
+        if factory is None:
+            set_operation(method, op)
+        else:
+            set_operation_factory(method, _wrap_factory(factory, op))
+
+
+def _wrap_factory(
+    factory: Callable[[Any], OperationHandler[Any, Any]],
+    op: Operation[Any, Any],
+) -> Callable[[Any], OperationHandler[Any, Any]]:
+    @functools.wraps(factory)
+    def wrapper(self: Any) -> OperationHandler[Any, Any]:
+        return factory(self)
+
+    set_operation(wrapper, op)
+    return wrapper
+
+
+def _wrap_inherited_method(method: Callable[..., Any]) -> Callable[..., Any]:
+    if inspect.iscoroutinefunction(method):
+
+        @functools.wraps(method)
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            return await method(*args, **kwargs)
+
+        return async_wrapper
+
+    @functools.wraps(method)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        return method(*args, **kwargs)
+
+    return wrapper
 
 
 def service_definition_from_operation_handler_methods(
