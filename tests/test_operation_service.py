@@ -50,11 +50,6 @@ class UndecoratedSubDefinition(BaseDefinition):
 
 
 def test_definition_operations_report_their_service():
-    assert _service_name(BaseDefinition.annotated) == "base-definition"
-    assert _service_name(BaseDefinition.renamed) == "base-definition"
-
-
-def test_inherited_definition_operations_report_the_child_service():
     assert _service_name(SubDefinition.annotated) == "sub-definition"
     assert _service_name(SubDefinition.renamed) == "sub-definition"
     assert _service_name(SubDefinition.added) == "sub-definition"
@@ -63,6 +58,7 @@ def test_inherited_definition_operations_report_the_child_service():
     # The parent keeps its own operations
     assert SubDefinition.annotated is not BaseDefinition.annotated
     assert _service_name(BaseDefinition.annotated) == "base-definition"
+    assert _service_name(BaseDefinition.renamed) == "base-definition"
     # Equality ignores the service
     assert SubDefinition.annotated == BaseDefinition.annotated
 
@@ -97,18 +93,6 @@ class SubHandler(BaseHandler):
 
 
 def test_handler_methods_report_their_service():
-    assert _service_name(BaseHandler.annotated) == "base-definition"
-    assert _service_name(BaseHandler.renamed) == "base-definition"
-
-
-def test_handler_method_operations_use_the_definition_name_and_types():
-    op = _operation(BaseHandler.renamed)
-    assert op.name == "Renamed"
-    assert op.method_name == "renamed"
-    assert (op.input_type, op.output_type) == (int, int)
-
-
-def test_inherited_handler_methods_report_the_child_service():
     assert _service_name(SubHandler.annotated) == "sub-handler"
     assert _service_name(SubHandler.renamed) == "sub-handler"
     assert _operation(SubHandler.renamed).name == "Renamed"
@@ -116,7 +100,15 @@ def test_inherited_handler_methods_report_the_child_service():
     # The parent keeps its own methods and operations
     assert SubHandler.annotated is not BaseHandler.annotated
     assert _service_name(BaseHandler.annotated) == "base-definition"
+    assert _service_name(BaseHandler.renamed) == "base-definition"
     assert inspect.iscoroutinefunction(SubHandler.annotated)
+
+
+def test_handler_method_operations_use_the_definition_name_and_types():
+    op = _operation(BaseHandler.renamed)
+    assert op.name == "Renamed"
+    assert op.method_name == "renamed"
+    assert (op.input_type, op.output_type) == (int, int)
 
 
 @pytest.mark.asyncio

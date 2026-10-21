@@ -9,6 +9,7 @@ from typing import Any, Callable, Generic, Optional
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
 from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
 from nexusrpc._util import (
+    _NEXUS_OPERATION_FACTORY_ATTR_NAME,  # pyright: ignore[reportPrivateUsage]
     get_operation,
     get_operation_factory,
     is_async_callable,
@@ -258,7 +259,7 @@ def bind_operation_handler_methods_to_service(
         method = getattr(service_cls, op_defn.method_name)
         # A start method with a decorator such as @sync_operation holds a factory. A
         # method with the @operation_handler decorator is the factory.
-        factory = getattr(method, "__nexus_operation_factory__", None)
+        factory = getattr(method, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None)
 
         op: Operation[Any, Any] = Operation(
             name=op_defn.name,
