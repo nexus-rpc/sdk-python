@@ -49,6 +49,17 @@ class Operation(Generic[InputT, OutputT]):
     method_name: Optional[str] = dataclasses.field(default=None, init=False)
     input_type: Optional[type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[type[OutputT]] = dataclasses.field(default=None)
+    service: Optional[ServiceDefinition] = dataclasses.field(
+        default=None, init=False, compare=False, repr=False
+    )
+    """The service that contains this operation.
+
+    :py:func:`nexusrpc.service` and :py:func:`nexusrpc.handler.service_handler`
+    set this value. Each decorated class has its own operations. Thus, when a child
+    service inherits an operation from a parent service, the operation reports the
+    child service. The value is None when the operation is not part of a decorated
+    class.
+    """
 
 
 @dataclass
@@ -133,20 +144,19 @@ def service(
         # In order for callers to refer to operation definitions at run-time, a decorated user
         # service class must itself have a class attribute for every operation, even if
         # declared only via a type annotation, and whether inherited from a parent class
-        # or not.
-        #
-        # TODO(preview): it is sufficient to do this setattr only for the subset of
-        # operations that were declared on *this* class. Currently however we are
-        # setting all inherited operations.
-        for op_name, op_defn in defn.operation_definitions.items():
-            if not hasattr(cls, op_name):
+        # or not. Each inherited operation gets a new Operation instance. Thus, each
+        # operation reports the service of the class that holds it.
+        for op_defn in defn.operation_definitions.values():
+            op = cls.__dict__.get(op_defn.method_name)
+            if not isinstance(op, Operation):
                 op = Operation(
                     name=op_defn.name,
                     input_type=op_defn.input_type,
                     output_type=op_defn.output_type,
                 )
                 op.method_name = op_defn.method_name
-                setattr(cls, op_name, op)
+                setattr(cls, op_defn.method_name, op)
+            op.service = defn
 
         return cls
 

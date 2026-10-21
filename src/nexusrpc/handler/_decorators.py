@@ -24,6 +24,7 @@ from nexusrpc.handler._util import (
 from ._operation_handler import (
     OperationHandler,
     SyncOperationHandler,
+    bind_operation_handler_methods_to_service,
     collect_operation_handler_factories_by_method_name,
     service_definition_from_operation_handler_methods,
     validate_operation_handler_methods,
@@ -112,6 +113,7 @@ def service_handler(
         )
         validate_operation_handler_methods(cls, factories_by_method_name, service)
         set_service_definition(cls, service)
+        bind_operation_handler_methods_to_service(cls, service)
         return cls
 
     if cls is None:
