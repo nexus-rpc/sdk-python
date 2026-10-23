@@ -98,7 +98,7 @@ jobs:
     name: Smoke test TestPyPI (Python ${{ matrix.python }})
     needs: [build, publish_testpypi]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -133,7 +133,7 @@ jobs:
     name: Smoke test PyPI (Python ${{ matrix.python }})
     needs: [build, publish_pypi]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:

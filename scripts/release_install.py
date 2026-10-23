@@ -19,8 +19,8 @@ def pip_install(args: Sequence[str], *, attempts: int = 1) -> None:
         except subprocess.CalledProcessError:
             if attempt == attempts - 1:
                 raise
-            print("Package installation failed; retrying in 15 seconds", flush=True)
-            time.sleep(15)
+            print("Package installation failed; retrying in 30 seconds", flush=True)
+            time.sleep(30)
 
 
 def install(version: str, index_url: str, dependency_index_url: str | None) -> None:
@@ -34,7 +34,7 @@ def install(version: str, index_url: str, dependency_index_url: str | None) -> N
             *(["--no-deps"] if dependency_index_url else []),
             f"nexus-rpc=={version}",
         ],
-        attempts=12,
+        attempts=31,
     )
     if dependency_index_url:
         requirements = importlib.metadata.requires("nexus-rpc") or []

@@ -9,6 +9,8 @@ import re
 import tarfile
 import zipfile
 
+import tomllib
+
 
 def validate_version(version: str) -> str:
     """Require a canonical release version suitable for metadata and tags."""
@@ -22,18 +24,22 @@ def validate_version(version: str) -> str:
     return version
 
 
-def _verify_metadata(data: bytes, version: str) -> None:
+def _verify_metadata(data: bytes, version: str, requires_python: str) -> None:
     metadata = email.parser.BytesParser().parsebytes(data)
     name = re.sub(r"[-_.]+", "-", str(metadata["Name"])).lower()
     if name != "nexus-rpc" or metadata["Version"] != version:
         raise ValueError("Distribution metadata does not match nexus-rpc==" + version)
-    if metadata["Requires-Python"] != ">=3.10":
+    if metadata["Requires-Python"] != requires_python:
         raise ValueError("Distribution has unexpected Requires-Python metadata")
 
 
 def verify_dist(dist: pathlib.Path, version: str) -> None:
     """Check the exact artifact set, embedded metadata, and public package files."""
     validate_version(version)
+    with (pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml").open(
+        "rb"
+    ) as f:
+        requires_python = tomllib.load(f)["project"]["requires-python"]
     wheel = f"nexus_rpc-{version}-py3-none-any.whl"
     sdist = f"nexus_rpc-{version}.tar.gz"
     # uv build writes a .gitignore alongside the distributions.
@@ -51,7 +57,7 @@ def verify_dist(dist: pathlib.Path, version: str) -> None:
             or not {f"nexusrpc/{name}" for name in required}.issubset(names)
         ):
             raise ValueError("Wheel is missing package files or has invalid metadata")
-        _verify_metadata(archive.read(metadata_path), version)
+        _verify_metadata(archive.read(metadata_path), version, requires_python)
     with tarfile.open(dist / sdist, "r:gz") as archive:
         names = archive.getnames()
         prefix = f"nexus_rpc-{version}"
@@ -63,7 +69,7 @@ def verify_dist(dist: pathlib.Path, version: str) -> None:
         if metadata is None:
             raise ValueError("Source distribution is missing metadata")
         with metadata:
-            _verify_metadata(metadata.read(), version)
+            _verify_metadata(metadata.read(), version, requires_python)
 
 
 def main() -> None:
