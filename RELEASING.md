@@ -42,3 +42,26 @@ are retained for 14 days.
   only failed jobs in the original run; do not republish. Check for an existing
   release and tag before retrying draft creation. An existing tag must point to
   the verified commit.
+
+## Trusted Publishing setup
+
+Create `testpypi` and `pypi` GitHub environments in `nexus-rpc/sdk-python`.
+Restrict deployments to `main` and require approval, particularly for production.
+Prevent self-approval and administrator bypass where supported.
+
+Configure GitHub Trusted Publishers for the `nexus-rpc` project separately on
+TestPyPI and PyPI:
+
+| Setting | TestPyPI | PyPI |
+| --- | --- | --- |
+| Repository owner | `nexus-rpc` | `nexus-rpc` |
+| Repository | `sdk-python` | `sdk-python` |
+| Workflow file | `release-publish.yml` | `release-publish.yml` |
+| Environment | `testpypi` | `pypi` |
+
+Use **`release-publish.yml`**: it contains both publishing jobs. Do not leave the
+publisher's environment field empty. TestPyPI and PyPI have separate accounts
+and publisher configurations; configuring one does not configure the other.
+
+Publishing uses GitHub OIDC. No stored PyPI API token or publishing username is needed.
+See [PyPI Trusted Publishing setup](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
