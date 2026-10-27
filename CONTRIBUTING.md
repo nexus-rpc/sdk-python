@@ -20,3 +20,7 @@ uv run pytest
 ```
 uv run poe docs
 ```
+
+### Releases
+
+See [the release guide](RELEASING.md) for package publication and recovery.

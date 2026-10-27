@@ -1,0 +1,168 @@
+name: Release Publish
+run-name: Release from main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and verify distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Require main for publishing
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "Release publishing must be dispatched from main" >&2
+          exit 1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8
+        with:
+          python-version: "3.14"
+      - run: uv sync --locked
+      - name: Validate release version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(uv version --short)"
+          uv run python -c 'import sys; from scripts.release_verify import validate_version; validate_version(sys.argv[1])' "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git show-ref --verify --quiet "refs/tags/$version"; then
+            test "$(git rev-parse "refs/tags/$version^{}")" = "$GITHUB_SHA" || {
+              echo "Existing release tag points to a different commit" >&2
+              exit 1
+            }
+          fi
+      - name: Lint and test release commit
+        run: |
+          uv run poe lint
+          uv run pytest
+      - run: uv build
+      - name: Verify distributions
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: uv run python scripts/release_verify.py --version "$VERSION"
+      - name: Test wheel and source distribution
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          test_dir="$(mktemp -d)"
+          uv venv "$test_dir/wheel"
+          uv pip install --python "$test_dir/wheel/bin/python" dist/*.whl
+          "$test_dir/wheel/bin/python" -I scripts/release_smoke.py --version "$VERSION"
+          uv build --wheel "dist/nexus_rpc-$VERSION.tar.gz" --out-dir "$test_dir/rebuilt"
+          uv venv "$test_dir/sdist"
+          uv pip install --python "$test_dir/sdist/bin/python" "$test_dir"/rebuilt/*.whl
+          "$test_dir/sdist/bin/python" -I scripts/release_smoke.py --version "$VERSION"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-dist
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish_testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  smoke_testpypi:
+    name: Smoke test TestPyPI (Python ${{ matrix.python }})
+    needs: [build, publish_testpypi]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+      - uses: ./.github/actions/release-smoke
+        with:
+          version: ${{ needs.build.outputs.version }}
+          index-url: https://test.pypi.org/simple/
+          dependency-index-url: https://pypi.org/simple/
+          python-version: ${{ matrix.python }}
+
+  publish_pypi:
+    name: Publish to PyPI
+    needs: [build, smoke_testpypi]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+
+  smoke_pypi:
+    name: Smoke test PyPI (Python ${{ matrix.python }})
+    needs: [build, publish_pypi]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+      - uses: ./.github/actions/release-smoke
+        with:
+          version: ${{ needs.build.outputs.version }}
+          index-url: https://pypi.org/simple/
+          python-version: ${{ matrix.python }}
+
+  draft_release:
+    name: Create draft GitHub release
+    needs: [build, smoke_pypi]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create draft release at the verified commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.sha }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "$VERSION" --target "$RELEASE_SHA" \
+            --title "$VERSION" --draft --generate-notes
