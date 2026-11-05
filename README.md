@@ -73,4 +73,5 @@ class MyNexusServiceHandler:
 
 ---
 
-_The `nexus-rpc` package name on PyPI was previously used by an unrelated project._
+_Versions 1.0.1 and earlier of the `nexus-rpc` package on PyPI belong to an unrelated
+project. The Nexus Python SDK starts at version 1.1.0._
