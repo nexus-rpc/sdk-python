@@ -70,3 +70,7 @@ class MyNexusServiceHandler:
     ) -> MyOutput:
         return MyOutput(message=f"Hello {input.name}!")
 ```
+
+---
+
+_The `nexus-rpc` package name on PyPI was previously used by an unrelated project._
