@@ -135,7 +135,7 @@ def operation_handler(
 
 @overload
 def operation_handler(
-    *, name: Optional[str] = None
+    *, name: Optional[str] = None, dynamic: bool = False
 ) -> Callable[[OperationHandlerFactoryT], OperationHandlerFactoryT]: ...
 
 
@@ -143,6 +143,7 @@ def operation_handler(
     method: Optional[OperationHandlerFactoryT] = None,
     *,
     name: Optional[str] = None,
+    dynamic: bool = False,
 ) -> Union[
     OperationHandlerFactoryT,
     Callable[[OperationHandlerFactoryT], OperationHandlerFactoryT],
@@ -156,7 +157,12 @@ def operation_handler(
     Args:
         method: The method to decorate.
         name: Optional name for the operation. If not provided, the method name will be used.
+        dynamic: Use this factory for the unnamed fallback. Cannot specify name.
+            The handler must accept raw nexusrpc.LazyValue input.
     """
+
+    if dynamic and name is not None:
+        raise ValueError("A dynamic operation handler cannot specify name")
 
     def decorator(
         method: OperationHandlerFactoryT,
@@ -177,7 +183,8 @@ def operation_handler(
                 )
 
         op: Operation[Any, Any] = Operation(
-            name=name or method.__name__,
+            name="" if dynamic else name or method.__name__,
+            dynamic=dynamic,
             input_type=input_type,
             output_type=output_type,
         )

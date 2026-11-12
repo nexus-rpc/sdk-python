@@ -46,6 +46,8 @@ class Operation(Generic[InputT, OutputT]):
     """
 
     name: str
+    dynamic: bool = dataclasses.field(default=False, kw_only=True)
+    """Whether this describes the unnamed handler fallback."""
     method_name: Optional[str] = dataclasses.field(default=None, init=False)
     input_type: Optional[type[InputT]] = dataclasses.field(default=None)
     output_type: Optional[type[OutputT]] = dataclasses.field(default=None)
