@@ -7,11 +7,13 @@ from typing import Any, Callable, Optional, TypeVar, Union, overload
 
 import nexusrpc.handler._syncio
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
+from nexusrpc._serializer import LazyValue, LazyValueT
 from nexusrpc._service import Operation
 from nexusrpc._util import (
     get_callable_name,
     get_service_definition,
     is_async_callable,
+    set_dynamic_operation_factory,
     set_operation,
     set_operation_factory,
     set_service_definition,
@@ -25,7 +27,7 @@ from ._operation_handler import (
     OperationHandler,
     SyncOperationHandler,
     bind_operation_handler_methods_to_service,
-    collect_operation_handler_factories_by_method_name,
+    collect_operation_handler_factories,
     service_definition_from_operation_handler_methods,
     validate_operation_handler_methods,
 )
@@ -105,9 +107,7 @@ def service_handler(
         )
         if not _name:
             raise ValueError("Service name must not be empty.")
-        factories_by_method_name = collect_operation_handler_factories_by_method_name(
-            cls, _service
-        )
+        factories_by_method_name, _ = collect_operation_handler_factories(cls, _service)
         service = _service or service_definition_from_operation_handler_methods(
             _name, factories_by_method_name
         )
@@ -159,6 +159,10 @@ def operation_handler(
         name: Optional name for the operation. If not provided, the method name will be used.
         dynamic: Use this factory for the unnamed fallback. Cannot specify name.
             The handler must accept raw nexusrpc.LazyValue input.
+
+    .. warning::
+        Dynamic operation handler (setting dynamic=True) are experimental and may change in
+        the future.
     """
 
     if dynamic and name is not None:
@@ -182,9 +186,16 @@ def operation_handler(
                     f"but operation {method.__name__} has {len(type_args)} type parameters: {type_args}"
                 )
 
+        if dynamic:
+            if input_type not in (LazyValue, LazyValueT):
+                raise TypeError(
+                    "A dynamic operation handler must accept nexusrpc.LazyValue"
+                )
+            set_dynamic_operation_factory(method)
+            return method
+
         op: Operation[Any, Any] = Operation(
-            name="" if dynamic else name or method.__name__,
-            dynamic=dynamic,
+            name=name or method.__name__,
             input_type=input_type,
             output_type=output_type,
         )

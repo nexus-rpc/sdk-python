@@ -21,7 +21,7 @@ from nexusrpc.handler import (
 )
 from nexusrpc.handler._decorators import operation_handler
 from nexusrpc.handler._operation_handler import (
-    collect_operation_handler_factories_by_method_name,
+    collect_operation_handler_factories,
 )
 from tests.helpers import TestOperationTaskCancellation
 
@@ -77,9 +77,10 @@ async def test_collected_operation_factories_match_service_definition(
     service = get_service_definition(test_case.Service)
     assert isinstance(service, nexusrpc.ServiceDefinition)
     assert service.name == "Service"
-    operation_factories = collect_operation_handler_factories_by_method_name(
+    operation_factories, dynamic_factory = collect_operation_handler_factories(
         test_case.Service, service
     )
+    assert dynamic_factory is None
     assert operation_factories.keys() == test_case.expected_operation_factories.keys()
     ctx = StartOperationContext(
         service="Service",

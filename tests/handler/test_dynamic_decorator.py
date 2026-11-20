@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 import nexusrpc
+from nexusrpc._util import get_operation_factory, set_operation_factory
 from nexusrpc.handler import (
     CancelOperationContext,
     Handler,
@@ -122,6 +123,8 @@ async def test_dynamic_decorator_routes_raw_input_and_preserves_named_handlers(
         tools.named if operation == "list_tools" else tools.dynamic
     )
     assert set(service.operation_handlers) == {"list_tools"}
+    assert nexusrpc.get_operation(Tools.forward) is None
+    assert get_operation_factory(Tools.forward) is Tools.forward
 
 
 # Removing a tool prevents new starts but does not prevent cancellation of its existing token.
@@ -245,6 +248,31 @@ async def test_dynamic_handler_with_explicit_service_and_no_named_operations():
         start_context("echo", "empty"), nexusrpc.LazyValue(DummySerializer({}), {})
     )
     assert isinstance(result, StartOperationResultSync) and result.value[0] == "echo"
+
+
+# Custom start-method decorators can attach a dynamic factory without an Operation.
+@pytest.mark.asyncio
+async def test_dynamic_factory_attached_to_start_method():
+    @operation_handler(dynamic=True)
+    def factory(_self: Any) -> OperationHandler[nexusrpc.LazyValue, Any]:
+        return Dynamic()
+
+    @service_handler(name="tools")
+    class CustomService:
+        async def forward(self) -> None:
+            raise AssertionError("The start method must not be called as a factory")
+
+        set_operation_factory(forward, factory)
+
+    handler = Handler([CustomService()])
+    assert not handler.service_handlers["tools"].operation_handlers
+    assert nexusrpc.get_operation(CustomService.forward) is None
+    assert get_operation_factory(CustomService.forward) is factory
+    result = await handler.start_operation(
+        start_context("echo"), nexusrpc.LazyValue(DummySerializer({"id": 5}), {})
+    )
+    assert isinstance(result, StartOperationResultSync)
+    assert result.value == ("echo", "req", {"id": 5})
 
 
 # A fallback can also accompany named operations from an explicit service definition.

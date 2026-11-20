@@ -109,7 +109,7 @@ from typing_extensions import Self, TypeGuard
 from nexusrpc._common import HandlerError, HandlerErrorType
 from nexusrpc._serializer import LazyValueT
 from nexusrpc._service import ServiceDefinition
-from nexusrpc._util import get_operation, get_service_definition, is_async_callable
+from nexusrpc._util import get_service_definition, is_async_callable
 
 from ._common import (
     CancelOperationContext,
@@ -121,7 +121,7 @@ from ._common import (
 from ._operation_handler import (
     MiddlewareSafeOperationHandler,
     OperationHandler,
-    collect_operation_handler_factories_by_method_name,
+    collect_operation_handler_factories,
 )
 
 
@@ -283,13 +283,13 @@ class Handler(BaseServiceCollectionHandler):
             input: The input to the operation, as a LazyValue.
         """
         service_handler = self._get_service_handler(ctx.service)
-        handler = service_handler.get_operation_handler(ctx.operation)
-        op_handler = self._get_operation_handler(ctx, handler)
-        definition = service_handler.service.operation_definitions.get(ctx.operation)
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
+
+        op_defn = service_handler.service.operation_definitions.get(ctx.operation)
         deserialized_input = (
             input
-            if definition is None
-            else await input.consume(as_type=definition.input_type)
+            if op_defn is None
+            else await input.consume(as_type=op_defn.input_type)
         )
         return await op_handler.start(ctx, deserialized_input)
 
@@ -301,20 +301,17 @@ class Handler(BaseServiceCollectionHandler):
             token: The operation token.
         """
         service_handler = self._get_service_handler(ctx.service)
-        handler = service_handler.get_operation_handler(ctx.operation)
-        op_handler = self._get_operation_handler(ctx, handler)
+        op_handler = self._get_operation_handler(ctx, service_handler, ctx.operation)
         return await op_handler.cancel(ctx, token)
 
     def _get_operation_handler(
-        self,
-        ctx: OperationContext,
-        handler: OperationHandler[Any, Any],
+        self, ctx: OperationContext, service_handler: ServiceHandler, operation: str
     ) -> MiddlewareSafeOperationHandler:
         """
-        Wrap the resolved handler for the specified operation and apply all middleware.
+        Get the specified handler for the specified operation from the given service_handler and apply all middleware.
         """
         op_handler: MiddlewareSafeOperationHandler = _EnsuredAwaitableOperationHandler(
-            self.executor, handler
+            self.executor, service_handler.get_operation_handler(operation)
         )
 
         for middleware in reversed(self._middleware):
@@ -380,20 +377,16 @@ class ServiceHandler:
 
         # Construct a map of operation handlers keyed by the op name from the service
         # definition (i.e. by the name by which the operation can be requested)
-        factories_by_method_name = collect_operation_handler_factories_by_method_name(
+        factories_by_method_name, dynamic_factory = collect_operation_handler_factories(
             user_instance.__class__, service
         )
         op_handlers = {
             name: factories_by_method_name[defn.method_name](user_instance)
             for name, defn in service.operation_definitions.items()
         }
-
         dynamic_handler = None
-        for factory in factories_by_method_name.values():
-            operation = get_operation(factory)
-            if operation is not None and operation.dynamic:
-                dynamic_handler = factory(user_instance)
-                break
+        if dynamic_factory is not None:
+            dynamic_handler = dynamic_factory(user_instance)
 
         return cls(
             service=service,
@@ -412,15 +405,15 @@ class ServiceHandler:
                 f"in the definition.",
                 type=HandlerErrorType.NOT_FOUND,
             )
-        handler = self.operation_handlers.get(operation_name)
-        if handler is None:
+        operation_handler = self.operation_handlers.get(operation_name)
+        if operation_handler is None:
             raise HandlerError(
                 f"Nexus service implementation '{self.service.name}' has no handler for "
                 f"operation '{operation_name}'. There are {len(self.operation_handlers)} "
                 f"available operation handlers.",
                 type=HandlerErrorType.NOT_FOUND,
             )
-        return handler
+        return operation_handler
 
 
 class _Executor:
