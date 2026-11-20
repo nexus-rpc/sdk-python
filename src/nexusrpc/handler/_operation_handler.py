@@ -7,6 +7,7 @@ from collections.abc import Awaitable
 from typing import Any, Callable, Generic, Optional
 
 from nexusrpc._common import InputT, OutputT, ServiceHandlerT
+from nexusrpc._serializer import LazyValueT
 from nexusrpc._service import Operation, OperationDefinition, ServiceDefinition
 from nexusrpc._util import (
     _NEXUS_OPERATION_FACTORY_ATTR_NAME,  # pyright: ignore[reportPrivateUsage]
@@ -14,6 +15,7 @@ from nexusrpc._util import (
     get_operation_factory,
     is_async_callable,
     is_callable,
+    is_dynamic_operation_factory,
     set_operation,
     set_operation_factory,
 )
@@ -132,14 +134,20 @@ class MiddlewareSafeOperationHandler(OperationHandler[Any, Any], ABC):
         ...
 
 
-def collect_operation_handler_factories_by_method_name(
+def collect_operation_handler_factories(
     user_service_cls: type[ServiceHandlerT],
     service: Optional[ServiceDefinition],
-) -> dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]]:
-    """
-    Collect operation handler methods from a user service handler class.
+) -> tuple[
+    dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]],
+    Optional[Callable[[ServiceHandlerT], OperationHandler[LazyValueT, Any]]],
+]:
+    """Collect named factories by method name and the optional dynamic factory.
+
+    Validate duplicate handlers, including inherited ones, and named methods against
+    the service definition when provided.
     """
     factories: dict[str, Callable[[ServiceHandlerT], OperationHandler[Any, Any]]] = {}
+    dynamic_factory = None
     service_method_names = (
         {op_defn.method_name for op_defn in service.operation_definitions.values()}
         if service
@@ -148,7 +156,14 @@ def collect_operation_handler_factories_by_method_name(
     seen = set()
     for _, method in inspect.getmembers(user_service_cls, is_callable):
         if factory := get_operation_factory(method):
-            if op := get_operation(factory):
+            if is_dynamic_operation_factory(factory):
+                if dynamic_factory is not None:
+                    raise RuntimeError(
+                        f"Service '{user_service_cls.__name__}' has more than one "
+                        f"dynamic operation handler."
+                    )
+                dynamic_factory = factory
+            elif op := get_operation(factory):
                 if op.name in seen:
                     raise RuntimeError(
                         f"Operation '{op.name}' in service '{user_service_cls.__name__}' "
@@ -169,7 +184,7 @@ def collect_operation_handler_factories_by_method_name(
                 )
                 factories[op.method_name] = factory
                 seen.add(op.name)
-    return factories
+    return factories, dynamic_factory
 
 
 def validate_operation_handler_methods(

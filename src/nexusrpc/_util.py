@@ -11,13 +11,14 @@ import nexusrpc
 
 if TYPE_CHECKING:
     import nexusrpc
-    from nexusrpc import InputT, OutputT
+    from nexusrpc import InputT, LazyValueT, OutputT
     from nexusrpc._common import ServiceT
     from nexusrpc.handler._operation_handler import OperationHandler
 
 _NEXUS_SERVICE_DEFINITION_ATTR_NAME = "__nexus_service_definition__"
 _NEXUS_OPERATION_ATTR_NAME = "__nexus_operation__"
 _NEXUS_OPERATION_FACTORY_ATTR_NAME = "__nexus_operation_factory__"
+_NEXUS_DYNAMIC_OPERATION_FACTORY_ATTR_NAME = "__nexus_dynamic_operation_factory__"
 
 
 def get_service_definition(
@@ -82,7 +83,7 @@ def get_operation_factory(
     if factory := getattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, None):
         # obj was a decorated operation start method
         return factory
-    if get_operation(obj):
+    if get_operation(obj) or is_dynamic_operation_factory(obj):
         # obj was the desired factory
         return obj
     return None
@@ -97,6 +98,18 @@ def set_operation_factory(
     ``obj`` should be an operation start method.
     """
     setattr(obj, _NEXUS_OPERATION_FACTORY_ATTR_NAME, operation_factory)
+
+
+def is_dynamic_operation_factory(obj: Any) -> bool:
+    """Return whether the operation handler factory is the dynamic fallback."""
+    return bool(getattr(obj, _NEXUS_DYNAMIC_OPERATION_FACTORY_ATTR_NAME, False))
+
+
+def set_dynamic_operation_factory(
+    operation_factory: Callable[[Any], OperationHandler[LazyValueT, Any]],
+) -> None:
+    """Mark an operation handler factory as the dynamic fallback."""
+    setattr(operation_factory, _NEXUS_DYNAMIC_OPERATION_FACTORY_ATTR_NAME, True)
 
 
 # Copied from https://github.com/modelcontextprotocol/python-sdk

@@ -71,6 +71,51 @@ class MyNexusServiceHandler:
         return MyOutput(message=f"Hello {input.name}!")
 ```
 
+### Implementing and registering a dynamic Operation handler
+
+A dynamic Operation handler handles requests whose operation name is not registered with a service handler. Named Operations take precedence. A service handler can have one dynamic handler, with or without named Operations.
+
+The handler receives the requested operation name through `ctx.operation` and raw input as
+`nexusrpc.LazyValue`. Decode the input with `await input.consume(as_type=...)`. Do not use the input after the handler returns. The handler can be sync or async.
+
+```python
+from typing import Any
+
+import nexusrpc.handler
+
+
+class MyDynamicOperation(nexusrpc.handler.OperationHandler[nexusrpc.LazyValue, Any]):
+    # Dynamic handler that simply echoes the input back synchronously.
+    async def start(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: nexusrpc.LazyValue
+    ) -> nexusrpc.handler.StartOperationResultSync[Any]:
+        value = await input.consume(as_type=str)
+        return nexusrpc.handler.StartOperationResultSync(value)
+
+    async def cancel(
+        self, ctx: nexusrpc.handler.CancelOperationContext, token: str
+    ) -> None:
+        raise NotImplementedError("An operation that responded synchronously cannot be cancelled.")
+```
+
+Register the handler with `@nexusrpc.handler.operation_handler(dynamic=True)` on your Nexus service handler. Each service can have maximum 1 dynamic handler. The registration will error if:
+
+* A name is provided for the dynamic handler
+* A dynamic handler is already defined on this service handler
+
+```python
+@nexusrpc.handler.service_handler(name="example-service")
+class MyDynamicServiceHandler:
+    @nexusrpc.handler.operation_handler(dynamic=True)
+    def forward(self) -> nexusrpc.handler.OperationHandler[nexusrpc.LazyValue, Any]:
+        return MyDynamicOperation()
+
+
+handler = nexusrpc.handler.Handler([MyDynamicServiceHandler()])
+```
+
+Middleware applies to dynamic handlers as it does to named Operations and receives the undecoded `nexusrpc.LazyValue` on start.
+
 ---
 
 _Versions 1.0.1 and earlier of the `nexus-rpc` package on PyPI belong to an unrelated
