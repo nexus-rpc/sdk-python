@@ -161,7 +161,7 @@ def operation_handler(
             The handler must accept raw nexusrpc.LazyValue input.
 
     .. warning::
-        Dynamic operation handler (setting dynamic=True) are experimental and may change in
+        Dynamic operation handler (setting dynamic=True) is experimental and may change in
         the future.
     """
 
